@@ -21,6 +21,15 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
 
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-XXXXXXXXXX');
+  </script>
+
   <style>
     :root{
       --bg:#f6f8fb; --card:#fff; --text:#121722; --muted:#5b6472;
@@ -351,6 +360,28 @@
   <script>
     // 西暦を自動更新
     document.getElementById('y').textContent = new Date().getFullYear();
+
+    // 月次キャッシュクリア機能
+    (function() {
+      const CACHE_KEY = 'exteriortools_cache_month';
+      const currentMonth = new Date().getFullYear() + '-' + (new Date().getMonth() + 1);
+      const savedMonth = localStorage.getItem(CACHE_KEY);
+
+      if (savedMonth !== currentMonth) {
+        // 月が変わった場合、キャッシュをクリア
+        if ('caches' in window) {
+          caches.keys().then(function(names) {
+            for (let name of names) {
+              caches.delete(name);
+            }
+          });
+        }
+        // localStorageの計算履歴などもクリア（必要に応じて）
+        // localStorage.clear(); // 全クリアする場合
+        localStorage.setItem(CACHE_KEY, currentMonth);
+        console.log('Cache cleared for new month:', currentMonth);
+      }
+    })();
 
     // PWA: Service Worker 登録
     if ('serviceWorker' in navigator) {
