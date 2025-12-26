@@ -8,10 +8,16 @@
     ========================================
     躯体採寸システム
     ========================================
-    バージョン: 1.5.2（完成版）
-    最終更新: 2024-12-26
+    バージョン: 1.6.0
+    最終更新: 2024-12-27
     
     [更新履歴]
+    v1.6.0 (2024-12-27)
+    - PDF保存機能追加（GoodNotes、Notion、クラウドに保存可能）
+    - PNG画像保存機能追加
+    - 共有機能追加（iPhoneの共有メニューから直接共有）
+    - 計算結果の図を簡単に保存・共有できるように改善
+    
     v1.5.2 (2024-12-26) - 完成版
     - 計算結果の小数点以下を切り捨てに変更
     - すべての機能が完成
@@ -62,6 +68,8 @@
     - 四角形の閉じた図形対応
     ========================================
     -->
+    <!-- jsPDF ライブラリ（PDF保存用） -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -376,8 +384,8 @@
             
             <!-- バージョン情報 -->
             <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 13px;">
-                <div style="margin-bottom: 5px;">躯体採寸システム v1.5.2（完成版）</div>
-                <div>最終更新: 2024-12-26</div>
+                <div style="margin-bottom: 5px;">躯体採寸システム v1.6.0</div>
+                <div>最終更新: 2024-12-27</div>
             </div>
         </div>
         
@@ -1338,10 +1346,21 @@
                     `;
                 });
                 
-                // キャンバスを追加して図を描画
+                // キャンバスと保存ボタンを追加して図を描画
                 html = `
                     <div style="margin-bottom: 20px;">
                         <canvas id="result-canvas" width="500" height="400" style="width: 100%; border-radius: 10px;"></canvas>
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+                        <button onclick="downloadAsPDF()" style="flex: 1; min-width: 140px; padding: 12px 20px; background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            📄 PDFで保存
+                        </button>
+                        <button onclick="downloadAsPNG()" style="flex: 1; min-width: 140px; padding: 12px 20px; background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            🖼️ 画像で保存
+                        </button>
+                        <button onclick="shareResult()" style="flex: 1; min-width: 140px; padding: 12px 20px; background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            📤 共有
+                        </button>
                     </div>
                 ` + html;
                 
@@ -2747,7 +2766,139 @@
             document.getElementById('measurement-screen').style.display = 'none';
             loadSavedPatterns();
         }
+        
+        // ==============================================
+        // 保存・共有機能
+        // ==============================================
+        
+        // PDFとして保存
+        function downloadAsPDF() {
+            const canvas = document.getElementById('result-canvas');
+            if (!canvas) {
+                alert('計算結果がありません');
+                return;
+            }
+            
+            try {
+                // jsPDFを使用してPDFを作成
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+                
+                // キャンバスを画像として取得
+                const imgData = canvas.toDataURL('image/png');
+                
+                // A4サイズに合わせて画像を配置
+                const imgWidth = 190; // A4幅 - 余白
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                
+                // タイトルを追加
+                pdf.setFontSize(16);
+                pdf.text('躯体採寸システム - 計算結果', 105, 15, { align: 'center' });
+                
+                // 日付を追加
+                const date = new Date().toLocaleDateString('ja-JP');
+                pdf.setFontSize(10);
+                pdf.text(date, 105, 22, { align: 'center' });
+                
+                // 画像を追加
+                pdf.addImage(imgData, 'PNG', 10, 30, imgWidth, imgHeight);
+                
+                // ファイル名を生成
+                const filename = `躯体採寸_${new Date().toISOString().slice(0,10)}.pdf`;
+                
+                // PDFを保存
+                pdf.save(filename);
+                
+            } catch (error) {
+                console.error('PDF保存エラー:', error);
+                alert('PDFの保存に失敗しました');
+            }
+        }
+        
+        // PNGとして保存
+        function downloadAsPNG() {
+            const canvas = document.getElementById('result-canvas');
+            if (!canvas) {
+                alert('計算結果がありません');
+                return;
+            }
+            
+            try {
+                // キャンバスを画像として取得
+                const imgData = canvas.toDataURL('image/png');
+                
+                // ダウンロードリンクを作成
+                const link = document.createElement('a');
+                link.download = `躯体採寸_${new Date().toISOString().slice(0,10)}.png`;
+                link.href = imgData;
+                link.click();
+                
+            } catch (error) {
+                console.error('PNG保存エラー:', error);
+                alert('画像の保存に失敗しました');
+            }
+        }
+        
+        // 共有機能（Web Share API使用）
+        async function shareResult() {
+            const canvas = document.getElementById('result-canvas');
+            if (!canvas) {
+                alert('計算結果がありません');
+                return;
+            }
+            
+            try {
+                // Web Share APIが利用可能かチェック
+                if (!navigator.share && !navigator.canShare) {
+                    // Web Share APIが使えない場合、PNGダウンロードを実行
+                    alert('この端末では共有機能が使えません。画像として保存します。');
+                    downloadAsPNG();
+                    return;
+                }
+                
+                // キャンバスをBlobに変換
+                canvas.toBlob(async (blob) => {
+                    try {
+                        const file = new File([blob], `躯体採寸_${new Date().toISOString().slice(0,10)}.png`, { type: 'image/png' });
+                        
+                        const shareData = {
+                            title: '躯体採寸システム - 計算結果',
+                            text: '躯体採寸の計算結果です',
+                            files: [file]
+                        };
+                        
+                        // 共有可能かチェック
+                        if (navigator.canShare && !navigator.canShare(shareData)) {
+                            // ファイル共有がサポートされていない場合、テキストのみ共有
+                            await navigator.share({
+                                title: shareData.title,
+                                text: shareData.text,
+                                url: window.location.href
+                            });
+                        } else {
+                            // ファイルを含めて共有
+                            await navigator.share(shareData);
+                        }
+                        
+                    } catch (shareError) {
+                        if (shareError.name !== 'AbortError') {
+                            console.error('共有エラー:', shareError);
+                            alert('共有に失敗しました。画像として保存します。');
+                            downloadAsPNG();
+                        }
+                    }
+                }, 'image/png');
+                
+            } catch (error) {
+                console.error('共有エラー:', error);
+                alert('共有に失敗しました。画像として保存します。');
+                downloadAsPNG();
+            }
+        }
     </script>
 </body>
 </html>
-
