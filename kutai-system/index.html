@@ -1,1 +1,2753 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>躯体採寸システム</title>
+    <!--
+    ========================================
+    躯体採寸システム
+    ========================================
+    バージョン: 1.5.2（完成版）
+    最終更新: 2024-12-26
+    
+    [更新履歴]
+    v1.5.2 (2024-12-26) - 完成版
+    - 計算結果の小数点以下を切り捨てに変更
+    - すべての機能が完成
+    
+    v1.5.1 (2024-12-26)
+    - 作図終了後の戻るボタンで作図再開できる機能を修正
+    - 作図用イベントリスナーを正しく再設定
+    - 計算結果の躯体幅表示に背景を追加（重なり防止）
+    
+    v1.5.0 (2024-12-26)
+    - 作図後、点・線クリックで入力欄に移動（状態変更なし）
+    - 線クリック機能追加（点から線分への距離計算）
+    - 計算結果の図：最小表示長さ200px、テキストを線の外側に配置
+    - テキストの重なりを完全に防止（垂直方向40pxオフセット）
+    
+    v1.4.0 (2024-12-26)
+    - 計算結果の図の最小表示長さを150pxに増加（数字の重なりを防止）
+    - 作図終了後に点クリックで状態変更できる機能を修正
+    - 始点クリックで図形を閉じる機能を修正（スナップ処理後に判定）
+    - PC: 30px以内、タッチ: 40px以内で始点として認識
+    
+    v1.3.1 (2024-12-26)
+    - 計算結果の図でコーナー点が表示されない問題を修正
+    - 点クリック時の入力欄スクロール機能を修正（DOMの更新を待つ）
+    - 始点を直接クリックして図形を閉じる機能を修正
+    
+    v1.3.0 (2024-12-26)
+    - 点クリックで入力欄にスクロール&ハイライト機能追加
+    - 計算結果の図を実寸法比率で表示（見やすさ優先）
+    - 最小表示長さ80pxで寸法の視認性を確保
+    
+    v1.2.0 (2024-12-26)
+    - 始点の強調表示サイズを調整
+    - 始点を直接クリック/タップで図形を閉じる機能追加
+    - 作図終了後に戻るボタンで作図を再開できる機能追加
+    - パターン選択に戻るボタンを常に有効化
+    
+    v1.1.0 (2024-12-26)
+    - スマートガイドライン追加（イラストレーター風）
+    - 始点に向かうガイドライン表示
+    - ガイドライン合致時に始点を強調表示
+    - 段差寸法の入力チェック追加
+    
+    v1.0.0 (2024-12-26)
+    - 初回リリース
+    - I字型、L字型、コの字型、自由作図対応
+    - 段差機能、コーナー計算機能
+    - 四角形の閉じた図形対応
+    ========================================
+    -->
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #1a1a1a;
+            margin-bottom: 40px;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        
+        h2 {
+            color: #1a1a1a;
+            margin: 30px 0 20px;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.6;
+        }
+        
+        /* パターン選択画面 */
+        .pattern-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .pattern-btn {
+            background: white;
+            color: #1a1a1a;
+            border: 2px solid #e5e7eb;
+            padding: 24px 16px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            min-height: 110px;
+        }
+        
+        .pattern-btn svg {
+            width: 50px;
+            height: 50px;
+        }
+        
+        .pattern-btn:hover {
+            border-color: #3b82f6;
+            background: #f0f9ff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+        }
+        
+        .pattern-btn:active {
+            transform: translateY(0);
+        }
+        
+        .pattern-btn.custom {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+            grid-column: 1 / -1;
+        }
+        
+        .pattern-btn.custom:hover {
+            background: #2563eb;
+            border-color: #2563eb;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+        }
+        
+        .pattern-btn .delete-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        .pattern-btn .delete-btn:hover {
+            background: #dc2626;
+            transform: scale(1.1);
+        }
+        
+        /* 採寸画面 */
+        .measurement-screen {
+            display: none;
+        }
+        
+        .back-btn {
+            background: #f3f4f6;
+            color: #1a1a1a;
+            border: 1px solid #e5e7eb;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        
+        .back-btn:hover {
+            background: #e5e7eb;
+            border-color: #d1d5db;
+        }
+        
+        .drawing-area {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            background: #f9fafb;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            margin: 20px 0;
+            overflow: hidden;
+            touch-action: none;
+        }
+        
+        canvas {
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+        
+        .dimension-inputs {
+            margin: 20px 0;
+        }
+        
+        .dimension-item {
+            background: #f9fafb;
+            padding: 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            margin-bottom: 12px;
+        }
+        
+        .dimension-item label {
+            display: block;
+            color: #1a1a1a;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .dimension-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .dimension-row input {
+            padding: 10px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: all 0.2s ease;
+        }
+        
+        .dimension-row input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .results {
+            background: #f9fafb;
+            padding: 20px;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+        
+        .result-item {
+            padding: 12px;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .result-label {
+            color: #555;
+            font-weight: bold;
+        }
+        
+        .result-value {
+            color: #667eea;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .save-pattern-btn {
+            width: 100%;
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.2s ease;
+        }
+        
+        .save-pattern-btn:hover {
+            background: #059669;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+        }
+        
+        .alert {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border-left-color: #28a745;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- パターン選択画面 -->
+        <div id="pattern-select-screen">
+            <h1>躯体採寸システム</h1>
+            
+            <h2>基本パターン</h2>
+            <div class="pattern-grid">
+                <button class="pattern-btn" onclick="selectPattern('i')">
+                    <svg viewBox="0 0 60 60">
+                        <line x1="10" y1="30" x2="50" y2="30" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/>
+                    </svg>
+                    I字
+                </button>
+                <button class="pattern-btn" onclick="selectPattern('l-left')">
+                    <svg viewBox="0 0 60 60">
+                        <line x1="15" y1="10" x2="15" y2="50" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/>
+                        <line x1="15" y1="10" x2="45" y2="10" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/>
+                    </svg>
+                    左L字
+                </button>
+                <button class="pattern-btn" onclick="selectPattern('l-right')">
+                    <svg viewBox="0 0 60 60">
+                        <line x1="45" y1="10" x2="45" y2="50" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/>
+                        <line x1="15" y1="10" x2="45" y2="10" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/>
+                    </svg>
+                    右L字
+                </button>
+                <button class="pattern-btn" onclick="selectPattern('u')">
+                    <svg viewBox="0 0 60 60">
+                        <line x1="15" y1="50" x2="15" y2="10" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/>
+                        <line x1="15" y1="10" x2="45" y2="10" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/>
+                        <line x1="45" y1="10" x2="45" y2="50" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/>
+                    </svg>
+                    コの字
+                </button>
+            </div>
+            
+            <div id="saved-patterns-section" style="display: none;">
+                <h2>保存済みパターン</h2>
+                <div class="pattern-grid" id="saved-patterns-grid"></div>
+            </div>
+            
+            <h2>カスタム作図</h2>
+            <div class="pattern-grid">
+                <button class="pattern-btn custom" onclick="selectPattern('custom')">自由に線を引く</button>
+            </div>
+            
+            <!-- バージョン情報 -->
+            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 13px;">
+                <div style="margin-bottom: 5px;">躯体採寸システム v1.5.2（完成版）</div>
+                <div>最終更新: 2024-12-26</div>
+            </div>
+        </div>
+        
+        <!-- 採寸画面 -->
+        <div id="measurement-screen" class="measurement-screen">
+            <button id="back-btn" class="back-btn" onclick="backToSelect()">← パターン選択に戻る</button>
+            
+            <h1 id="pattern-title">採寸入力</h1>
+            
+            <div id="alert" class="alert" style="display: none;"></div>
+            
+            <div class="drawing-area">
+                <canvas id="canvas"></canvas>
+            </div>
+            
+            <div id="drawing-controls" style="display: none; margin-top: 10px; display: flex; gap: 10px;">
+                <button onclick="undoLastLine()" style="flex: 1; padding: 12px; background: #f59e0b; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">↶ 戻る</button>
+                <button onclick="finishDrawing()" style="flex: 1; padding: 12px; background: #10b981; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">✓ 作図終了</button>
+            </div>
+            
+            <div class="dimension-inputs" id="dimension-inputs"></div>
+            
+            <div class="results">
+                <h2>計算結果</h2>
+                <div id="results-content">
+                    <p style="color: #999; text-align: center;">寸法を入力してください</p>
+                </div>
+            </div>
+            
+            <button class="save-pattern-btn" onclick="savePattern()">このパターンを保存</button>
+        </div>
+    </div>
+    
+    <script>
+        let currentPattern = null;
+        let lines = [];
+        let dimensions = {};
+        let isDrawing = false;
+        let isDragging = false;
+        let startPoint = null;
+        let canvas, ctx;
+        let drawingPoints = [];
+        let lastClickTime = 0;
+        let lastTapTime = 0;
+        let commonWidth = null; // 躯体幅
+        let useIndividualWidth = false; // 個別設定フラグ
+        let commonHeight = null; // 躯体高さ
+        let corners = {}; // コーナー情報 { 'x,y': { hasStep: bool, depth: number, lines: [...] } }
+        
+        // コーナーを検出
+        function detectCorners() {
+            if (!corners) {
+                corners = {};
+            }
+            
+            if (!lines || lines.length === 0) {
+                corners = {};
+                return;
+            }
+            
+            const newCorners = {};
+            const tolerance = 5; // 同じ点とみなす許容範囲
+            
+            lines.forEach((line, idx) => {
+                if (!line) return;
+                
+                // 始点
+                const startKey = findCornerKeyForDetection(line.x1, line.y1, tolerance, newCorners);
+                if (!newCorners[startKey]) {
+                    // 既存のコーナー情報を保持
+                    const oldCorner = corners[startKey];
+                    newCorners[startKey] = { 
+                        x: line.x1, 
+                        y: line.y1, 
+                        hasStep: oldCorner ? oldCorner.hasStep : false, 
+                        depth: oldCorner ? oldCorner.depth : null, 
+                        lines: [] 
+                    };
+                }
+                newCorners[startKey].lines.push({ lineId: line.id, point: 'start' });
+                
+                // 終点
+                const endKey = findCornerKeyForDetection(line.x2, line.y2, tolerance, newCorners);
+                if (!newCorners[endKey]) {
+                    // 既存のコーナー情報を保持
+                    const oldCorner = corners[endKey];
+                    newCorners[endKey] = { 
+                        x: line.x2, 
+                        y: line.y2, 
+                        hasStep: oldCorner ? oldCorner.hasStep : false, 
+                        depth: oldCorner ? oldCorner.depth : null, 
+                        lines: [] 
+                    };
+                }
+                newCorners[endKey].lines.push({ lineId: line.id, point: 'end' });
+            });
+            
+            corners = newCorners;
+        }
+        
+        // コーナーキーを検索（検出用 - 新しいcornersオブジェクトを参照）
+        function findCornerKeyForDetection(x, y, tolerance, cornersObj) {
+            for (const key in cornersObj) {
+                const corner = cornersObj[key];
+                const dist = Math.sqrt(Math.pow(x - corner.x, 2) + Math.pow(y - corner.y, 2));
+                if (dist < tolerance) {
+                    return key;
+                }
+            }
+            // 新しいキーを生成
+            return `${Math.round(x)},${Math.round(y)}`;
+        }
+        
+        // コーナーキーを検索（既存のcornersから検索）
+        function findCornerKey(x, y, tolerance) {
+            if (!corners) return `${Math.round(x)},${Math.round(y)}`;
+            
+            for (const key in corners) {
+                const corner = corners[key];
+                const dist = Math.sqrt(Math.pow(x - corner.x, 2) + Math.pow(y - corner.y, 2));
+                if (dist < tolerance) {
+                    return key;
+                }
+            }
+            // 新しいキーを生成
+            return `${Math.round(x)},${Math.round(y)}`;
+        }
+        
+        
+        // ページ読み込み時
+        window.onload = function() {
+            canvas = document.getElementById('canvas');
+            ctx = canvas.getContext('2d');
+            resizeCanvas();
+            
+            loadSavedPatterns();
+        };
+        
+        // Canvas リサイズ
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            if (lines.length > 0) {
+                drawLines();
+            }
+        }
+        
+        // パターン選択
+        function selectPattern(type) {
+            currentPattern = type;
+            document.getElementById('pattern-select-screen').style.display = 'none';
+            document.getElementById('measurement-screen').style.display = 'block';
+            
+            // Canvasをリサイズ
+            setTimeout(resizeCanvas, 100);
+            
+            lines = [];
+            dimensions = {};
+            drawingPoints = [];
+            commonWidth = null;
+            commonHeight = null;
+            useIndividualWidth = false;
+            
+            if (type === 'i') {
+                document.getElementById('pattern-title').textContent = 'I字型 採寸';
+                createIPattern();
+            } else if (type === 'l-left') {
+                document.getElementById('pattern-title').textContent = '左L字型 採寸';
+                createLPatternLeft();
+            } else if (type === 'l-right') {
+                document.getElementById('pattern-title').textContent = '右L字型 採寸';
+                createLPatternRight();
+            } else if (type === 'u') {
+                document.getElementById('pattern-title').textContent = 'コの字型 採寸';
+                createUPattern();
+            } else if (type === 'custom') {
+                document.getElementById('pattern-title').textContent = '自由作図';
+                setupCustomDrawing();
+            } else {
+                // 保存済みパターンの読み込み
+                loadCustomPattern(type);
+            }
+        }
+        
+        // I字パターン
+        function createIPattern() {
+            lines = [
+                { 
+                    id: 'A', 
+                    x1: 100, y1: 200, 
+                    x2: 400, y2: 200, 
+                    name: '辺A', 
+                    start: 'wall', // デフォルトは壁
+                    end: 'wall'
+                }
+            ];
+            drawLines();
+            createInputs();
+            setupPointClickListener();
+        }
+        
+        // 左L字パターン（┌型）
+        function createLPatternLeft() {
+            lines = [
+                { 
+                    id: 'A', 
+                    x1: 150, y1: 100, 
+                    x2: 150, y2: 320, 
+                    name: '辺A（縦）', 
+                    start: 'wall',  // 最初の線の始点は壁
+                    end: 'wall'  // エンドは壁
+                },
+                { 
+                    id: 'B', 
+                    x1: 150, y1: 100, 
+                    x2: 400, y2: 100, 
+                    name: '辺B（横）', 
+                    start: 'corner',
+                    end: 'wall'  // エンドは壁
+                }
+            ];
+            drawLines();
+            createInputs();
+            setupPointClickListener();
+        }
+        
+        // 右L字パターン（┐型）
+        function createLPatternRight() {
+            lines = [
+                { 
+                    id: 'A', 
+                    x1: 100, y1: 100, 
+                    x2: 350, y2: 100, 
+                    name: '辺A（横）', 
+                    start: 'wall',  // エンドは壁
+                    end: 'corner'
+                },
+                { 
+                    id: 'B', 
+                    x1: 350, y1: 100, 
+                    x2: 350, y2: 320, 
+                    name: '辺B（縦）', 
+                    start: 'corner',
+                    end: 'wall'  // エンドは壁
+                }
+            ];
+            drawLines();
+            createInputs();
+            setupPointClickListener();
+        }
+        
+        // コの字パターン
+        function createUPattern() {
+            lines = [
+                { 
+                    id: 'A', 
+                    x1: 120, y1: 320, 
+                    x2: 120, y2: 100, 
+                    name: '辺A', 
+                    start: 'wall',  // エンドは壁
+                    end: 'corner'
+                },
+                { 
+                    id: 'B', 
+                    x1: 120, y1: 100, 
+                    x2: 380, y2: 100, 
+                    name: '辺B', 
+                    start: 'corner',
+                    end: 'corner'
+                },
+                { 
+                    id: 'C', 
+                    x1: 380, y1: 100, 
+                    x2: 380, y2: 320, 
+                    name: '辺C', 
+                    start: 'corner',
+                    end: 'wall'  // エンドは壁
+                }
+            ];
+            drawLines();
+            createInputs();
+            setupPointClickListener();
+        }
+        
+        // 点クリックリスナーのセットアップ
+        function setupPointClickListener() {
+            // 既存のリスナーを削除（重複防止）
+            canvas.removeEventListener('click', handlePointClick);
+            canvas.removeEventListener('touchend', handlePointClickTouch);
+            
+            // 新しいリスナーを追加
+            canvas.addEventListener('click', handlePointClick);
+            canvas.addEventListener('touchend', handlePointClickTouch);
+        }
+        
+        // タッチで点の状態を切り替え
+        function handlePointClickTouch(e) {
+            if (isDrawing || isDragging) return;
+            if (drawingPoints.length > 0) return;
+            
+            e.preventDefault();
+            const touch = e.changedTouches[0];
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const x = (touch.clientX - rect.left) * scaleX;
+            const y = (touch.clientY - rect.top) * scaleY;
+            
+            const clickRadius = 25;
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                
+                const distStart = Math.sqrt(Math.pow(x - line.x1, 2) + Math.pow(y - line.y1, 2));
+                if (distStart < clickRadius) {
+                    // 入力欄にスクロール&ハイライトのみ（状態変更しない）
+                    scrollToInput(line.id);
+                    return;
+                }
+                
+                const distEnd = Math.sqrt(Math.pow(x - line.x2, 2) + Math.pow(y - line.y2, 2));
+                if (distEnd < clickRadius) {
+                    // 入力欄にスクロール&ハイライトのみ（状態変更しない）
+                    scrollToInput(line.id);
+                    return;
+                }
+                
+                // 線をタップしたかチェック
+                const distToLine = distanceToLineSegment(x, y, line.x1, line.y1, line.x2, line.y2);
+                if (distToLine < 15) {
+                    // 入力欄にスクロール&ハイライト
+                    scrollToInput(line.id);
+                    return;
+                }
+            }
+        }
+        
+        // 線を描画
+        function drawLines() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // コーナーを検出
+            detectCorners();
+            
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 5;
+            ctx.lineCap = 'round';
+            
+            // 線を描画
+            lines.forEach((line, index) => {
+                ctx.beginPath();
+                ctx.moveTo(line.x1, line.y1);
+                ctx.lineTo(line.x2, line.y2);
+                ctx.stroke();
+                
+                // ラベル位置計算
+                const midX = (line.x1 + line.x2) / 2;
+                const midY = (line.y1 + line.y2) / 2;
+                
+                // 入力された外法寸法を表示
+                const dim = dimensions[line.id];
+                if (dim && dim.length) {
+                    ctx.font = 'bold 18px sans-serif';
+                    ctx.fillStyle = '#3b82f6';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    
+                    // 背景を白く
+                    const text = `${dim.length}`;
+                    const metrics = ctx.measureText(text);
+                    const padding = 8;
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                    ctx.fillRect(midX - metrics.width/2 - padding, midY - 12, metrics.width + padding*2, 24);
+                    
+                    // 文字を描画
+                    ctx.fillStyle = '#3b82f6';
+                    ctx.fillText(text, midX, midY);
+                }
+                
+                // 辺名ラベル
+                ctx.font = 'bold 13px sans-serif';
+                const textWidth = ctx.measureText(line.name).width;
+                const padding = 8;
+                const bgWidth = textWidth + padding * 2;
+                const bgHeight = 20;
+                
+                // 背景
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+                ctx.fillRect(midX - bgWidth/2, midY - bgHeight/2 - 35, bgWidth, bgHeight);
+                
+                // 文字
+                ctx.fillStyle = '#333';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(line.name, midX, midY - 35);
+            });
+            
+            // 既に描画したコーナーを記録
+            const drawnCorners = new Set();
+            
+            // コーナーベースで点を描画
+            if (corners) {
+                for (const cornerKey in corners) {
+                    const corner = corners[cornerKey];
+                    
+                    if (!corner || drawnCorners.has(cornerKey)) continue;
+                    drawnCorners.add(cornerKey);
+                    
+                    // このコーナーに接続している辺を取得
+                    if (!corner.lines || corner.lines.length === 0) continue;
+                    
+                    // コーナーの座標を取得
+                    const firstLineRef = corner.lines[0];
+                    const firstLine = lines.find(l => l.id === firstLineRef.lineId);
+                    if (!firstLine) continue;
+                    
+                    const cornerX = corner.x !== undefined ? corner.x : (firstLine[firstLineRef.point === 'start' ? 'x1' : 'x2']);
+                    const cornerY = corner.y !== undefined ? corner.y : (firstLine[firstLineRef.point === 'start' ? 'y1' : 'y2']);
+                    
+                    // 段差がある場合は2つの点、ない場合は1つの点
+                    if (corner.hasStep && corner.lines.length >= 2) {
+                        // 2つの辺から状態を取得
+                        const line1Ref = corner.lines[0];
+                        const line2Ref = corner.lines[1];
+                        const line1 = lines.find(l => l.id === line1Ref.lineId);
+                        const line2 = lines.find(l => l.id === line2Ref.lineId);
+                        
+                        if (line1 && line2) {
+                            const state1 = line1[line1Ref.point] || 'wall';
+                            const state2 = line2[line2Ref.point] || 'wall';
+                            
+                            // 2つの辺の方向ベクトルの平均を取る
+                            let avgDx = 0, avgDy = 0;
+                            
+                            corner.lines.forEach(lineRef => {
+                                const line = lines.find(l => l.id === lineRef.lineId);
+                                if (!line) return;
+                                
+                                let dx, dy;
+                                if (lineRef.point === 'start') {
+                                    dx = line.x2 - line.x1;
+                                    dy = line.y2 - line.y1;
+                                } else {
+                                    dx = line.x1 - line.x2;
+                                    dy = line.y1 - line.y2;
+                                }
+                                avgDx += dx;
+                                avgDy += dy;
+                            });
+                            
+                            const length = Math.sqrt(avgDx * avgDx + avgDy * avgDy);
+                            if (length > 0) {
+                                const perpX = -avgDy / length;
+                                const perpY = avgDx / length;
+                                const offset = 12;
+                                
+                                // 2つの点をそれぞれの状態で描画
+                                drawPoint(cornerX + perpX * offset, cornerY + perpY * offset, state1);
+                                drawPoint(cornerX - perpX * offset, cornerY - perpY * offset, state2);
+                            } else {
+                                // 方向が定まらない場合は1つだけ
+                                drawPoint(cornerX, cornerY, state1);
+                            }
+                        }
+                    } else {
+                        // 段差なし：1つの点
+                        const state = firstLine[firstLineRef.point] || 'wall';
+                        drawPoint(cornerX, cornerY, state);
+                    }
+                }
+            }
+            
+            // 描画中のポイントを表示
+            drawingPoints.forEach((point, index) => {
+                ctx.fillStyle = '#f39c12';
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, 6, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            });
+        }
+        
+        // 点を描画
+        function drawPoint(x, y, state) {
+            const colors = {
+                'corner': '#e74c3c', // 赤：コーナー
+                'end': '#3498db',    // 青：エンド
+                'wall': '#2ecc71'    // 緑：壁
+            };
+            
+            ctx.fillStyle = colors[state] || colors['end'];
+            ctx.beginPath();
+            ctx.arc(x, y, 10, 0, Math.PI * 2); // 8から10に変更
+            ctx.fill();
+            
+            // 白い枠
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 3; // 2から3に変更
+            ctx.stroke();
+        }
+        
+        // 入力フォーム作成
+        function createInputs() {
+            const container = document.getElementById('dimension-inputs');
+            container.innerHTML = '';
+            
+            // コーナーを検出
+            detectCorners();
+            
+            // 点の説明
+            const infoDiv = document.createElement('div');
+            infoDiv.style.cssText = 'background: #e3f2fd; padding: 12px; border-radius: 8px; margin-bottom: 15px;';
+            infoDiv.innerHTML = `
+                <p style="margin: 0; color: #555; font-size: 14px; line-height: 1.6;">
+                    <span style="color: #e74c3c; font-size: 16px;">●</span> <strong>赤＝コーナー</strong>（躯体幅÷2を引く）　
+                    <span style="color: #3498db; font-size: 16px;">●</span> <strong>青＝エンド</strong>（壁なし）　
+                    <span style="color: #2ecc71; font-size: 16px;">●</span> <strong>緑＝壁</strong>（壁あり）
+                </p>
+            `;
+            container.appendChild(infoDiv);
+            
+            // 躯体幅・高さ入力
+            const widthDiv = document.createElement('div');
+            widthDiv.style.cssText = 'background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;';
+            widthDiv.innerHTML = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+                    <div>
+                        <label style="display: block; color: #555; font-weight: bold; margin-bottom: 8px;">躯体幅 (mm)</label>
+                        <input type="number" id="common-width" placeholder="例: 180" value="${commonWidth || ''}" 
+                               oninput="updateCommonWidth(this.value)" 
+                               style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px;">
+                    </div>
+                    <div>
+                        <label style="display: block; color: #555; font-weight: bold; margin-bottom: 8px;">躯体高さ (mm)</label>
+                        <input type="number" id="common-height" placeholder="例: 1100" value="${commonHeight || ''}" 
+                               oninput="updateCommonHeight(this.value)" 
+                               style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px;">
+                    </div>
+                </div>
+                <div>
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="checkbox" id="individual-width-check" ${useIndividualWidth ? 'checked' : ''} 
+                               onchange="toggleIndividualWidth(this.checked)"
+                               style="width: 18px; height: 18px; margin-right: 8px; cursor: pointer;">
+                        <span style="color: #555; font-size: 14px;">辺ごとに躯体幅を設定</span>
+                    </label>
+                </div>
+            `;
+            container.appendChild(widthDiv);
+            
+            // 各辺の入力
+            lines.forEach((line, lineIndex) => {
+                const div = document.createElement('div');
+                div.className = 'dimension-item';
+                div.setAttribute('data-line-id', line.id);  // IDを追加
+                
+                // コーナーの段差状態を確認
+                const startKey = findCornerKey(line.x1, line.y1, 5);
+                const endKey = findCornerKey(line.x2, line.y2, 5);
+                const startCorner = corners[startKey];
+                const endCorner = corners[endKey];
+                
+                // 段差がある場合の状態を取得
+                const startHasStep = startCorner && startCorner.hasStep;
+                const endHasStep = endCorner && endCorner.hasStep;
+                
+                // 点の状態を取得
+                let startState = line.start || 'wall';
+                let endState = line.end || 'wall';
+                
+                // 斜め線かどうか判定
+                const isDiagonal = isLineDiagonal(line);
+                const angle = isDiagonal ? getLineAngle(line).toFixed(1) : null;
+                
+                // 個別躯体幅入力欄
+                const widthInput = useIndividualWidth ? `
+                    <input type="number" placeholder="躯体幅 (mm)" 
+                           oninput="updateDimension('${line.id}', 'width', this.value)"
+                           value="${dimensions[line.id]?.width || ''}"
+                           style="padding: 10px; border: 2px solid #ddd; border-radius: 6px; font-size: 16px;">
+                ` : '';
+                
+                // 角度入力欄（斜め線の場合のみ）
+                const angleInput = isDiagonal ? `
+                    <div style="margin-top: 10px; padding: 10px; background: #fff3cd; border-radius: 6px; border: 2px solid #ffc107;">
+                        <label style="display: block; color: #856404; font-weight: bold; margin-bottom: 5px; font-size: 13px;">
+                            ⚠️ 斜め線：角度（度）
+                        </label>
+                        <input type="number" placeholder="角度 (度)" 
+                               value="${angle || ''}"
+                               oninput="updateLineAngle('${line.id}', this.value)"
+                               style="width: 100%; padding: 10px; border: 2px solid #ffc107; border-radius: 6px; font-size: 16px;">
+                        <p style="margin: 5px 0 0 0; font-size: 12px; color: #856404;">現在の角度: ${angle}°</p>
+                    </div>
+                ` : '';
+                
+                // 点の状態ボタン（通常）
+                const pointButtons = `
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="changePointState('${line.id}', 'start')" style="padding: 6px 12px; background: ${getStateColor(startState)}; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;">
+                            始点: ${getStateLabel(startState)}
+                        </button>
+                        <button onclick="changePointState('${line.id}', 'end')" style="padding: 6px 12px; background: ${getStateColor(endState)}; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;">
+                            終点: ${getStateLabel(endState)}
+                        </button>
+                    </div>
+                `;
+                
+                div.innerHTML = `
+                    <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <span style="font-weight: bold; color: #667eea;">${line.name}${isDiagonal ? ' <span style="color: #ff9800;">⚠️斜め</span>' : ''}</span>
+                        ${pointButtons}
+                    </label>
+                    <div class="dimension-row" style="display: grid; grid-template-columns: ${useIndividualWidth ? '1fr 1fr' : '1fr'}; gap: 10px;">
+                        <input type="number" placeholder="外法寸法 (mm)" 
+                               oninput="updateDimension('${line.id}', 'length', this.value)"
+                               value="${dimensions[line.id]?.length || ''}"
+                               style="padding: 10px; border: 2px solid #ddd; border-radius: 6px; font-size: 16px;">
+                        ${widthInput}
+                    </div>
+                    ${angleInput}
+                `;
+                container.appendChild(div);
+                
+                if (!dimensions[line.id]) {
+                    dimensions[line.id] = { length: null, width: null };
+                }
+                
+                // この辺の終点がコーナーの場合、段差設定を追加
+                if (endCorner && endCorner.lines.length >= 2 && lineIndex < lines.length - 1) {
+                    const cornerDiv = document.createElement('div');
+                    cornerDiv.style.cssText = 'margin: 10px 0 20px 0; padding: 12px; background: #e8f5e9; border-radius: 6px; border: 2px solid #4caf50;';
+                    
+                    const nextLine = lines[lineIndex + 1];
+                    const cornerLabel = `${line.name}━${nextLine.name}`;
+                    
+                    cornerDiv.innerHTML = `
+                        <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 8px;">
+                            <input type="checkbox" ${endCorner.hasStep ? 'checked' : ''} 
+                                   onchange="toggleCornerStep('${endKey}', this.checked)"
+                                   style="width: 18px; height: 18px; margin-right: 8px; cursor: pointer;">
+                            <span style="color: #2e7d32; font-weight: bold; font-size: 14px;">📐 ${cornerLabel} に段差あり</span>
+                        </label>
+                        ${endCorner.hasStep ? `
+                            <input type="number" placeholder="深さ (mm)" 
+                                   value="${endCorner.depth || ''}"
+                                   oninput="updateCornerDepth('${endKey}', this.value)"
+                                   style="width: 100%; padding: 8px; border: 2px solid #4caf50; border-radius: 6px; font-size: 14px;">
+                        ` : ''}
+                    `;
+                    container.appendChild(cornerDiv);
+                }
+            });
+        }
+        
+        // 角度を更新して線を再計算
+        function updateLineAngle(lineId, angleDegrees) {
+            const lineIndex = lines.findIndex(line => line.id === lineId);
+            if (lineIndex === -1) return;
+            
+            const line = lines[lineIndex];
+            const angle = parseFloat(angleDegrees);
+            if (isNaN(angle)) return;
+            
+            // 線の長さを計算
+            const dx = line.x2 - line.x1;
+            const dy = line.y2 - line.y1;
+            const length = Math.sqrt(dx * dx + dy * dy);
+            
+            // 新しい角度で終点を再計算
+            const radians = angle * (Math.PI / 180);
+            line.x2 = line.x1 + length * Math.cos(radians);
+            line.y2 = line.y1 + length * Math.sin(radians);
+            
+            drawLines();
+            createInputs();
+        }
+        
+        // 躯体幅を更新
+        function updateCommonWidth(value) {
+            commonWidth = value ? parseFloat(value) : null;
+            if (!useIndividualWidth) {
+                // 全ての辺に適用
+                lines.forEach(line => {
+                    if (dimensions[line.id]) {
+                        dimensions[line.id].width = commonWidth;
+                    }
+                });
+                drawLines();
+                calculate();
+            }
+        }
+        
+        // 躯体高さを更新
+        function updateCommonHeight(value) {
+            commonHeight = value ? parseFloat(value) : null;
+            drawLines();
+            calculate();
+        }
+        
+        // コーナーの段差を切り替え
+        function toggleCornerStep(cornerKey, hasStep) {
+            if (!corners[cornerKey]) return;
+            
+            corners[cornerKey].hasStep = hasStep;
+            if (!hasStep) {
+                corners[cornerKey].depth = null;
+            } else {
+                // 段差を有効にした場合、このコーナーの全ての点をコーナー以外にする
+                const corner = corners[cornerKey];
+                corner.lines.forEach(lineRef => {
+                    const line = lines.find(l => l.id === lineRef.lineId);
+                    if (line && line[lineRef.point] === 'corner') {
+                        line[lineRef.point] = 'wall';
+                    }
+                });
+            }
+            
+            drawLines();
+            createInputs();
+        }
+        
+        // コーナーの深さを更新
+        function updateCornerDepth(cornerKey, depth) {
+            if (!corners[cornerKey]) return;
+            
+            corners[cornerKey].depth = depth ? parseFloat(depth) : null;
+        }
+        
+        // 個別設定の切り替え
+        function toggleIndividualWidth(checked) {
+            useIndividualWidth = checked;
+            if (!checked && commonWidth) {
+                // 個別→共通に切り替え：共通値を全辺に適用
+                lines.forEach(line => {
+                    if (dimensions[line.id]) {
+                        dimensions[line.id].width = commonWidth;
+                    }
+                });
+            }
+            createInputs();
+            drawLines();
+            calculate();
+        }
+        
+        // 状態の色を取得
+        function getStateColor(state) {
+            const colors = {
+                'corner': '#e74c3c',
+                'end': '#3498db',
+                'wall': '#2ecc71'
+            };
+            return colors[state] || colors['end'];
+        }
+        
+        // 状態のラベルを取得
+        function getStateLabel(state) {
+            const labels = {
+                'corner': 'コーナー',
+                'end': 'エンド',
+                'wall': '壁'
+            };
+            return labels[state] || labels['end'];
+        }
+        
+        // ボタンから点の状態を変更
+        function changePointState(lineId, point) {
+            const lineIndex = lines.findIndex(line => line.id === lineId);
+            if (lineIndex === -1) return;
+            
+            const line = lines[lineIndex];
+            
+            // この点のコーナーキーを取得
+            const x = point === 'start' ? line.x1 : line.x2;
+            const y = point === 'start' ? line.y1 : line.y2;
+            const cornerKey = findCornerKey(x, y, 5);
+            const corner = corners[cornerKey];
+            
+            // 図形が閉じているかチェック（最初の線の始点と最後の線の終点が同じ位置）
+            const isClosed = lines.length > 0 && 
+                Math.abs(lines[0].x1 - lines[lines.length - 1].x2) < 5 && 
+                Math.abs(lines[0].y1 - lines[lines.length - 1].y2) < 5;
+            
+            // 最初の線の始点はコーナーになれない（閉じている場合は除く）
+            const isFirstLineStart = (lineIndex === 0 && point === 'start' && !isClosed);
+            
+            // 最後の線の終点はコーナーになれない（閉じている場合は除く）
+            const isLastLineEnd = (lineIndex === lines.length - 1 && point === 'end' && !isClosed);
+            
+            // 段差があるコーナーの場合は、コーナー選択を除外
+            const hasStepAtCorner = corner && corner.hasStep;
+            
+            // 選択可能な状態を決定
+            let states;
+            if (isFirstLineStart || isLastLineEnd || hasStepAtCorner) {
+                states = ['end', 'wall'];
+            } else {
+                states = ['corner', 'end', 'wall'];
+            }
+            
+            const currentState = lines[lineIndex][point] || 'wall';
+            const currentIndex = states.indexOf(currentState);
+            const nextIndex = (currentIndex + 1) % states.length;
+            lines[lineIndex][point] = states[nextIndex];
+            
+            // コーナーに変更した場合、同じ位置の点も連動
+            if (lines[lineIndex][point] === 'corner') {
+                autoSetCorners();
+            }
+            
+            // 段差があるコーナーで状態を変更した場合、接続している辺の状態を自動調整
+            if (corner && corner.hasStep && corner.lines.length >= 2) {
+                syncCornerStatesWithStep(cornerKey, lineId, point, lines[lineIndex][point]);
+            }
+            
+            // 再描画
+            drawLines();
+            createInputs(); // ボタンの色を更新
+            calculate();
+        }
+        
+        // 段差があるコーナーの状態を同期（片方がエンド→もう片方は壁）
+        function syncCornerStatesWithStep(cornerKey, changedLineId, changedPoint, newState) {
+            const corner = corners[cornerKey];
+            if (!corner) return;
+            
+            // このコーナーに接続している辺を取得
+            corner.lines.forEach(lineRef => {
+                const line = lines.find(l => l.id === lineRef.lineId);
+                if (!line) return;
+                
+                // 変更した辺以外の辺の状態を調整
+                if (line.id !== changedLineId) {
+                    if (newState === 'end') {
+                        // 片方がエンド → もう片方は壁
+                        line[lineRef.point] = 'wall';
+                    } else if (newState === 'wall') {
+                        // 片方が壁 → もう片方はエンドまたは壁（変更しない）
+                        // 何もしない
+                    }
+                }
+            });
+        }
+        
+        // 寸法更新
+        function updateDimension(id, type, value) {
+            if (!dimensions[id]) {
+                dimensions[id] = { length: null, width: null };
+            }
+            
+            dimensions[id][type] = value ? parseFloat(value) : null;
+            
+            // 図面を再描画（スケール調整はしない）
+            drawLines();
+            calculate();
+        }
+        
+        // 計算
+        function calculate() {
+            const resultsContent = document.getElementById('results-content');
+            let html = '';
+            let hasAll = true;
+            let missingItems = []; // 未入力項目リスト
+            
+            // コーナーを検出
+            detectCorners();
+            
+            // 入力チェック
+            lines.forEach(line => {
+                const dim = dimensions[line.id];
+                
+                // 外法寸法のチェック
+                if (!dim || !dim.length) {
+                    hasAll = false;
+                    missingItems.push(`${line.name}の外法寸法`);
+                }
+                
+                // 躯体幅のチェック
+                const hasWidth = useIndividualWidth ? (dim && dim.width) : commonWidth;
+                if (!hasWidth) {
+                    hasAll = false;
+                    if (useIndividualWidth) {
+                        missingItems.push(`${line.name}の躯体幅`);
+                    } else if (!commonWidth) {
+                        // 躯体幅のチェック（重複を避けるため一度だけ追加）
+                        if (!missingItems.includes('躯体幅')) {
+                            missingItems.push('躯体幅');
+                        }
+                    }
+                }
+            });
+            
+            // 躯体高さのチェック
+            if (!commonHeight) {
+                hasAll = false;
+                missingItems.push('躯体高さ');
+            }
+            
+            // 段差寸法のチェック
+            if (corners) {
+                for (const cornerKey in corners) {
+                    const corner = corners[cornerKey];
+                    if (corner && corner.hasStep) {
+                        // 段差がある場合、深さが入力されているかチェック
+                        if (!corner.depth) {
+                            hasAll = false;
+                            // コーナーに接続している辺の名前を取得
+                            if (corner.lines && corner.lines.length >= 2) {
+                                const line1 = lines.find(l => l.id === corner.lines[0].lineId);
+                                const line2 = lines.find(l => l.id === corner.lines[1].lineId);
+                                if (line1 && line2) {
+                                    missingItems.push(`${line1.name}━${line2.name}の段差寸法`);
+                                } else {
+                                    missingItems.push('段差寸法');
+                                }
+                            } else {
+                                missingItems.push('段差寸法');
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // 全て入力されている場合のみ計算結果を表示
+            if (hasAll) {
+                lines.forEach(line => {
+                    const dim = dimensions[line.id];
+                    let result = dim.length;
+                    
+                    // 始点がコーナーなら隣接する辺の幅の半分を引く
+                    if (line.start === 'corner') {
+                        const adjacentWidth = getAdjacentLineWidth(line.id, 'start');
+                        if (adjacentWidth > 0) {
+                            result -= adjacentWidth / 2;
+                        }
+                    }
+                    
+                    // 終点がコーナーなら隣接する辺の幅の半分を引く
+                    if (line.end === 'corner') {
+                        const adjacentWidth = getAdjacentLineWidth(line.id, 'end');
+                        if (adjacentWidth > 0) {
+                            result -= adjacentWidth / 2;
+                        }
+                    }
+                    
+                    const startLabel = getPointLabel(line.start);
+                    const endLabel = getPointLabel(line.end);
+                    
+                    html += `
+                        <div class="result-item">
+                            <span class="result-label">${line.name} ${startLabel}━${endLabel}</span>
+                            <span class="result-value">${Math.floor(result)} mm</span>
+                        </div>
+                    `;
+                });
+                
+                // キャンバスを追加して図を描画
+                html = `
+                    <div style="margin-bottom: 20px;">
+                        <canvas id="result-canvas" width="500" height="400" style="width: 100%; border-radius: 10px;"></canvas>
+                    </div>
+                ` + html;
+                
+                resultsContent.innerHTML = html;
+                
+                // 図を描画
+                drawResultDiagram();
+            } else {
+                // 入力漏れがある場合、赤文字で警告表示
+                const warningHtml = `
+                    <div style="background: #fee; border: 2px solid #e74c3c; border-radius: 10px; padding: 20px; text-align: center;">
+                        <div style="color: #e74c3c; font-size: 20px; font-weight: bold; margin-bottom: 15px;">
+                            ⚠️ 入力が完了していません
+                        </div>
+                        <div style="color: #c0392b; font-size: 16px; line-height: 1.8;">
+                            以下の項目を入力してください：<br>
+                            <strong>${missingItems.join('、')}</strong>
+                        </div>
+                    </div>
+                `;
+                resultsContent.innerHTML = warningHtml;
+            }
+        }
+        
+        // 隣接する辺の幅を取得
+        function getAdjacentLineWidth(lineId, point) {
+            // 該当する辺を探す
+            const currentLine = lines.find(l => l.id === lineId);
+            if (!currentLine) return 0;
+            
+            // コーナーキーを取得
+            const x = point === 'start' ? currentLine.x1 : currentLine.x2;
+            const y = point === 'start' ? currentLine.y1 : currentLine.y2;
+            const cornerKey = findCornerKey(x, y, 5);
+            
+            if (!corners || !corners[cornerKey]) return 0;
+            
+            const corner = corners[cornerKey];
+            
+            // このコーナーに接続している他の辺を探す
+            for (const lineRef of corner.lines) {
+                if (lineRef.lineId !== lineId) {
+                    // 隣接する辺が見つかった
+                    const adjacentLine = lines.find(l => l.id === lineRef.lineId);
+                    if (adjacentLine) {
+                        const adjacentDim = dimensions[lineRef.lineId];
+                        if (adjacentDim && adjacentDim.width) {
+                            return adjacentDim.width;
+                        }
+                    }
+                }
+            }
+            
+            return 0;
+        }
+        
+        // 計算結果の図を描画
+        function drawResultDiagram() {
+            const resultCanvas = document.getElementById('result-canvas');
+            if (!resultCanvas) return;
+            
+            const ctx = resultCanvas.getContext('2d');
+            
+            // 背景色を塗る（計算結果とわかるように）
+            ctx.fillStyle = '#f0f9ff';
+            ctx.fillRect(0, 0, resultCanvas.width, resultCanvas.height);
+            
+            if (lines.length === 0) return;
+            
+            // 実寸法を使って図形を再構築
+            const realLines = [];
+            let currentX = 0;
+            let currentY = 0;
+            const minLength = 200; // 最小表示長さ（px）- 数字が重ならないサイズ
+            
+            // 最初の線の始点を設定
+            realLines.push({
+                x1: currentX,
+                y1: currentY,
+                line: lines[0]
+            });
+            
+            // 各線を実寸法の比率で配置
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                const dim = dimensions[line.id];
+                
+                if (!dim || !dim.length) continue;
+                
+                // 実際の長さを取得（mm）
+                let realLength = dim.length;
+                
+                // 線の方向ベクトルを計算
+                const dx = line.x2 - line.x1;
+                const dy = line.y2 - line.y1;
+                const originalLength = Math.sqrt(dx * dx + dy * dy);
+                
+                if (originalLength === 0) continue;
+                
+                // 正規化された方向ベクトル
+                const dirX = dx / originalLength;
+                const dirY = dy / originalLength;
+                
+                // 実寸法をピクセルに変換（1mm = 0.2px、ただし最小長さを保証）
+                let displayLength = Math.max(realLength * 0.2, minLength);
+                
+                // 新しい終点を計算
+                const nextX = currentX + dirX * displayLength;
+                const nextY = currentY + dirY * displayLength;
+                
+                realLines[realLines.length - 1].x2 = nextX;
+                realLines[realLines.length - 1].y2 = nextY;
+                
+                // 次の線の始点を設定
+                if (i < lines.length - 1) {
+                    currentX = nextX;
+                    currentY = nextY;
+                    realLines.push({
+                        x1: currentX,
+                        y1: currentY,
+                        line: lines[i + 1]
+                    });
+                }
+            }
+            
+            if (realLines.length === 0) return;
+            
+            // 全ての点の範囲を取得
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            
+            realLines.forEach(rLine => {
+                minX = Math.min(minX, rLine.x1, rLine.x2);
+                minY = Math.min(minY, rLine.y1, rLine.y2);
+                maxX = Math.max(maxX, rLine.x1, rLine.x2);
+                maxY = Math.max(maxY, rLine.y1, rLine.y2);
+            });
+            
+            // 図形の幅と高さ
+            const shapeWidth = maxX - minX;
+            const shapeHeight = maxY - minY;
+            
+            if (shapeWidth === 0 || shapeHeight === 0) return;
+            
+            // マージン
+            const margin = 60;
+            const canvasWidth = resultCanvas.width - margin * 2;
+            const canvasHeight = resultCanvas.height - margin * 2;
+            
+            // スケール係数を計算（アスペクト比を維持）
+            const scaleX = canvasWidth / shapeWidth;
+            const scaleY = canvasHeight / shapeHeight;
+            const scale = Math.min(scaleX, scaleY);
+            
+            // オフセットを計算（中央配置）
+            const scaledWidth = shapeWidth * scale;
+            const scaledHeight = shapeHeight * scale;
+            const offsetX = margin + (canvasWidth - scaledWidth) / 2 - minX * scale;
+            const offsetY = margin + (canvasHeight - scaledHeight) / 2 - minY * scale;
+            
+            // 座標変換関数
+            function transformX(x) {
+                return x * scale + offsetX;
+            }
+            
+            function transformY(y) {
+                return y * scale + offsetY;
+            }
+            
+            // 点を描画する関数
+            function drawResultPoint(x, y, state) {
+                const colors = {
+                    'corner': '#ef4444',
+                    'end': '#3b82f6',
+                    'wall': '#10b981'
+                };
+                
+                ctx.fillStyle = colors[state] || colors['end'];
+                ctx.beginPath();
+                ctx.arc(transformX(x), transformY(y), 6, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(transformX(x), transformY(y), 6, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            
+            // コーナーを検出
+            detectCorners();
+            
+            // 線を描画（黒一色に統一）
+            realLines.forEach(rLine => {
+                const line = rLine.line;
+                
+                ctx.strokeStyle = '#1a1a1a';
+                ctx.lineWidth = 3;
+                ctx.lineCap = 'round';
+                
+                ctx.beginPath();
+                ctx.moveTo(transformX(rLine.x1), transformY(rLine.y1));
+                ctx.lineTo(transformX(rLine.x2), transformY(rLine.y2));
+                ctx.stroke();
+                
+                // 計算結果と躯体幅を線の外側に表示
+                const dim = dimensions[line.id];
+                if (dim && dim.length) {
+                    let result = dim.length;
+                    
+                    // 始点がコーナーなら隣接する辺の幅の半分を引く
+                    if (line.start === 'corner') {
+                        const adjacentWidth = getAdjacentLineWidth(line.id, 'start');
+                        if (adjacentWidth > 0) {
+                            result -= adjacentWidth / 2;
+                        }
+                    }
+                    
+                    // 終点がコーナーなら隣接する辺の幅の半分を引く
+                    if (line.end === 'corner') {
+                        const adjacentWidth = getAdjacentLineWidth(line.id, 'end');
+                        if (adjacentWidth > 0) {
+                            result -= adjacentWidth / 2;
+                        }
+                    }
+                    
+                    // 線の中点と方向ベクトルを計算
+                    const midX = (rLine.x1 + rLine.x2) / 2;
+                    const midY = (rLine.y1 + rLine.y2) / 2;
+                    const dx = rLine.x2 - rLine.x1;
+                    const dy = rLine.y2 - rLine.y1;
+                    const lineLength = Math.sqrt(dx * dx + dy * dy);
+                    
+                    // 線の垂直方向のベクトル（左側に配置）
+                    const perpX = -dy / lineLength;
+                    const perpY = dx / lineLength;
+                    
+                    // テキストのオフセット（線の外側、40px離す）
+                    const offset = 40;
+                    const textX = transformX(midX + perpX * offset);
+                    const textY = transformY(midY + perpY * offset);
+                    
+                    // 芯寸法（計算結果）を大きく目立つように表示
+                    ctx.font = 'bold 22px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    
+                    const resultText = `${Math.floor(result)}`;
+                    const resultMetrics = ctx.measureText(resultText);
+                    const padding = 8;
+                    
+                    // 黄色の背景で目立たせる
+                    ctx.fillStyle = '#fef3c7';
+                    ctx.fillRect(textX - resultMetrics.width/2 - padding, textY - 13, resultMetrics.width + padding*2, 26);
+                    
+                    // 枠線を追加
+                    ctx.strokeStyle = '#f59e0b';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(textX - resultMetrics.width/2 - padding, textY - 13, resultMetrics.width + padding*2, 26);
+                    
+                    // 文字を描画（濃い青で強調）
+                    ctx.fillStyle = '#1e40af';
+                    ctx.fillText(resultText, textX, textY);
+                    
+                    // 躯体幅を小さく表示（芯寸法の下、背景付き）
+                    if (dim.width) {
+                        ctx.font = '11px sans-serif';
+                        const widthText = `幅:${dim.width}`;
+                        const widthMetrics = ctx.measureText(widthText);
+                        const widthY = textY + 20;
+                        const widthPadding = 4;
+                        
+                        // 背景（薄い灰色）
+                        ctx.fillStyle = '#f3f4f6';
+                        ctx.fillRect(textX - widthMetrics.width/2 - widthPadding, widthY - 8, widthMetrics.width + widthPadding*2, 16);
+                        
+                        // 文字（灰色）
+                        ctx.fillStyle = '#6b7280';
+                        ctx.fillText(widthText, textX, widthY);
+                    }
+                }
+            });
+            
+            // 既に描画したコーナーを記録
+            const drawnCorners = new Set();
+            
+            // 元の座標からrealLines座標への対応マップを作成
+            const coordMap = new Map();
+            realLines.forEach((rLine, idx) => {
+                const line = rLine.line;
+                // 始点の対応
+                const startKey = `${line.x1},${line.y1}`;
+                if (!coordMap.has(startKey)) {
+                    coordMap.set(startKey, { x: rLine.x1, y: rLine.y1 });
+                }
+                // 終点の対応
+                const endKey = `${line.x2},${line.y2}`;
+                if (!coordMap.has(endKey)) {
+                    coordMap.set(endKey, { x: rLine.x2, y: rLine.y2 });
+                }
+            });
+            
+            // コーナーベースで点を描画
+            if (corners) {
+                for (const cornerKey in corners) {
+                    const corner = corners[cornerKey];
+                    
+                    if (!corner || drawnCorners.has(cornerKey)) continue;
+                    drawnCorners.add(cornerKey);
+                    
+                    if (!corner.lines || corner.lines.length === 0) continue;
+                    
+                    const firstLineRef = corner.lines[0];
+                    const firstLine = lines.find(l => l.id === firstLineRef.lineId);
+                    if (!firstLine) continue;
+                    
+                    // コーナーの元座標
+                    const cornerX = corner.x !== undefined ? corner.x : (firstLine[firstLineRef.point === 'start' ? 'x1' : 'x2']);
+                    const cornerY = corner.y !== undefined ? corner.y : (firstLine[firstLineRef.point === 'start' ? 'y1' : 'y2']);
+                    
+                    // 元座標からrealLines座標に変換
+                    const coordKey = `${cornerX},${cornerY}`;
+                    const realCoord = coordMap.get(coordKey);
+                    
+                    if (!realCoord) continue;
+                    
+                    // 段差がある場合は2つの点、ない場合は1つの点
+                    if (corner.hasStep && corner.lines.length >= 2) {
+                        // 2つの辺から状態を取得
+                        const line1Ref = corner.lines[0];
+                        const line2Ref = corner.lines[1];
+                        const line1 = lines.find(l => l.id === line1Ref.lineId);
+                        const line2 = lines.find(l => l.id === line2Ref.lineId);
+                        
+                        if (line1 && line2) {
+                            const state1 = line1[line1Ref.point] || 'wall';
+                            const state2 = line2[line2Ref.point] || 'wall';
+                            
+                            let avgDx = 0, avgDy = 0;
+                            
+                            corner.lines.forEach(lineRef => {
+                                const line = lines.find(l => l.id === lineRef.lineId);
+                                if (!line) return;
+                                
+                                let dx, dy;
+                                if (lineRef.point === 'start') {
+                                    dx = line.x2 - line.x1;
+                                    dy = line.y2 - line.y1;
+                                } else {
+                                    dx = line.x1 - line.x2;
+                                    dy = line.y1 - line.y2;
+                                }
+                                avgDx += dx;
+                                avgDy += dy;
+                            });
+                            
+                            const length = Math.sqrt(avgDx * avgDx + avgDy * avgDy);
+                            if (length > 0) {
+                                const perpX = -avgDy / length;
+                                const perpY = avgDx / length;
+                                const offset = 12;
+                                
+                                // 2つの点をそれぞれの状態で描画
+                                drawResultPoint(realCoord.x + perpX * offset, realCoord.y + perpY * offset, state1);
+                                drawResultPoint(realCoord.x - perpX * offset, realCoord.y - perpY * offset, state2);
+                            } else {
+                                drawResultPoint(realCoord.x, realCoord.y, state1);
+                            }
+                        }
+                    } else {
+                        const state = firstLine[firstLineRef.point] || 'wall';
+                        drawResultPoint(realCoord.x, realCoord.y, state);
+                    }
+                }
+            }
+        }
+        
+        // 点のラベルを取得
+        function getPointLabel(state) {
+            const labels = {
+                'corner': '<span style="color: #e74c3c;">●</span>',
+                'end': '<span style="color: #3498db;">●</span>',
+                'wall': '<span style="color: #2ecc71;">●</span>'
+            };
+            return labels[state] || labels['end'];
+        }
+        
+        // カスタム作図
+        function setupCustomDrawing() {
+            // 入力フォームをクリア
+            document.getElementById('dimension-inputs').innerHTML = `
+                <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <h3 style="margin: 0 0 10px 0; color: #1976d2; font-size: 16px;">📝 作図方法</h3>
+                    <p style="margin: 0; color: #555; font-size: 14px;">
+                        <strong>クリック</strong>で点を打ち、線を連続して引く<br>
+                        <strong>ダブルクリック</strong>または下のボタンで作図終了
+                    </p>
+                    <button onclick="finishDrawing()" style="width: 100%; padding: 12px; background: #27ae60; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px;">
+                        ✓ 作図終了
+                    </button>
+                    <h3 style="margin: 15px 0 10px 0; color: #1976d2; font-size: 16px;">🎨 点の意味</h3>
+                    <p style="margin: 0; color: #555; font-size: 14px;">
+                        <span style="color: #e74c3c;">●</span> 赤：コーナー（躯体幅÷2を引く）<br>
+                        <span style="color: #3498db;">●</span> 青：エンド（端部、壁なし）<br>
+                        <span style="color: #2ecc71;">●</span> 緑：壁（壁あり）<br>
+                        <strong>作図終了後、点をタップで切り替え</strong>
+                    </p>
+                </div>
+            `;
+            
+            drawingPoints = [];
+            
+            // 既存のイベントリスナーをすべて削除
+            canvas.removeEventListener('mousedown', startDrawing);
+            canvas.removeEventListener('mousemove', drawing);
+            canvas.removeEventListener('mouseup', endDrawing);
+            canvas.removeEventListener('click', handlePointClick);
+            canvas.removeEventListener('touchend', handlePointClickTouch);
+            
+            // 作図用イベントリスナーを設定
+            canvas.addEventListener('click', handleCanvasClick);
+            canvas.addEventListener('mousemove', handleCanvasMouseMove);
+            
+            canvas.addEventListener('touchstart', handleTouchDrawing);
+            canvas.addEventListener('touchmove', handleTouchDrawingMove);
+            
+            updateDrawingControls();
+        }
+        
+        // Canvasクリック処理（作図用）
+        function handleCanvasClick(e) {
+            // 点の状態切り替えとの競合を避ける
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            let x = (e.offsetX || e.clientX - rect.left) * scaleX;
+            let y = (e.offsetY || e.clientY - rect.top) * scaleY;
+            
+            // スナップ処理（2点目以降）
+            if (drawingPoints.length > 0) {
+                const lastPoint = drawingPoints[drawingPoints.length - 1];
+                const snapped = snapToAxis(lastPoint.x, lastPoint.y, x, y);
+                x = snapped.x;
+                y = snapped.y;
+            }
+            
+            // 始点への吸着と閉じる確認（3点以上ある場合）
+            if (drawingPoints.length >= 3) {
+                const startPoint = drawingPoints[0];
+                const distToStart = Math.sqrt(Math.pow(x - startPoint.x, 2) + Math.pow(y - startPoint.y, 2));
+                
+                // 始点から30px以内（直接クリックまたはガイドライン経由）
+                if (distToStart < 30) {
+                    if (confirm('図形を閉じますか？\n（始点と終点を結合します）')) {
+                        // 始点に吸着
+                        x = startPoint.x;
+                        y = startPoint.y;
+                        
+                        // 点を追加
+                        drawingPoints.push({ x, y });
+                        
+                        // 最後の線を作成
+                        const prevPoint = drawingPoints[drawingPoints.length - 2];
+                        const currPoint = drawingPoints[drawingPoints.length - 1];
+                        
+                        const id = String.fromCharCode(65 + lines.length);
+                        lines.push({
+                            id: id,
+                            x1: prevPoint.x,
+                            y1: prevPoint.y,
+                            x2: currPoint.x,
+                            y2: currPoint.y,
+                            name: `辺${id}`,
+                            start: 'wall',
+                            end: 'wall'
+                        });
+                        
+                        // コーナーの自動設定
+                        autoSetCorners();
+                        
+                        // 作図終了
+                        finishDrawing();
+                        return;
+                    } else {
+                        // キャンセルした場合は何もしない
+                        return;
+                    }
+                }
+            }
+            
+            // 既存の点をクリックしたか判定（ただし始点は除く）
+            const clickRadius = 20;
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                
+                // 始点かチェック（3点以上ある場合）
+                let isStartPoint = false;
+                if (drawingPoints.length >= 3 && i === 0) {
+                    const startPoint = drawingPoints[0];
+                    const distToStart = Math.sqrt(Math.pow(line.x1 - startPoint.x, 2) + Math.pow(line.y1 - startPoint.y, 2));
+                    isStartPoint = distToStart < 5; // 始点と同じ位置なら
+                }
+                
+                const distStart = Math.sqrt(Math.pow(x - line.x1, 2) + Math.pow(y - line.y1, 2));
+                const distEnd = Math.sqrt(Math.pow(x - line.x2, 2) + Math.pow(y - line.y2, 2));
+                
+                // 始点以外の既存の点をクリックした場合は無視
+                if (!isStartPoint && distStart < clickRadius) {
+                    return;
+                }
+                if (distEnd < clickRadius) {
+                    return;
+                }
+            }
+            
+            // ダブルクリック判定
+            const currentTime = new Date().getTime();
+            const timeDiff = currentTime - lastClickTime;
+            lastClickTime = currentTime;
+            
+            if (timeDiff < 500 && drawingPoints.length > 0) {
+                finishDrawing();
+                return;
+            }
+            
+            // 点を追加
+            drawingPoints.push({ x, y });
+            
+            // 2点以上あれば線を作成
+            if (drawingPoints.length >= 2) {
+                const prevPoint = drawingPoints[drawingPoints.length - 2];
+                const currPoint = drawingPoints[drawingPoints.length - 1];
+                
+                const id = String.fromCharCode(65 + lines.length);
+                lines.push({
+                    id: id,
+                    x1: prevPoint.x,
+                    y1: prevPoint.y,
+                    x2: currPoint.x,
+                    y2: currPoint.y,
+                    name: `辺${id}`,
+                    start: 'wall',
+                    end: 'wall'
+                });
+                
+                // コーナーの自動設定
+                autoSetCorners();
+            }
+            
+            drawLines();
+            updateDrawingControls();
+        }
+        
+        // マウス移動時のプレビュー
+        function handleCanvasMouseMove(e) {
+            if (drawingPoints.length === 0) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            let x = (e.offsetX || e.clientX - rect.left) * scaleX;
+            let y = (e.offsetY || e.clientY - rect.top) * scaleY;
+            
+            // スナップ処理
+            const lastPoint = drawingPoints[drawingPoints.length - 1];
+            const snapped = snapToAxis(lastPoint.x, lastPoint.y, x, y);
+            x = snapped.x;
+            y = snapped.y;
+            
+            drawLines();
+            
+            // 始点へのガイドラインと吸着（3点以上ある場合）
+            let snapToStart = false;
+            if (drawingPoints.length >= 3) {
+                const startPoint = drawingPoints[0];
+                const threshold = 10; // ガイドライン表示の閾値
+                
+                // 水平ガイドライン（Y座標が始点と近い場合）
+                if (Math.abs(y - startPoint.y) < threshold) {
+                    // 始点に向かって水平線を引く
+                    ctx.strokeStyle = '#f59e0b';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([4, 4]);
+                    ctx.beginPath();
+                    ctx.moveTo(x, startPoint.y);
+                    ctx.lineTo(startPoint.x, startPoint.y);
+                    ctx.stroke();
+                    
+                    // Y座標を始点に合わせる
+                    y = startPoint.y;
+                    
+                    // X座標も始点と近い場合は吸着
+                    if (Math.abs(x - startPoint.x) < threshold) {
+                        x = startPoint.x;
+                        snapToStart = true;
+                    }
+                }
+                
+                // 垂直ガイドライン（X座標が始点と近い場合）
+                if (Math.abs(x - startPoint.x) < threshold) {
+                    // 始点に向かって垂直線を引く
+                    ctx.strokeStyle = '#f59e0b';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([4, 4]);
+                    ctx.beginPath();
+                    ctx.moveTo(startPoint.x, y);
+                    ctx.lineTo(startPoint.x, startPoint.y);
+                    ctx.stroke();
+                    
+                    // X座標を始点に合わせる
+                    x = startPoint.x;
+                    
+                    // Y座標も始点と近い場合は吸着
+                    if (Math.abs(y - startPoint.y) < threshold) {
+                        y = startPoint.y;
+                        snapToStart = true;
+                    }
+                }
+                
+                // 始点と合致した場合、始点を大きく表示
+                if (snapToStart) {
+                    ctx.fillStyle = '#f59e0b';
+                    ctx.beginPath();
+                    ctx.arc(startPoint.x, startPoint.y, 8, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // 白い縁取り
+                    ctx.strokeStyle = 'white';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+            }
+            
+            // 通常のガイドライン（90度）
+            if (!snapToStart) {
+                // 水平ガイドライン
+                if (Math.abs(y - lastPoint.y) < 30) {
+                    ctx.strokeStyle = '#10b981';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([2, 2]);
+                    ctx.beginPath();
+                    ctx.moveTo(0, lastPoint.y);
+                    ctx.lineTo(canvas.width, lastPoint.y);
+                    ctx.stroke();
+                }
+                
+                // 垂直ガイドライン
+                if (Math.abs(x - lastPoint.x) < 30) {
+                    ctx.strokeStyle = '#10b981';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([2, 2]);
+                    ctx.beginPath();
+                    ctx.moveTo(lastPoint.x, 0);
+                    ctx.lineTo(lastPoint.x, canvas.height);
+                    ctx.stroke();
+                }
+            }
+            
+            // プレビュー線
+            ctx.strokeStyle = snapToStart ? '#f59e0b' : '#667eea';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([5, 5]);
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(lastPoint.x, lastPoint.y);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+        
+        // 水平・垂直にスナップ
+        function snapToAxis(x1, y1, x2, y2) {
+            const dx = Math.abs(x2 - x1);
+            const dy = Math.abs(y2 - y1);
+            const threshold = 30; // スナップ判定の閾値
+            
+            // 水平に近い
+            if (dx > dy && dy < threshold) {
+                return { x: x2, y: y1 };
+            }
+            // 垂直に近い
+            else if (dy > dx && dx < threshold) {
+                return { x: x1, y: y2 };
+            }
+            // 斜め（そのまま）
+            return { x: x2, y: y2 };
+        }
+        
+        // 線が斜めかどうか判定
+        function isLineDiagonal(line) {
+            const dx = Math.abs(line.x2 - line.x1);
+            const dy = Math.abs(line.y2 - line.y1);
+            const threshold = 5;
+            
+            // 水平でも垂直でもない場合は斜め
+            return dx > threshold && dy > threshold;
+        }
+        
+        // 線の角度を計算（度）
+        function getLineAngle(line) {
+            const dx = line.x2 - line.x1;
+            const dy = line.y2 - line.y1;
+            const radians = Math.atan2(dy, dx);
+            return radians * (180 / Math.PI);
+        }
+        
+        // タッチ描画処理
+        function handleTouchDrawing(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            let x = (touch.clientX - rect.left) * scaleX;
+            let y = (touch.clientY - rect.top) * scaleY;
+            
+            // スナップ処理（2点目以降）
+            if (drawingPoints.length > 0) {
+                const lastPoint = drawingPoints[drawingPoints.length - 1];
+                const snapped = snapToAxis(lastPoint.x, lastPoint.y, x, y);
+                x = snapped.x;
+                y = snapped.y;
+            }
+            
+            // 始点への吸着と閉じる確認（3点以上ある場合）
+            if (drawingPoints.length >= 3) {
+                const startPoint = drawingPoints[0];
+                const distToStart = Math.sqrt(Math.pow(x - startPoint.x, 2) + Math.pow(y - startPoint.y, 2));
+                
+                // 始点から40px以内（タッチ操作は広めに）
+                if (distToStart < 40) {
+                    if (confirm('図形を閉じますか？\n（始点と終点を結合します）')) {
+                        // 始点に吸着
+                        x = startPoint.x;
+                        y = startPoint.y;
+                        
+                        // 点を追加
+                        drawingPoints.push({ x, y });
+                        
+                        // 最後の線を作成
+                        const prevPoint = drawingPoints[drawingPoints.length - 2];
+                        const currPoint = drawingPoints[drawingPoints.length - 1];
+                        
+                        const id = String.fromCharCode(65 + lines.length);
+                        lines.push({
+                            id: id,
+                            x1: prevPoint.x,
+                            y1: prevPoint.y,
+                            x2: currPoint.x,
+                            y2: currPoint.y,
+                            name: `辺${id}`,
+                            start: 'wall',
+                            end: 'wall'
+                        });
+                        
+                        // コーナーの自動設定
+                        autoSetCorners();
+                        
+                        // 作図終了
+                        finishDrawing();
+                        return;
+                    } else {
+                        // キャンセルした場合は何もしない
+                        return;
+                    }
+                }
+            }
+            
+            // 既存の点をタップしたか判定（ただし始点は除く）
+            const clickRadius = 25;
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                
+                // 始点かチェック（3点以上ある場合）
+                let isStartPoint = false;
+                if (drawingPoints.length >= 3 && i === 0) {
+                    const startPoint = drawingPoints[0];
+                    const distToStart = Math.sqrt(Math.pow(line.x1 - startPoint.x, 2) + Math.pow(line.y1 - startPoint.y, 2));
+                    isStartPoint = distToStart < 5; // 始点と同じ位置なら
+                }
+                
+                const distStart = Math.sqrt(Math.pow(x - line.x1, 2) + Math.pow(y - line.y1, 2));
+                const distEnd = Math.sqrt(Math.pow(x - line.x2, 2) + Math.pow(y - line.y2, 2));
+                
+                // 始点以外の既存の点をタップした場合は無視
+                if (!isStartPoint && distStart < clickRadius) {
+                    return;
+                }
+                if (distEnd < clickRadius) {
+                    return;
+                }
+            }
+            
+            // ダブルタップ判定
+            const currentTime = new Date().getTime();
+            const timeDiff = currentTime - lastTapTime;
+            lastTapTime = currentTime;
+            
+            if (timeDiff < 500 && drawingPoints.length > 0) {
+                finishDrawing();
+                return;
+            }
+            
+            // 点を追加
+            drawingPoints.push({ x, y });
+            
+            // 2点以上あれば線を作成
+            if (drawingPoints.length >= 2) {
+                const prevPoint = drawingPoints[drawingPoints.length - 2];
+                const currPoint = drawingPoints[drawingPoints.length - 1];
+                
+                const id = String.fromCharCode(65 + lines.length);
+                lines.push({
+                    id: id,
+                    x1: prevPoint.x,
+                    y1: prevPoint.y,
+                    x2: currPoint.x,
+                    y2: currPoint.y,
+                    name: `辺${id}`,
+                    start: 'wall',
+                    end: 'wall'
+                });
+                
+                // コーナーの自動設定
+                autoSetCorners();
+            }
+            
+            drawLines();
+            updateDrawingControls();
+        }
+        
+        // タッチ移動時のプレビュー
+        function handleTouchDrawingMove(e) {
+            if (drawingPoints.length === 0) return;
+            e.preventDefault();
+            
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            let x = (touch.clientX - rect.left) * scaleX;
+            let y = (touch.clientY - rect.top) * scaleY;
+            
+            // スナップ処理
+            const lastPoint = drawingPoints[drawingPoints.length - 1];
+            const snapped = snapToAxis(lastPoint.x, lastPoint.y, x, y);
+            x = snapped.x;
+            y = snapped.y;
+            
+            drawLines();
+            
+            // 始点へのガイドラインと吸着（3点以上ある場合）
+            let snapToStart = false;
+            if (drawingPoints.length >= 3) {
+                const startPoint = drawingPoints[0];
+                const threshold = 15; // タッチ操作は少し広めに
+                
+                // 水平ガイドライン（Y座標が始点と近い場合）
+                if (Math.abs(y - startPoint.y) < threshold) {
+                    // 始点に向かって水平線を引く
+                    ctx.strokeStyle = '#f59e0b';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([4, 4]);
+                    ctx.beginPath();
+                    ctx.moveTo(x, startPoint.y);
+                    ctx.lineTo(startPoint.x, startPoint.y);
+                    ctx.stroke();
+                    
+                    // Y座標を始点に合わせる
+                    y = startPoint.y;
+                    
+                    // X座標も始点と近い場合は吸着
+                    if (Math.abs(x - startPoint.x) < threshold) {
+                        x = startPoint.x;
+                        snapToStart = true;
+                    }
+                }
+                
+                // 垂直ガイドライン（X座標が始点と近い場合）
+                if (Math.abs(x - startPoint.x) < threshold) {
+                    // 始点に向かって垂直線を引く
+                    ctx.strokeStyle = '#f59e0b';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([4, 4]);
+                    ctx.beginPath();
+                    ctx.moveTo(startPoint.x, y);
+                    ctx.lineTo(startPoint.x, startPoint.y);
+                    ctx.stroke();
+                    
+                    // X座標を始点に合わせる
+                    x = startPoint.x;
+                    
+                    // Y座標も始点と近い場合は吸着
+                    if (Math.abs(y - startPoint.y) < threshold) {
+                        y = startPoint.y;
+                        snapToStart = true;
+                    }
+                }
+                
+                // 始点と合致した場合、始点を大きく表示
+                if (snapToStart) {
+                    ctx.fillStyle = '#f59e0b';
+                    ctx.beginPath();
+                    ctx.arc(startPoint.x, startPoint.y, 10, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // 白い縁取り
+                    ctx.strokeStyle = 'white';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+            }
+            
+            // 通常のガイドライン（90度）
+            if (!snapToStart) {
+                // 水平ガイドライン
+                if (Math.abs(y - lastPoint.y) < 30) {
+                    ctx.strokeStyle = '#10b981';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([2, 2]);
+                    ctx.beginPath();
+                    ctx.moveTo(0, lastPoint.y);
+                    ctx.lineTo(canvas.width, lastPoint.y);
+                    ctx.stroke();
+                }
+                
+                // 垂直ガイドライン
+                if (Math.abs(x - lastPoint.x) < 30) {
+                    ctx.strokeStyle = '#10b981';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([2, 2]);
+                    ctx.beginPath();
+                    ctx.moveTo(lastPoint.x, 0);
+                    ctx.lineTo(lastPoint.x, canvas.height);
+                    ctx.stroke();
+                }
+            }
+            
+            // プレビュー線
+            ctx.strokeStyle = snapToStart ? '#f59e0b' : '#667eea';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([5, 5]);
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(lastPoint.x, lastPoint.y);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+        
+        // 作図終了
+        function finishDrawing() {
+            drawingPoints = [];
+            drawLines();
+            
+            // 作図用イベントリスナーを削除
+            canvas.removeEventListener('click', handleCanvasClick);
+            canvas.removeEventListener('mousemove', handleCanvasMouseMove);
+            canvas.removeEventListener('touchstart', handleTouchDrawing);
+            canvas.removeEventListener('touchmove', handleTouchDrawingMove);
+            
+            // 点クリック用イベントリスナーを設定
+            canvas.addEventListener('click', handlePointClick);
+            canvas.addEventListener('touchend', handlePointClickTouch);
+            
+            if (lines.length > 0) {
+                createInputs();
+            }
+            
+            updateDrawingControls();
+        }
+        
+        // 点のクリック処理
+        function handlePointClick(e) {
+            if (isDrawing || isDragging) return;
+            if (drawingPoints.length > 0) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const x = (e.offsetX || e.clientX - rect.left) * scaleX;
+            const y = (e.offsetY || e.clientY - rect.top) * scaleY;
+            
+            const clickRadius = 20;
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                
+                const distStart = Math.sqrt(Math.pow(x - line.x1, 2) + Math.pow(y - line.y1, 2));
+                if (distStart < clickRadius) {
+                    // 入力欄にスクロール&ハイライトのみ（状態変更しない）
+                    scrollToInput(line.id);
+                    return;
+                }
+                
+                const distEnd = Math.sqrt(Math.pow(x - line.x2, 2) + Math.pow(y - line.y2, 2));
+                if (distEnd < clickRadius) {
+                    // 入力欄にスクロール&ハイライトのみ（状態変更しない）
+                    scrollToInput(line.id);
+                    return;
+                }
+                
+                // 線をクリックしたかチェック
+                const distToLine = distanceToLineSegment(x, y, line.x1, line.y1, line.x2, line.y2);
+                if (distToLine < 10) {
+                    // 入力欄にスクロール&ハイライト
+                    scrollToInput(line.id);
+                    return;
+                }
+            }
+        }
+        
+        // 点から線分への最短距離を計算
+        function distanceToLineSegment(px, py, x1, y1, x2, y2) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const lengthSquared = dx * dx + dy * dy;
+            
+            if (lengthSquared === 0) {
+                return Math.sqrt((px - x1) * (px - x1) + (py - y1) * (py - y1));
+            }
+            
+            let t = ((px - x1) * dx + (py - y1) * dy) / lengthSquared;
+            t = Math.max(0, Math.min(1, t));
+            
+            const nearestX = x1 + t * dx;
+            const nearestY = y1 + t * dy;
+            
+            return Math.sqrt((px - nearestX) * (px - nearestX) + (py - nearestY) * (py - nearestY));
+        }
+        
+        // 入力欄にスクロール&ハイライト
+        function scrollToInput(lineId) {
+            // DOMの更新を待つ
+            setTimeout(() => {
+                const inputGroup = document.querySelector(`[data-line-id="${lineId}"]`);
+                if (inputGroup) {
+                    // スクロール
+                    inputGroup.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    
+                    // ハイライト（2秒間）
+                    inputGroup.style.transition = 'background-color 0.3s';
+                    inputGroup.style.backgroundColor = '#fef3c7';
+                    
+                    setTimeout(() => {
+                        inputGroup.style.backgroundColor = '';
+                    }, 2000);
+                }
+            }, 100);
+        }
+        
+        // コーナーを自動設定
+        function autoSetCorners() {
+            const tolerance = 5; // 同じ位置と判定する距離
+            
+            // 図形が閉じているかチェック（最初の線の始点と最後の線の終点が同じ位置）
+            const isClosed = lines.length > 0 && 
+                Math.abs(lines[0].x1 - lines[lines.length - 1].x2) < tolerance && 
+                Math.abs(lines[0].y1 - lines[lines.length - 1].y2) < tolerance;
+            
+            // 全ての点をチェック
+            for (let i = 0; i < lines.length; i++) {
+                for (let j = i + 1; j < lines.length; j++) {
+                    const line1 = lines[i];
+                    const line2 = lines[j];
+                    
+                    // line1の始点とline2の始点が同じ位置
+                    if (Math.abs(line1.x1 - line2.x1) < tolerance && Math.abs(line1.y1 - line2.y1) < tolerance) {
+                        // 90度かどうかチェック
+                        if (is90Degrees(line1, line2, 'start', 'start')) {
+                            // 最初の線の始点はコーナーにしない（閉じている場合は除く）
+                            if (i !== 0 || isClosed) line1.start = 'corner';
+                            if (j !== 0 || isClosed) line2.start = 'corner';
+                        } else {
+                            // 90度でない場合は通常の連動
+                            if ((i !== 0 || isClosed) && line1.start === 'corner') line2.start = 'corner';
+                            if ((j !== 0 || isClosed) && line2.start === 'corner') line1.start = 'corner';
+                        }
+                    }
+                    
+                    // line1の始点とline2の終点が同じ位置
+                    if (Math.abs(line1.x1 - line2.x2) < tolerance && Math.abs(line1.y1 - line2.y2) < tolerance) {
+                        // 90度かどうかチェック
+                        if (is90Degrees(line1, line2, 'start', 'end')) {
+                            if (i !== 0 || isClosed) line1.start = 'corner';
+                            // 最後の線の終点はコーナーにしない（閉じている場合は除く）
+                            if (j !== lines.length - 1 || isClosed) line2.end = 'corner';
+                        } else {
+                            if ((i !== 0 || isClosed) && line1.start === 'corner') line2.end = 'corner';
+                            if ((j !== lines.length - 1 || isClosed) && line2.end === 'corner') line1.start = 'corner';
+                        }
+                    }
+                    
+                    // line1の終点とline2の始点が同じ位置
+                    if (Math.abs(line1.x2 - line2.x1) < tolerance && Math.abs(line1.y2 - line2.y1) < tolerance) {
+                        // 90度かどうかチェック
+                        if (is90Degrees(line1, line2, 'end', 'start')) {
+                            // 最後の線の終点はコーナーにしない（閉じている場合は除く）
+                            if (i !== lines.length - 1 || isClosed) line1.end = 'corner';
+                            if (j !== 0 || isClosed) line2.start = 'corner';
+                        } else {
+                            if ((i !== lines.length - 1 || isClosed) && line1.end === 'corner') line2.start = 'corner';
+                            if ((j !== 0 || isClosed) && line2.start === 'corner') line1.end = 'corner';
+                        }
+                    }
+                    
+                    // line1の終点とline2の終点が同じ位置
+                    if (Math.abs(line1.x2 - line2.x2) < tolerance && Math.abs(line1.y2 - line2.y2) < tolerance) {
+                        // 90度かどうかチェック
+                        if (is90Degrees(line1, line2, 'end', 'end')) {
+                            // 最後の線の終点はコーナーにしない（閉じている場合は除く）
+                            if (i !== lines.length - 1 || isClosed) line1.end = 'corner';
+                            if (j !== lines.length - 1 || isClosed) line2.end = 'corner';
+                        } else {
+                            if ((i !== lines.length - 1 || isClosed) && line1.end === 'corner') line2.end = 'corner';
+                            if ((j !== lines.length - 1 || isClosed) && line2.end === 'corner') line1.end = 'corner';
+                        }
+                    }
+                }
+            }
+        }
+        
+        // 2つの線が90度かどうか判定
+        function is90Degrees(line1, line2, point1, point2) {
+            // 線1の方向ベクトル
+            const dx1 = line1.x2 - line1.x1;
+            const dy1 = line1.y2 - line1.y1;
+            
+            // 線2の方向ベクトル
+            const dx2 = line2.x2 - line2.x1;
+            const dy2 = line2.y2 - line2.y1;
+            
+            // 内積を計算（90度なら0に近い）
+            const dotProduct = dx1 * dx2 + dy1 * dy2;
+            const magnitude1 = Math.sqrt(dx1 * dx1 + dy1 * dy1);
+            const magnitude2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+            
+            if (magnitude1 === 0 || magnitude2 === 0) return false;
+            
+            const cosAngle = dotProduct / (magnitude1 * magnitude2);
+            
+            // 90度の場合、cosは0に近い（許容誤差0.1）
+            return Math.abs(cosAngle) < 0.1;
+        }
+        
+        // 点の状態を切り替え
+        function togglePointState(lineIndex, point) {
+            const line = lines[lineIndex];
+            
+            // この点のコーナーキーを取得
+            const x = point === 'start' ? line.x1 : line.x2;
+            const y = point === 'start' ? line.y1 : line.y2;
+            const cornerKey = findCornerKey(x, y, 5);
+            const corner = corners[cornerKey];
+            
+            // 図形が閉じているかチェック（最初の線の始点と最後の線の終点が同じ位置）
+            const isClosed = lines.length > 0 && 
+                Math.abs(lines[0].x1 - lines[lines.length - 1].x2) < 5 && 
+                Math.abs(lines[0].y1 - lines[lines.length - 1].y2) < 5;
+            
+            // 最初の線の始点はコーナーになれない（閉じている場合は除く）
+            const isFirstLineStart = (lineIndex === 0 && point === 'start' && !isClosed);
+            
+            // 最後の線の終点はコーナーになれない（閉じている場合は除く）
+            const isLastLineEnd = (lineIndex === lines.length - 1 && point === 'end' && !isClosed);
+            
+            // 段差があるコーナーの場合は、コーナー選択を除外
+            const hasStepAtCorner = corner && corner.hasStep;
+            
+            // 選択可能な状態を決定
+            let states;
+            if (isFirstLineStart || isLastLineEnd || hasStepAtCorner) {
+                states = ['end', 'wall'];
+            } else {
+                states = ['corner', 'end', 'wall'];
+            }
+            
+            const currentState = lines[lineIndex][point] || 'wall';
+            const currentIndex = states.indexOf(currentState);
+            const nextIndex = (currentIndex + 1) % states.length;
+            lines[lineIndex][point] = states[nextIndex];
+            
+            // コーナーに変更した場合、同じ位置の点も連動
+            if (lines[lineIndex][point] === 'corner') {
+                autoSetCorners();
+            }
+            
+            // 段差があるコーナーで状態を変更した場合、接続している辺の状態を自動調整
+            if (corner && corner.hasStep && corner.lines.length >= 2) {
+                syncCornerStatesWithStep(cornerKey, line.id, point, lines[lineIndex][point]);
+            }
+        }
+        
+        
+        function handleTouch(e) {
+            e.preventDefault();
+            const touch = e.touches[0] || e.changedTouches[0];
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const x = (touch.clientX - rect.left) * scaleX;
+            const y = (touch.clientY - rect.top) * scaleY;
+            
+            if (e.type === 'touchstart') {
+                startDrawing({ offsetX: x, offsetY: y });
+            } else if (e.type === 'touchmove') {
+                drawing({ offsetX: x, offsetY: y });
+            } else if (e.type === 'touchend') {
+                endDrawing({ offsetX: x, offsetY: y });
+            }
+        }
+        
+        function startDrawing(e) {
+            isDrawing = true;
+            isDragging = false; // ドラッグ開始時はfalse
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            startPoint = { 
+                x: (e.offsetX || e.clientX - rect.left) * scaleX, 
+                y: (e.offsetY || e.clientY - rect.top) * scaleY 
+            };
+        }
+        
+        function drawing(e) {
+            if (!isDrawing) return;
+            
+            isDragging = true; // マウス移動したらドラッグ中
+            
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const x = (e.offsetX || e.clientX - rect.left) * scaleX;
+            const y = (e.offsetY || e.clientY - rect.top) * scaleY;
+            
+            // 既存の線を描画
+            drawLines();
+            
+            // プレビュー線を描画
+            ctx.strokeStyle = '#667eea';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([5, 5]);
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(startPoint.x, startPoint.y);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+        
+        function endDrawing(e) {
+            if (!isDrawing) return;
+            
+            // ドラッグしていた場合のみ線を引く
+            if (isDragging) {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                const x = (e.offsetX || e.clientX - rect.left) * scaleX;
+                const y = (e.offsetY || e.clientY - rect.top) * scaleY;
+                
+                const id = String.fromCharCode(65 + lines.length);
+                lines.push({
+                    id: id,
+                    x1: startPoint.x,
+                    y1: startPoint.y,
+                    x2: x,
+                    y2: y,
+                    name: `辺${id}`,
+                    start: 'wall', // デフォルトは壁
+                    end: 'wall'    // デフォルトは壁
+                });
+                
+                drawLines();
+                createInputs(); // 線を引いた後に入力フォームを作成
+            }
+            
+            isDrawing = false;
+            isDragging = false;
+        }
+        
+        // パターン保存
+        function savePattern() {
+            const name = prompt('パターン名を入力してください:');
+            if (!name) return;
+            
+            const savedPatterns = JSON.parse(localStorage.getItem('savedPatterns') || '{}');
+            savedPatterns[name] = {
+                lines: lines,
+                dimensions: dimensions
+            };
+            localStorage.setItem('savedPatterns', JSON.stringify(savedPatterns));
+            
+            alert('パターンを保存しました');
+        }
+        
+        // 保存済みパターン読み込み
+        function loadSavedPatterns() {
+            const savedPatterns = JSON.parse(localStorage.getItem('savedPatterns') || '{}');
+            const keys = Object.keys(savedPatterns);
+            
+            if (keys.length === 0) return;
+            
+            document.getElementById('saved-patterns-section').style.display = 'block';
+            const grid = document.getElementById('saved-patterns-grid');
+            grid.innerHTML = '';
+            
+            keys.forEach(name => {
+                const btn = document.createElement('button');
+                btn.className = 'pattern-btn';
+                btn.innerHTML = `
+                    ${name}
+                    <span class="delete-btn" onclick="event.stopPropagation(); deletePattern('${name}')">×</span>
+                `;
+                btn.onclick = () => selectPattern(name);
+                grid.appendChild(btn);
+            });
+        }
+        
+        // カスタムパターン読み込み
+        function loadCustomPattern(name) {
+            const savedPatterns = JSON.parse(localStorage.getItem('savedPatterns') || '{}');
+            const pattern = savedPatterns[name];
+            
+            if (!pattern) return;
+            
+            document.getElementById('pattern-title').textContent = name;
+            lines = pattern.lines;
+            dimensions = pattern.dimensions || {};
+            
+            drawLines();
+            createInputs();
+        }
+        
+        // パターン削除
+        function deletePattern(name) {
+            if (!confirm(`「${name}」を削除しますか？`)) return;
+            
+            const savedPatterns = JSON.parse(localStorage.getItem('savedPatterns') || '{}');
+            delete savedPatterns[name];
+            localStorage.setItem('savedPatterns', JSON.stringify(savedPatterns));
+            
+            loadSavedPatterns();
+        }
+        
+        // クリア（全削除）
+        // クリア（全削除）
+        
+        // 最後の線を削除
+        function undoLastLine() {
+            if (lines.length === 0) return;
+            
+            // 作図終了後（drawingPointsが空）の場合は、drawingPointsを復元してから削除
+            if (drawingPoints.length === 0 && lines.length > 0) {
+                // 全ての点をdrawingPointsに復元
+                drawingPoints = [];
+                
+                // 最初の線の始点を追加
+                drawingPoints.push({ x: lines[0].x1, y: lines[0].y1 });
+                
+                // 全ての線の終点を追加
+                for (let i = 0; i < lines.length; i++) {
+                    drawingPoints.push({ x: lines[i].x2, y: lines[i].y2 });
+                }
+                
+                // 点クリック用イベントリスナーを削除
+                canvas.removeEventListener('click', handlePointClick);
+                canvas.removeEventListener('touchend', handlePointClickTouch);
+                
+                // 作図用イベントリスナーを再設定
+                canvas.addEventListener('click', handleCanvasClick);
+                canvas.addEventListener('mousemove', handleCanvasMouseMove);
+                canvas.addEventListener('touchstart', handleTouchDrawing);
+                canvas.addEventListener('touchmove', handleTouchDrawingMove);
+            }
+            
+            // 最後の線を削除
+            const lastLineId = lines[lines.length - 1].id;
+            lines.pop();
+            delete dimensions[lastLineId];
+            
+            // drawingPointsから最後の点を削除（1つ前の点から再開できるように）
+            if (drawingPoints.length > 1) {
+                drawingPoints.pop();
+            }
+            
+            drawLines();
+            createInputs();
+            calculate();
+            updateDrawingControls();
+        }
+        
+        // 描画コントロールの表示・非表示
+        function updateDrawingControls() {
+            const controls = document.getElementById('drawing-controls');
+            if (controls) {
+                controls.style.display = (drawingPoints.length > 0 || currentPattern === 'custom') ? 'flex' : 'none';
+            }
+        }
+        
+        // 戻る
+        function backToSelect() {
+            document.getElementById('pattern-select-screen').style.display = 'block';
+            document.getElementById('measurement-screen').style.display = 'none';
+            loadSavedPatterns();
+        }
+    </script>
+</body>
+</html>
 
