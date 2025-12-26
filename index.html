@@ -1,394 +1,214 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
-  <title>エクステリア計算ツール</title>
-  <meta name="description" content="カーポートやテラス屋根など、エクステリア現調・施工に便利な計算ツール集です。" />
-  <meta name="theme-color" content="#2563eb" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <link rel="manifest" href="manifest.json" />
-  <link rel="icon" href="icon-192.svg" sizes="192x192" />
-  <link rel="icon" href="icon-512.svg" sizes="512x512" />
-  <link rel="apple-touch-icon" href="icon-192.svg" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="外構工事に便利な計算ツール集 - カーポート、テラス屋根、躯体採寸など">
+    <title>エクステリア計算ツール</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-  <!-- Stylish JP-friendly fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
 
-  <!-- Google Analytics -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-J0619V5FP8"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-J0619V5FP8');
-  </script>
+        .container {
+            max-width: 1000px;
+            width: 100%;
+        }
 
-  <style>
-    :root{
-      --bg:#f6f8fb; --card:#fff; --text:#121722; --muted:#5b6472;
-      --brand:#2563eb; --brand-strong:#1e40af; --ring: 0 10px 24px rgba(0,0,0,.08);
-      --grad-text: linear-gradient(90deg,#0ea5e9,#2563eb,#7c3aed);
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica Neue,Arial,Noto Sans,"Apple Color Emoji","Segoe UI Emoji";
-      background:linear-gradient(180deg, var(--bg), #eef2f7 50%, var(--bg));
-      color:var(--text);
-    }
-    .wrap{max-width:1100px; margin:0 auto; padding:40px 20px 72px;}
-    header{ text-align:center; margin-bottom:28px;}
-    
-    /* バナースタイル */
-    .banner-container {
-      position: relative;
-      width: 100%;
-      max-width: 1000px;
-      height: 300px;
-      background: linear-gradient(135deg, #0f2557 0%, #1e4d8b 50%, #2563b8 100%);
-      border-radius: 20px;
-      overflow: hidden;
-      box-shadow: 0 20px 60px rgba(37, 99, 184, 0.4);
-      margin-bottom: 40px;
-    }
-    
-    .banner-container::before {
-      content: '';
-      position: absolute;
-      width: 500px;
-      height: 500px;
-      background: radial-gradient(circle, rgba(59, 130, 246, 0.3) 0%, transparent 70%);
-      border-radius: 50%;
-      top: -150px;
-      right: -100px;
-      animation: pulse 4s ease-in-out infinite;
-    }
-    
-    .banner-container::after {
-      content: '';
-      position: absolute;
-      width: 400px;
-      height: 400px;
-      background: radial-gradient(circle, rgba(96, 165, 250, 0.2) 0%, transparent 70%);
-      border-radius: 50%;
-      bottom: -150px;
-      left: -100px;
-      animation: pulse 4s ease-in-out infinite 2s;
-    }
-    
-    .grid-overlay {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      background-image: 
-        linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px);
-      background-size: 50px 50px;
-      opacity: 0.3;
-    }
-    
-    .banner-content {
-      position: relative;
-      z-index: 10;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      padding: 40px;
-    }
-    
-    .banner-title {
-      font-size: clamp(24px, 4vw, 48px);
-      font-weight: 700;
-      color: #ffffff;
-      text-align: center;
-      letter-spacing: 1px;
-      white-space: nowrap;
-      text-shadow: 
-        0 0 20px rgba(59, 130, 246, 0.8),
-        0 0 40px rgba(59, 130, 246, 0.5),
-        0 4px 8px rgba(0, 0, 0, 0.3);
-      animation: titleGlow 3s ease-in-out infinite;
-      margin: 0;
-    }
-    
-    .banner-subtitle {
-      font-size: clamp(14px, 2vw, 18px);
-      color: #93c5fd;
-      margin-top: 12px;
-      letter-spacing: 6px;
-      text-transform: uppercase;
-      font-weight: 300;
-      opacity: 0.9;
-    }
-    
-    .geometric {
-      position: absolute;
-      border: 2px solid rgba(59, 130, 246, 0.3);
-    }
-    
-    .geometric-1 {
-      width: 80px;
-      height: 80px;
-      top: 20px;
-      left: 20px;
-      transform: rotate(45deg);
-      animation: rotate 20s linear infinite;
-    }
-    
-    .geometric-2 {
-      width: 60px;
-      height: 60px;
-      bottom: 20px;
-      right: 30px;
-      border-radius: 50%;
-      animation: float 6s ease-in-out infinite;
-    }
-    
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); opacity: 0.3; }
-      50% { transform: scale(1.1); opacity: 0.5; }
-    }
-    
-    @keyframes titleGlow {
-      0%, 100% { 
-        text-shadow: 
-          0 0 20px rgba(59, 130, 246, 0.8),
-          0 0 40px rgba(59, 130, 246, 0.5),
-          0 4px 8px rgba(0, 0, 0, 0.3);
-      }
-      50% { 
-        text-shadow: 
-          0 0 30px rgba(59, 130, 246, 1),
-          0 0 60px rgba(59, 130, 246, 0.7),
-          0 4px 8px rgba(0, 0, 0, 0.3);
-      }
-    }
-    
-    @keyframes rotate {
-      from { transform: rotate(45deg); }
-      to { transform: rotate(405deg); }
-    }
-    
-    @keyframes float {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-15px); }
-    }
-    
-    h1{
-      font-family:"Zen Kaku Gothic New", "Noto Sans JP", system-ui, -apple-system, sans-serif;
-      font-weight:700; font-size: clamp(26px, 4.2vw, 40px); letter-spacing:.01em; margin:0 0 10px;
-      background: var(--grad-text); -webkit-background-clip:text; background-clip:text; color:transparent;
-    }
-    .sub{ color:var(--muted); font-size:clamp(14px, 2.4vw, 16px); }
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
 
-    .grid{ display:grid; gap:18px; margin-top:28px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
-    a.card{display:block; text-decoration:none; color:inherit; background:var(--card);
-      border-radius:18px; padding:18px; box-shadow:var(--ring); transition: transform .18s ease, box-shadow .18s ease; border:1px solid rgba(0,0,0,.05);
-    }
-    a.card:focus-visible{outline:3px solid color-mix(in oklab, var(--brand) 70%, white); outline-offset:2px}
-    a.card:hover{ transform: translateY(-4px); box-shadow:0 14px 36px rgba(0,0,0,.12)}
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
 
-    .row{display:flex; align-items:center; gap:14px}
-    .icon{ width:56px; height:56px; flex:0 0 56px; border-radius:14px; display:grid; place-items:center; border:1px solid rgba(0,0,0,.06);
-      background: radial-gradient(120% 120% at 10% 0%, #eaf2ff, #eef2ff 60%, #f8fbff 100%);
-    }
-    .title{ font-size:18px; font-weight:800; font-family:"Outfit","Zen Kaku Gothic New",system-ui,sans-serif }
-    .desc{ color:var(--muted); font-size:14px; line-height:1.5; margin:8px 0 12px; word-wrap:break-word; overflow-wrap:break-word; }
-    .btn{ display:inline-block; border-radius:999px; padding:12px 18px; font-weight:800; font-family:"Outfit",system-ui;
-      background:var(--brand); color:white; border:1px solid color-mix(in oklab, var(--brand) 90%, black 10%); transition: background .15s ease, transform .1s ease; line-height:1.4; cursor:pointer; font-size:14px;}
-    .btn:hover{ background:var(--brand-strong)}
-    .btn:active{ transform: scale(0.98); }
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
 
-    footer{ margin-top:28px; text-align:center; color:var(--muted); font-size:13px }
+        .description {
+            font-size: 1rem;
+            opacity: 0.8;
+        }
 
-    /* モバイル超小型端末対応（320px～360px） */
-    @media (max-width: 360px) {
-      .wrap{ padding: 32px 16px 64px; }
-      h1{ font-size: clamp(22px, 3.8vw, 26px); }
-      .grid{ gap: 14px; }
-      .card{ padding: 14px; }
-      .icon{ width: 48px; height: 48px; flex: 0 0 48px; }
-      .row{ gap: 12px; }
-      .title{ font-size: 16px; }
-      .desc{ font-size: 12px; }
-      .btn{ padding: 10px 14px; font-size: 13px; }
-      .banner-container { height: 180px; }
-      .banner-title { font-size: clamp(18px, 3.5vw, 24px); letter-spacing: 0px; }
-      .banner-subtitle { font-size: clamp(12px, 1.8vw, 14px); letter-spacing: 2px; }
-      .geometric-1 { width: 50px; height: 50px; }
-      .geometric-2 { width: 35px; height: 35px; }
-    }
-    
-    /* タブレット以上（768px） */
-    @media (min-width: 480px) and (max-width: 767px) {
-      .banner-container { height: 240px; }
-      .banner-title { font-size: clamp(28px, 4.5vw, 36px); }
-    }
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
 
-    /* タブレット対応（768px以上） */
-    @media (min-width: 768px) {
-      .btn:hover{ transform: translateY(-1px); }
-      .card:hover .btn{ background: var(--brand-strong); }
-    }
-  </style>
+        .tool-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .tool-card.new {
+            border: 3px solid #f59e0b;
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+        }
+
+        .tool-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .tool-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .tool-card.new .tool-title {
+            color: #92400e;
+        }
+
+        .new-badge {
+            display: inline-block;
+            background: #f59e0b;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        .tool-description {
+            font-size: 0.95rem;
+            color: #666;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+        .tool-card.new .tool-description {
+            color: #78350f;
+        }
+
+        .tool-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 10px 25px;
+            border-radius: 8px;
+            font-weight: bold;
+            text-decoration: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .tool-card.new .tool-button {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .tool-button:hover {
+            opacity: 0.9;
+        }
+
+        footer {
+            text-align: center;
+            color: white;
+            opacity: 0.8;
+            font-size: 0.9rem;
+            margin-top: 30px;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .subtitle {
+                font-size: 1rem;
+            }
+
+            .tools-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <!-- バナー -->
-      <div class="banner-container">
-        <div class="grid-overlay"></div>
-        <div class="geometric geometric-1"></div>
-        <div class="geometric geometric-2"></div>
-        
-        <div class="banner-content">
-          <h1 class="banner-title">エクステリア計算ツール</h1>
-          <div class="banner-subtitle">Exterior Calculator</div>
+    <div class="container">
+        <header>
+            <h1>エクステリア計算ツール</h1>
+            <p class="subtitle">Exterior Calculator</p>
+            <p class="description">カーポートやテラス屋根など、外構工事に便利な計算ツール集です。</p>
+        </header>
+
+        <div class="tools-grid">
+            <!-- 新しいツール：躯体採寸システム -->
+            <a href="https://as9source.github.io/kutai-system/" class="tool-card new">
+                <div class="tool-icon">📐</div>
+                <h2 class="tool-title">躯体採寸システム<span class="new-badge">NEW</span></h2>
+                <p class="tool-description">現場での躯体採寸をデジタル化。自由作図、コーナー計算、段差対応。測定ミス・計算漏れを防ぎます。</p>
+                <span class="tool-button">開く</span>
+            </a>
+
+            <!-- 既存のツール -->
+            <a href="./Carport-Post-Calculation/index.html" class="tool-card">
+                <div class="tool-icon">📏</div>
+                <h2 class="tool-title">柱寸法計算</h2>
+                <p class="tool-description">カーポートの柱ピッチ・寸法を自動計算します。</p>
+                <span class="tool-button">開く</span>
+            </a>
+
+            <a href="./Carport-Post-Calculation/conc.html" class="tool-card">
+                <div class="tool-icon">㎡</div>
+                <h2 class="tool-title">生コン量計算</h2>
+                <p class="tool-description">カーポート柱のコンクリート必要量を自動計算します。</p>
+                <span class="tool-button">開く</span>
+            </a>
+
+            <a href="https://as9source.github.io/angle/" class="tool-card">
+                <div class="tool-icon">🏠</div>
+                <h2 class="tool-title">テラス屋根 干渉チェック</h2>
+                <p class="tool-description">母屋の屋根とテラス屋根の干渉を計算でチェックします。</p>
+                <span class="tool-button">開く</span>
+            </a>
+
+            <a href="https://as9source.github.io/triangle/" class="tool-card">
+                <div class="tool-icon">📐</div>
+                <h2 class="tool-title">三角形計算機</h2>
+                <p class="tool-description">直角三角形の斜辺や高さを簡単に計算できます。</p>
+                <span class="tool-button">開く</span>
+            </a>
         </div>
-      </div>
-      
-      <div class="sub">カーポートやテラス屋根など、外構工事に便利な計算ツール集です。</div>
-    </header>
 
-    <section class="grid" aria-label="アプリ一覧">
-      <!-- 1) 柱寸法計算 -->
-      <a class="card" href="./Carport-Post-Calculation/index.html" target="_self" rel="noopener">
-        <div class="row">
-          <div class="icon" aria-hidden="true">
-            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <!-- ground line -->
-              <path d="M2 21h20" stroke="#0f172a" stroke-opacity=".18" stroke-width="2"/>
-              <!-- left pillar -->
-              <rect x="4" y="5" width="4" height="14" rx="1.2" fill="#1e3a8a"/>
-              <!-- right pillar -->
-              <rect x="16" y="7" width="4" height="12" rx="1.2" fill="#2563eb"/>
-              <!-- dimension arrow between pillars -->
-              <path d="M8.2 13h7.6" stroke="#1d4ed8" stroke-width="1.6"/>
-              <path d="M8.2 13l1.8-1.3M8.2 13l1.8 1.3" stroke="#1d4ed8" stroke-width="1.6" stroke-linecap="round"/>
-              <path d="M15.8 13l-1.8-1.3M15.8 13l-1.8 1.3" stroke="#1d4ed8" stroke-width="1.6" stroke-linecap="round"/>
-              <!-- tick marks under pillars to imply pitch points -->
-              <path d="M6 21v-2.2M18 21v-2.2" stroke="#0f172a" stroke-opacity=".35" stroke-width="1.6" stroke-linecap="round"/>
-            </svg>
-          </div>
-          <div>
-            <div class="title">柱寸法計算</div>
-            <div class="desc">カーポートの柱ピッチ・寸法を自動計算します。</div>
-            <span class="btn" role="button">開く</span>
-          </div>
-        </div>
-      </a>
-
-      <!-- 2) 生コン量計算 -->
-      <a class="card" href="./Carport-Post-Calculation/conc.html" target="_self" rel="noopener">
-        <div class="row">
-          <div class="icon" aria-hidden="true">
-            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <!-- isometric cube -->
-              <path d="M7 8l5-3 5 3v6l-5 3-5-3V8z" fill="#e5efff" stroke="#1d4ed8" stroke-width="1.6"/>
-              <path d="M12 5v6l5 3" stroke="#1d4ed8" stroke-opacity=".6" stroke-width="1.4"/>
-              <!-- front face label -->
-              <rect x="8.2" y="10.2" width="7.6" height="5.2" rx="1.1" fill="#1d4ed8"/>
-              <text x="12" y="14.1" text-anchor="middle" font-size="3.6" font-weight="700" fill="#ffffff">㎡</text>
-            </svg>
-          </div>
-          <div>
-            <div class="title">生コン量計算</div>
-            <div class="desc">カーポート柱のコンクリート必要量を自動計算します。</div>　　　　　　　
-            <span class="btn" role="button">開く</span>
-          </div>
-        </div>
-      </a>
-
-      <!-- 3) 勾配角度計算 -->
-      <a class="card" href="https://as9source.github.io/angle/" target="_self" rel="noopener">
-        <div class="row">
-          <div class="icon" aria-hidden="true">
-            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <path d="M4 20h16L12 12 4 20Z" fill="#60a5fa"/>
-              <path d="M12 12 4 20m8-8 8 8" stroke="#0f172a" stroke-opacity=".3" stroke-width="2"/>
-              <path d="M7 18h2m2-2h2m2 2h2" stroke="#0f172a" stroke-opacity=".45" stroke-width="1.6" stroke-linecap="round"/>
-              <circle cx="12" cy="12" r="1.4" fill="#2563eb"/>
-            </svg>
-          </div>
-          <div>
-            <div class="title">テラス屋根 干渉チェック</div>
-            <div class="desc">母屋の屋根とテラス屋根の干渉を計算でチェックします。</div>
-            <span class="btn" role="button">開く</span>
-          </div>
-        </div>
-      </a>
-
-      <!-- 4) 三角形計算機 -->
-      <a class="card" href="https://as9source.github.io/triangle/" target="_self" rel="noopener">
-        <div class="row">
-          <div class="icon" aria-hidden="true">
-            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <!-- 直角三角形 -->
-              <path d="M5 19 L5 7 L17 19 Z" fill="#dbeafe" stroke="#1e40af" stroke-width="2" stroke-linejoin="round"/>
-              <!-- 直角マーク -->
-              <rect x="5" y="16.5" width="2.5" height="2.5" fill="none" stroke="#1e40af" stroke-width="1.5"/>
-              <!-- 斜辺（赤） -->
-              <path d="M5 7 L17 19" stroke="#e74c3c" stroke-width="2.2" stroke-linecap="round"/>
-              <!-- ラベル記号 -->
-              <circle cx="11" cy="12" r="1.2" fill="#2563eb"/>
-              <text x="8.5" y="15.5" font-size="3.5" font-weight="700" fill="#1e40af">c</text>
-            </svg>
-          </div>
-          <div>
-            <div class="title">三角形計算機</div>
-            <div class="desc">直角三角形の斜辺や高さを簡単に計算できます。</div>
-            <span class="btn" role="button">開く</span>
-          </div>
-        </div>
-      </a>
-    </section>
-
-    <footer>
-      © <span id="y"></span> as9source — Exterior Tools
-    </footer>
-  </div>
-
-  <script>
-    // 西暦を自動更新
-    document.getElementById('y').textContent = new Date().getFullYear();
-
-    // 月次キャッシュクリア機能
-    (function() {
-      const CACHE_KEY = 'exteriortools_cache_month';
-      const currentMonth = new Date().getFullYear() + '-' + (new Date().getMonth() + 1);
-      const savedMonth = localStorage.getItem(CACHE_KEY);
-
-      if (savedMonth !== currentMonth) {
-        // 月が変わった場合、キャッシュをクリア
-        if ('caches' in window) {
-          caches.keys().then(function(names) {
-            for (let name of names) {
-              caches.delete(name);
-            }
-          });
-        }
-        // localStorageの計算履歴などもクリア（必要に応じて）
-        // localStorage.clear(); // 全クリアする場合
-        localStorage.setItem(CACHE_KEY, currentMonth);
-        console.log('Cache cleared for new month:', currentMonth);
-      }
-    })();
-
-    // PWA: Service Worker 登録
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js').catch(console.error);
-      });
-    }
-  </script>
+        <footer>
+            © as9source — Exterior Tools
+        </footer>
+    </div>
 </body>
 </html>
