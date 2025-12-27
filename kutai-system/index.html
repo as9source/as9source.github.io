@@ -8,10 +8,16 @@
     ========================================
     躯体採寸システム
     ========================================
-    バージョン: 1.11.0
+    バージョン: 1.11.1
     最終更新: 2024-12-27
     
     [更新履歴]
+    v1.11.1 (2024-12-27)
+    - 使い方マニュアルを追加（manual.md）
+    - パターン選択画面に「❓ 使い方」ボタンを追加
+    - 採寸画面にも「❓ 使い方」ボタンを追加
+    - GitHubのマニュアルページへリンク
+    
     v1.11.0 (2024-12-27)
     - 直線が並んだ場合に計算結果の図が表示されない問題を修正
     - ファイル名入力欄を削除
@@ -429,6 +435,15 @@
         <div id="pattern-select-screen">
             <h1>躯体採寸システム</h1>
             
+            <!-- 使い方ボタン -->
+            <div style="margin-bottom: 20px; text-align: center;">
+                <a href="https://github.com/as9source/as9source.github.io/blob/main/kutai-system/manual.md" 
+                   target="_blank" 
+                   style="display: inline-block; padding: 10px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    ❓ 使い方
+                </a>
+            </div>
+            
             <h2>基本パターン</h2>
             <div class="pattern-grid">
                 <button class="pattern-btn" onclick="selectPattern('i')">
@@ -473,7 +488,7 @@
             
             <!-- バージョン情報 -->
             <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 13px;">
-                <div style="margin-bottom: 5px;">躯体採寸システム v1.11.0</div>
+                <div style="margin-bottom: 5px;">躯体採寸システム v1.11.1</div>
                 <div>最終更新: 2024-12-27</div>
             </div>
         </div>
@@ -481,7 +496,12 @@
         <!-- 採寸画面 -->
         <div id="measurement-screen" class="measurement-screen">
             <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                <button id="back-btn" class="back-btn" onclick="backToSelect()" style="flex: 1;">← パターン選択に戻る</button>
+                <button id="back-btn" class="back-btn" onclick="backToSelect()" style="flex: 2;">← パターン選択に戻る</button>
+                <a href="https://github.com/as9source/as9source.github.io/blob/main/kutai-system/manual.md" 
+                   target="_blank" 
+                   style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px;">
+                    ❓ 使い方
+                </a>
             </div>
             
             <h1 id="pattern-title">採寸入力</h1>
