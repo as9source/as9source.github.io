@@ -8,10 +8,22 @@
     ========================================
     躯体採寸システム
     ========================================
-    バージョン: 1.10.4
+    バージョン: 1.10.6
     最終更新: 2024-12-27
     
     [更新履歴]
+    v1.10.6 (2024-12-27)
+    - 段差がある場合の点の配置を改善
+    - 線から垂直方向にずらす → 線の方向に沿って角からずらす
+    - どちらの辺の点なのか明確に判別できるように
+    - 作図画面と計算結果の両方に適用
+    
+    v1.10.5 (2024-12-27)
+    - 段差ありチェック時の点の種類を改善
+    - チェック時：1つ目をエンド（青）、残りを壁（緑）に変更
+    - チェック外す時：コーナー（赤）に戻す
+    - 誤操作時の復元が簡単に
+    
     v1.10.4 (2024-12-27)
     - 右L字の計算結果の図の破綻を修正
     - 線の接続関係を考慮して座標を調整
@@ -453,7 +465,7 @@
             
             <!-- バージョン情報 -->
             <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 13px;">
-                <div style="margin-bottom: 5px;">躯体採寸システム v1.10.4</div>
+                <div style="margin-bottom: 5px;">躯体採寸システム v1.10.6</div>
                 <div>最終更新: 2024-12-27</div>
             </div>
         </div>
@@ -955,37 +967,43 @@
                             const state1 = line1[line1Ref.point] || 'wall';
                             const state2 = line2[line2Ref.point] || 'wall';
                             
-                            // 2つの辺の方向ベクトルの平均を取る
-                            let avgDx = 0, avgDy = 0;
+                            const offset = 20; // 角からのずらし距離
                             
-                            corner.lines.forEach(lineRef => {
-                                const line = lines.find(l => l.id === lineRef.lineId);
-                                if (!line) return;
-                                
-                                let dx, dy;
-                                if (lineRef.point === 'start') {
-                                    dx = line.x2 - line.x1;
-                                    dy = line.y2 - line.y1;
-                                } else {
-                                    dx = line.x1 - line.x2;
-                                    dy = line.y1 - line.y2;
-                                }
-                                avgDx += dx;
-                                avgDy += dy;
-                            });
+                            // line1の方向ベクトルを計算（角から線に沿って進む方向）
+                            let dx1, dy1;
+                            if (line1Ref.point === 'start') {
+                                dx1 = line1.x2 - line1.x1;
+                                dy1 = line1.y2 - line1.y1;
+                            } else {
+                                dx1 = line1.x1 - line1.x2;
+                                dy1 = line1.y1 - line1.y2;
+                            }
+                            const len1 = Math.sqrt(dx1 * dx1 + dy1 * dy1);
                             
-                            const length = Math.sqrt(avgDx * avgDx + avgDy * avgDy);
-                            if (length > 0) {
-                                const perpX = -avgDy / length;
-                                const perpY = avgDx / length;
-                                const offset = 20; // 12から20に増加（点が重ならないように）
+                            // line2の方向ベクトルを計算（角から線に沿って進む方向）
+                            let dx2, dy2;
+                            if (line2Ref.point === 'start') {
+                                dx2 = line2.x2 - line2.x1;
+                                dy2 = line2.y2 - line2.y1;
+                            } else {
+                                dx2 = line2.x1 - line2.x2;
+                                dy2 = line2.y1 - line2.y2;
+                            }
+                            const len2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+                            
+                            if (len1 > 0 && len2 > 0) {
+                                // 正規化された方向ベクトル
+                                const dirX1 = dx1 / len1;
+                                const dirY1 = dy1 / len1;
+                                const dirX2 = dx2 / len2;
+                                const dirY2 = dy2 / len2;
                                 
-                                // 2つの点をそれぞれの状態で描画（座標変換適用）
-                                // エンドを上に、壁を下に配置
-                                const p1 = transform(cornerX + perpX * offset, cornerY + perpY * offset);
-                                const p2 = transform(cornerX - perpX * offset, cornerY - perpY * offset);
-                                drawPoint(p1.x, p1.y, state2); // state2を上に
-                                drawPoint(p2.x, p2.y, state1); // state1を下に
+                                // 各線の方向に沿って角からずらした位置に点を配置
+                                const p1 = transform(cornerX + dirX1 * offset, cornerY + dirY1 * offset);
+                                const p2 = transform(cornerX + dirX2 * offset, cornerY + dirY2 * offset);
+                                
+                                drawPoint(p1.x, p1.y, state1);
+                                drawPoint(p2.x, p2.y, state2);
                             } else {
                                 // 方向が定まらない場合は1つだけ
                                 const p = transform(cornerX, cornerY);
@@ -1237,15 +1255,27 @@
             if (!corners[cornerKey]) return;
             
             corners[cornerKey].hasStep = hasStep;
+            const corner = corners[cornerKey];
+            
             if (!hasStep) {
+                // チェックを外した時：コーナーに戻す
                 corners[cornerKey].depth = null;
-            } else {
-                // 段差を有効にした場合、このコーナーの全ての点をコーナー以外にする
-                const corner = corners[cornerKey];
                 corner.lines.forEach(lineRef => {
                     const line = lines.find(l => l.id === lineRef.lineId);
-                    if (line && line[lineRef.point] === 'corner') {
-                        line[lineRef.point] = 'wall';
+                    if (line) {
+                        line[lineRef.point] = 'corner';
+                    }
+                });
+            } else {
+                // 段差を有効にした場合、1つ目をエンド、残りを壁に
+                corner.lines.forEach((lineRef, index) => {
+                    const line = lines.find(l => l.id === lineRef.lineId);
+                    if (line) {
+                        if (index === 0) {
+                            line[lineRef.point] = 'end';
+                        } else {
+                            line[lineRef.point] = 'wall';
+                        }
                     }
                 });
             }
@@ -1890,33 +1920,48 @@
                             const state1 = line1[line1Ref.point] || 'wall';
                             const state2 = line2[line2Ref.point] || 'wall';
                             
-                            let avgDx = 0, avgDy = 0;
+                            const offset = 20; // 角からのずらし距離
                             
-                            corner.lines.forEach(lineRef => {
-                                const line = lines.find(l => l.id === lineRef.lineId);
-                                if (!line) return;
-                                
-                                let dx, dy;
-                                if (lineRef.point === 'start') {
-                                    dx = line.x2 - line.x1;
-                                    dy = line.y2 - line.y1;
+                            // line1に対応するrealLineを見つける
+                            const rLine1 = realLines.find(rl => rl.line.id === line1.id);
+                            const rLine2 = realLines.find(rl => rl.line.id === line2.id);
+                            
+                            if (rLine1 && rLine2) {
+                                // line1の方向ベクトルを計算（角から線に沿って進む方向）
+                                let dx1, dy1;
+                                if (line1Ref.point === 'start') {
+                                    dx1 = rLine1.x2 - rLine1.x1;
+                                    dy1 = rLine1.y2 - rLine1.y1;
                                 } else {
-                                    dx = line.x1 - line.x2;
-                                    dy = line.y1 - line.y2;
+                                    dx1 = rLine1.x1 - rLine1.x2;
+                                    dy1 = rLine1.y1 - rLine1.y2;
                                 }
-                                avgDx += dx;
-                                avgDy += dy;
-                            });
-                            
-                            const length = Math.sqrt(avgDx * avgDx + avgDy * avgDy);
-                            if (length > 0) {
-                                const perpX = -avgDy / length;
-                                const perpY = avgDx / length;
-                                const offset = 12;
+                                const len1 = Math.sqrt(dx1 * dx1 + dy1 * dy1);
                                 
-                                // 2つの点をそれぞれの状態で描画
-                                drawResultPoint(realCoord.x + perpX * offset, realCoord.y + perpY * offset, state1);
-                                drawResultPoint(realCoord.x - perpX * offset, realCoord.y - perpY * offset, state2);
+                                // line2の方向ベクトルを計算（角から線に沿って進む方向）
+                                let dx2, dy2;
+                                if (line2Ref.point === 'start') {
+                                    dx2 = rLine2.x2 - rLine2.x1;
+                                    dy2 = rLine2.y2 - rLine2.y1;
+                                } else {
+                                    dx2 = rLine2.x1 - rLine2.x2;
+                                    dy2 = rLine2.y1 - rLine2.y2;
+                                }
+                                const len2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+                                
+                                if (len1 > 0 && len2 > 0) {
+                                    // 正規化された方向ベクトル
+                                    const dirX1 = dx1 / len1;
+                                    const dirY1 = dy1 / len1;
+                                    const dirX2 = dx2 / len2;
+                                    const dirY2 = dy2 / len2;
+                                    
+                                    // 各線の方向に沿って角からずらした位置に点を配置
+                                    drawResultPoint(realCoord.x + dirX1 * offset, realCoord.y + dirY1 * offset, state1);
+                                    drawResultPoint(realCoord.x + dirX2 * offset, realCoord.y + dirY2 * offset, state2);
+                                } else {
+                                    drawResultPoint(realCoord.x, realCoord.y, state1);
+                                }
                             } else {
                                 drawResultPoint(realCoord.x, realCoord.y, state1);
                             }
