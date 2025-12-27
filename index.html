@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="外構工事に便利な計算ツール集 - カーポート、テラス屋根、躯体採寸など">
+    
+    <!-- キャッシュ対策 -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
     <title>エクステリア計算ツール</title>
     <style>
         * {
@@ -14,195 +23,277 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
+            padding: 40px 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* 背景の装飾 */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 100px;
+            left: 80px;
+            width: 150px;
+            height: 150px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            transform: rotate(25deg);
+        }
+
+        body::after {
+            content: '';
+            position: absolute;
+            bottom: 200px;
+            right: 100px;
+            width: 180px;
+            height: 180px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
         }
 
         .container {
-            max-width: 1000px;
-            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
         }
 
-        header {
+        /* ヘッダーカード */
+        .header-card {
+            background: rgba(30, 64, 175, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 30px;
+            padding: 80px 40px;
             text-align: center;
-            color: white;
             margin-bottom: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         }
 
         h1 {
             font-size: 2.5rem;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            color: white;
+            margin-bottom: 15px;
+            font-weight: 600;
+            letter-spacing: 2px;
         }
 
         .subtitle {
-            font-size: 1.2rem;
-            opacity: 0.9;
-            margin-bottom: 10px;
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.8);
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            font-weight: 300;
         }
 
         .description {
+            color: rgba(255, 255, 255, 0.9);
             font-size: 1rem;
-            opacity: 0.8;
+            margin-top: 40px;
+            line-height: 1.8;
         }
 
+        /* ツールカード */
         .tools-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            display: flex;
+            flex-direction: column;
             gap: 20px;
-            margin-bottom: 30px;
         }
 
         .tool-card {
             background: white;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-radius: 25px;
+            padding: 35px;
+            display: flex;
+            align-items: center;
+            gap: 25px;
             text-decoration: none;
             color: inherit;
-            display: block;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+            position: relative;
         }
 
         .tool-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.25);
         }
 
         .tool-card.new {
             border: 3px solid #f59e0b;
-            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+            background: white;
         }
 
-        .tool-icon {
-            font-size: 3rem;
-            margin-bottom: 15px;
+        .tool-icon-wrapper {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .tool-icon-wrapper i {
+            font-size: 2rem;
+            color: #2563eb;
+        }
+
+        .tool-content {
+            flex: 1;
         }
 
         .tool-title {
             font-size: 1.5rem;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 10px;
-        }
-
-        .tool-card.new .tool-title {
-            color: #92400e;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
         }
 
         .new-badge {
             display: inline-block;
             background: #f59e0b;
             color: white;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: bold;
-            margin-left: 8px;
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-left: 10px;
             vertical-align: middle;
         }
 
         .tool-description {
             font-size: 0.95rem;
-            color: #666;
-            margin-bottom: 15px;
-            line-height: 1.5;
-        }
-
-        .tool-card.new .tool-description {
-            color: #78350f;
+            color: #6b7280;
+            line-height: 1.6;
         }
 
         .tool-button {
-            display: inline-block;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
             color: white;
-            padding: 10px 25px;
-            border-radius: 8px;
-            font-weight: bold;
-            text-decoration: none;
-            transition: opacity 0.3s ease;
-        }
-
-        .tool-card.new .tool-button {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            padding: 14px 32px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1rem;
+            border: none;
+            cursor: pointer;
+            flex-shrink: 0;
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+            transition: all 0.3s ease;
         }
 
         .tool-button:hover {
-            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
         }
 
         footer {
             text-align: center;
-            color: white;
-            opacity: 0.8;
+            color: rgba(255, 255, 255, 0.7);
             font-size: 0.9rem;
-            margin-top: 30px;
+            margin-top: 60px;
         }
 
         @media (max-width: 768px) {
+            body::before,
+            body::after {
+                display: none;
+            }
+
             h1 {
                 font-size: 2rem;
             }
 
-            .subtitle {
-                font-size: 1rem;
+            .header-card {
+                padding: 60px 30px;
             }
 
-            .tools-grid {
-                grid-template-columns: 1fr;
+            .tool-card {
+                flex-direction: column;
+                text-align: center;
+                padding: 30px;
+            }
+
+            .tool-icon-wrapper {
+                width: 70px;
+                height: 70px;
+            }
+
+            .tool-icon-wrapper i {
+                font-size: 1.8rem;
+            }
+
+            .tool-button {
+                width: 100%;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <header>
+        <div class="header-card">
             <h1>エクステリア計算ツール</h1>
             <p class="subtitle">Exterior Calculator</p>
             <p class="description">カーポートやテラス屋根など、外構工事に便利な計算ツール集です。</p>
-        </header>
+        </div>
 
         <div class="tools-grid">
-            <!-- 新しいツール：躯体採寸システム -->
             <a href="https://as9source.github.io/kutai-system/" class="tool-card new">
-                <div class="tool-icon">📐</div>
-                <h2 class="tool-title">躯体採寸システム<span class="new-badge">NEW</span></h2>
-                <p class="tool-description">現場での躯体採寸をデジタル化。自由作図、コーナー計算、段差対応。測定ミス・計算漏れを防ぎます。</p>
-                <span class="tool-button">開く</span>
+                <div class="tool-icon-wrapper">
+                    <i class="fa-solid fa-ruler-combined"></i>
+                </div>
+                <div class="tool-content">
+                    <h2 class="tool-title">躯体採寸システム<span class="new-badge">NEW</span></h2>
+                    <p class="tool-description">現場での躯体採寸をデジタル化。自由作図、コーナー計算、段差対応。測定ミス・計算漏れを防ぎます。</p>
+                </div>
+                <button class="tool-button">開く</button>
             </a>
 
-            <!-- 既存のツール -->
             <a href="./Carport-Post-Calculation/index.html" class="tool-card">
-                <div class="tool-icon">📏</div>
-                <h2 class="tool-title">柱寸法計算</h2>
-                <p class="tool-description">カーポートの柱ピッチ・寸法を自動計算します。</p>
-                <span class="tool-button">開く</span>
+                <div class="tool-icon-wrapper">
+                    <i class="fa-solid fa-ruler-horizontal"></i>
+                </div>
+                <div class="tool-content">
+                    <h2 class="tool-title">柱寸法計算</h2>
+                    <p class="tool-description">カーポートの柱ピッチ・寸法を自動計算します。</p>
+                </div>
+                <button class="tool-button">開く</button>
             </a>
 
             <a href="./Carport-Post-Calculation/conc.html" class="tool-card">
-                <div class="tool-icon">㎡</div>
-                <h2 class="tool-title">生コン量計算</h2>
-                <p class="tool-description">カーポート柱のコンクリート必要量を自動計算します。</p>
-                <span class="tool-button">開く</span>
+                <div class="tool-icon-wrapper">
+                    <i class="fa-solid fa-cube"></i>
+                </div>
+                <div class="tool-content">
+                    <h2 class="tool-title">生コン量計算</h2>
+                    <p class="tool-description">カーポート柱のコンクリート必要量を自動計算します。</p>
+                </div>
+                <button class="tool-button">開く</button>
             </a>
 
             <a href="https://as9source.github.io/angle/" class="tool-card">
-                <div class="tool-icon">🏠</div>
-                <h2 class="tool-title">テラス屋根 干渉チェック</h2>
-                <p class="tool-description">母屋の屋根とテラス屋根の干渉を計算でチェックします。</p>
-                <span class="tool-button">開く</span>
+                <div class="tool-icon-wrapper">
+                    <i class="fa-solid fa-house"></i>
+                </div>
+                <div class="tool-content">
+                    <h2 class="tool-title">テラス屋根 干渉チェック</h2>
+                    <p class="tool-description">母屋の屋根とテラス屋根の干渉を計算でチェックします。</p>
+                </div>
+                <button class="tool-button">開く</button>
             </a>
 
             <a href="https://as9source.github.io/triangle/" class="tool-card">
-                <div class="tool-icon">📐</div>
-                <h2 class="tool-title">三角形計算機</h2>
-                <p class="tool-description">直角三角形の斜辺や高さを簡単に計算できます。</p>
-                <span class="tool-button">開く</span>
+                <div class="tool-icon-wrapper">
+                    <i class="fa-solid fa-drafting-compass"></i>
+                </div>
+                <div class="tool-content">
+                    <h2 class="tool-title">三角形計算機</h2>
+                    <p class="tool-description">直角三角形の斜辺や高さを簡単に計算できます。</p>
+                </div>
+                <button class="tool-button">開く</button>
             </a>
         </div>
 
