@@ -8,10 +8,18 @@
     ========================================
     躯体採寸システム
     ========================================
-    バージョン: 1.10.6
+    バージョン: 1.11.0
     最終更新: 2024-12-27
     
     [更新履歴]
+    v1.11.0 (2024-12-27)
+    - 直線が並んだ場合に計算結果の図が表示されない問題を修正
+    - ファイル名入力欄を削除
+    - 保存範囲トグルを削除
+    - 常にページ全体を保存（デフォルト）
+    - ファイル名は固定：kutai-keisoku_YYYY-MM-DD
+    - 共有機能が正常に動作するように改善
+    
     v1.10.6 (2024-12-27)
     - 段差がある場合の点の配置を改善
     - 線から垂直方向にずらす → 線の方向に沿って角からずらす
@@ -465,7 +473,7 @@
             
             <!-- バージョン情報 -->
             <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 13px;">
-                <div style="margin-bottom: 5px;">躯体採寸システム v1.10.6</div>
+                <div style="margin-bottom: 5px;">躯体採寸システム v1.11.0</div>
                 <div>最終更新: 2024-12-27</div>
             </div>
         </div>
@@ -518,7 +526,6 @@
         let useIndividualWidth = false; // 個別設定フラグ
         let commonHeight = null; // 躯体高さ
         let corners = {}; // コーナー情報 { 'x,y': { hasStep: bool, depth: number, lines: [...] } }
-        let saveMode = 'full'; // 保存範囲モード: 'result' = 計算結果のみ, 'full' = ページ全体
         
         // コーナーを検出
         function detectCorners() {
@@ -1524,46 +1531,6 @@
                         <canvas id="result-canvas" width="500" height="400" style="width: 100%; border-radius: 10px;"></canvas>
                     </div>
                     
-                    <!-- ファイル名入力欄 -->
-                    <div style="margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 10px;">
-                        <label for="filename-input" style="font-size: 13px; color: #6b7280; font-weight: 500;">ファイル名：</label>
-                        <input 
-                            type="text" 
-                            id="filename-input" 
-                            placeholder="例：田中邸、A現場" 
-                            style="flex: 1; max-width: 250px; padding: 8px 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; outline: none; transition: border-color 0.2s;"
-                            onfocus="this.style.borderColor='#3b82f6'"
-                            onblur="this.style.borderColor='#e5e7eb'; saveFilename()"
-                            onchange="saveFilename()"
-                        >
-                    </div>
-                    
-                    <!-- 保存範囲の選択トグル -->
-                    <div style="margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 10px;">
-                        <span style="font-size: 13px; color: #6b7280; font-weight: 500;">保存範囲：</span>
-                        <div style="display: flex; background: #f3f4f6; border-radius: 8px; padding: 3px;">
-                            <button id="toggle-result-only" onclick="setSaveMode('result')" style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
-                                計算結果のみ
-                            </button>
-                            <button id="toggle-full-page" onclick="setSaveMode('full')" style="padding: 8px 16px; background: transparent; color: #6b7280; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
-                                ページ全体
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- ファイル名入力欄 -->
-                    <div style="margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 10px;">
-                        <label for="filename-input" style="font-size: 13px; color: #6b7280; font-weight: 500;">ファイル名：</label>
-                        <input 
-                            type="text" 
-                            id="filename-input" 
-                            value="kutai-keisoku_${new Date().toISOString().slice(0,10)}" 
-                            style="padding: 8px 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; width: 280px; font-family: monospace; transition: border-color 0.2s;"
-                            onfocus="this.style.borderColor='#3b82f6'"
-                            onblur="this.style.borderColor='#e5e7eb'"
-                        />
-                    </div>
-                    
                     <!-- 保存・共有ボタン -->
                     <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
                         <button onclick="downloadAsPDF()" style="flex: 1; min-width: 140px; padding: 12px 20px; background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
@@ -1582,9 +1549,6 @@
                 
                 // 図を描画
                 drawResultDiagram();
-                
-                // ファイル名入力欄に保存された値を復元
-                loadFilename();
             } else {
                 // 入力漏れがある場合、赤文字で警告表示
                 const warningHtml = `
@@ -1721,10 +1685,8 @@
             });
             
             // 図形の幅と高さ
-            const shapeWidth = maxX - minX;
-            const shapeHeight = maxY - minY;
-            
-            if (shapeWidth === 0 || shapeHeight === 0) return;
+            const shapeWidth = Math.max(maxX - minX, 1); // 最小値1を保証
+            const shapeHeight = Math.max(maxY - minY, 1); // 最小値1を保証
             
             // マージン
             const margin = 60;
@@ -3154,60 +3116,10 @@
         // ==============================================
         
         // 保存モードの切り替え
-        function setSaveMode(mode) {
-            saveMode = mode;
-            
-            const resultOnlyBtn = document.getElementById('toggle-result-only');
-            const fullPageBtn = document.getElementById('toggle-full-page');
-            
-            if (mode === 'result') {
-                // 計算結果のみ
-                resultOnlyBtn.style.background = '#3b82f6';
-                resultOnlyBtn.style.color = 'white';
-                fullPageBtn.style.background = 'transparent';
-                fullPageBtn.style.color = '#6b7280';
-            } else {
-                // ページ全体
-                resultOnlyBtn.style.background = 'transparent';
-                resultOnlyBtn.style.color = '#6b7280';
-                fullPageBtn.style.background = '#3b82f6';
-                fullPageBtn.style.color = 'white';
-            }
-        }
-        
-        // ファイル名を保存
-        function saveFilename() {
-            const input = document.getElementById('filename-input');
-            if (input) {
-                localStorage.setItem('kutai-filename', input.value.trim());
-            }
-        }
-        
-        // ファイル名を読み込み
-        function loadFilename() {
-            const input = document.getElementById('filename-input');
-            if (input) {
-                const savedName = localStorage.getItem('kutai-filename');
-                if (savedName) {
-                    input.value = savedName;
-                }
-            }
-        }
-        
-        // ファイル名を取得（空の場合はデフォルト値）
+        // ファイル名を取得（日付のみ）
         function getFilename() {
-            const input = document.getElementById('filename-input');
-            let name = '';
-            
-            if (input && input.value.trim()) {
-                name = input.value.trim();
-            } else {
-                name = 'kutai-keisoku';
-            }
-            
-            // 日付を追加
             const date = new Date().toISOString().slice(0, 10);
-            return `${name}_${date}`;
+            return `kutai-keisoku_${date}`;
         }
         
         // PDFとして保存
@@ -3221,37 +3133,22 @@
             try {
                 let canvas, titleText;
                 
-                if (saveMode === 'result') {
-                    // 計算結果のみ：results-contentをキャプチャ
-                    const resultsContent = document.getElementById('results-content');
-                    if (!resultsContent) {
-                        alert('計算結果がありません');
-                        return;
-                    }
-                    canvas = await html2canvas(resultsContent, {
+                // ページ全体：containerをキャプチャ
+                const container = measurementScreen.querySelector('.container');
+                if (!container) {
+                    canvas = await html2canvas(measurementScreen, {
                         scale: 2,
                         backgroundColor: '#ffffff',
                         logging: false
                     });
-                    titleText = '躯体採寸システム - 計算結果';
                 } else {
-                    // ページ全体：containerをキャプチャ
-                    const container = measurementScreen.querySelector('.container');
-                    if (!container) {
-                        canvas = await html2canvas(measurementScreen, {
-                            scale: 2,
-                            backgroundColor: '#ffffff',
-                            logging: false
-                        });
-                    } else {
-                        canvas = await html2canvas(container, {
-                            scale: 2,
-                            backgroundColor: '#ffffff',
-                            logging: false
-                        });
-                    }
-                    titleText = '躯体採寸システム';
+                    canvas = await html2canvas(container, {
+                        scale: 2,
+                        backgroundColor: '#ffffff',
+                        logging: false
+                    });
                 }
+                titleText = '躯体採寸システム';
                 
                 // jsPDFを使用してPDFを作成
                 const { jsPDF } = window.jspdf;
@@ -3327,34 +3224,20 @@
             try {
                 let canvas;
                 
-                if (saveMode === 'result') {
-                    // 計算結果のみ：results-contentをキャプチャ
-                    const resultsContent = document.getElementById('results-content');
-                    if (!resultsContent) {
-                        alert('計算結果がありません');
-                        return;
-                    }
-                    canvas = await html2canvas(resultsContent, {
+                // ページ全体：containerをキャプチャ
+                const container = measurementScreen.querySelector('.container');
+                if (!container) {
+                    canvas = await html2canvas(measurementScreen, {
                         scale: 2,
                         backgroundColor: '#ffffff',
                         logging: false
                     });
                 } else {
-                    // ページ全体：containerをキャプチャ
-                    const container = measurementScreen.querySelector('.container');
-                    if (!container) {
-                        canvas = await html2canvas(measurementScreen, {
-                            scale: 2,
-                            backgroundColor: '#ffffff',
-                            logging: false
-                        });
-                    } else {
-                        canvas = await html2canvas(container, {
-                            scale: 2,
-                            backgroundColor: '#ffffff',
-                            logging: false
-                        });
-                    }
+                    canvas = await html2canvas(container, {
+                        scale: 2,
+                        backgroundColor: '#ffffff',
+                        logging: false
+                    });
                 }
                 
                 // キャンバスを画像として取得
@@ -3391,34 +3274,20 @@
                 
                 let canvas;
                 
-                if (saveMode === 'result') {
-                    // 計算結果のみ：results-contentをキャプチャ
-                    const resultsContent = document.getElementById('results-content');
-                    if (!resultsContent) {
-                        alert('計算結果がありません');
-                        return;
-                    }
-                    canvas = await html2canvas(resultsContent, {
+                // ページ全体：containerをキャプチャ
+                const container = measurementScreen.querySelector('.container');
+                if (!container) {
+                    canvas = await html2canvas(measurementScreen, {
                         scale: 2,
                         backgroundColor: '#ffffff',
                         logging: false
                     });
                 } else {
-                    // ページ全体：containerをキャプチャ
-                    const container = measurementScreen.querySelector('.container');
-                    if (!container) {
-                        canvas = await html2canvas(measurementScreen, {
-                            scale: 2,
-                            backgroundColor: '#ffffff',
-                            logging: false
-                        });
-                    } else {
-                        canvas = await html2canvas(container, {
-                            scale: 2,
-                            backgroundColor: '#ffffff',
-                            logging: false
-                        });
-                    }
+                    canvas = await html2canvas(container, {
+                        scale: 2,
+                        backgroundColor: '#ffffff',
+                        logging: false
+                    });
                 }
                 
                 // キャンバスをBlobに変換
@@ -3427,8 +3296,8 @@
                         const file = new File([blob], getFilename() + '.png', { type: 'image/png' });
                         
                         const shareData = {
-                            title: saveMode === 'result' ? '躯体採寸システム - 計算結果' : '躯体採寸システム',
-                            text: saveMode === 'result' ? '躯体採寸の計算結果です' : '躯体採寸の作図と計算結果です',
+                            title: '躯体採寸システム',
+                            text: '躯体採寸の作図と計算結果です',
                             files: [file]
                         };
                         
