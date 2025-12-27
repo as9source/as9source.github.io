@@ -10,6 +10,12 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     
+    <!-- PWA設定 -->
+    <link rel="apple-touch-icon" href="icon-192.svg">
+    <link rel="icon" type="image/svg+xml" href="icon-192.svg">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1e3a8a">
+    
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
@@ -247,7 +253,7 @@
                 </div>
                 <div class="tool-content">
                     <h2 class="tool-title">躯体採寸システム<span class="new-badge">NEW</span></h2>
-                    <p class="tool-description">現場での躯体採寸をデジタル化。自由作図、コーナー計算、段差対応。測定ミス・計算漏れを防ぎます。</p>
+                    <p class="tool-description">笠木の躯体採寸。自由作図、コーナー計算、段差対応。測定ミス・計算漏れを防ぎます。</p>
                 </div>
                 <button class="tool-button">開く</button>
             </a>
@@ -301,5 +307,16 @@
             © as9source — Exterior Tools
         </footer>
     </div>
+
+    <script>
+        // Service Worker登録
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(registration => console.log('ServiceWorker registered'))
+                    .catch(err => console.log('ServiceWorker registration failed'));
+            });
+        }
+    </script>
 </body>
 </html>
