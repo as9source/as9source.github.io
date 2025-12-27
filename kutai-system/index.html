@@ -8,10 +8,48 @@
     ========================================
     躯体採寸システム
     ========================================
-    バージョン: 1.6.0
+    バージョン: 1.9.0
     最終更新: 2024-12-27
     
     [更新履歴]
+    v1.9.0 (2024-12-27)
+    - ファイル名を自由に設定できる機能を追加
+    - 保存範囲トグルの上に入力欄を追加
+    - 入力した名前は保存され、次回も使える
+    - 例：「田中邸」→ 田中邸_2024-12-27.pdf
+    - 空欄の場合は「kutai-keisoku」が使用される
+    
+    v1.8.2 (2024-12-27)
+    - ファイル名を英語（ローマ字）に変更
+    - 文字化けを防止：kutai-keisoku_2024-12-27.pdf
+    - すべての保存・共有で正しいファイル名が表示される
+    
+    v1.8.1 (2024-12-27)
+    - 凡例のデザインを影付き文字に変更（白抜き背景を削除）
+    - PDFを必ず1ページに収めるように改善（縮小して全体表示）
+    - 長いページでも切れずに1ページで保存可能に
+    
+    v1.8.0 (2024-12-27)
+    - 保存範囲を選択できるトグルスイッチを追加
+    - 「計算結果のみ」と「ページ全体」を切り替え可能に
+    - 用途に応じて保存範囲を選べるように
+    
+    v1.7.0 (2024-12-27)
+    - ページ全体を共有できるように改善（作図 + 入力 + 計算結果）
+    - PDF/PNG保存時もページ全体が保存される
+    - 計算結果の図に凡例を追加（点の色の説明）
+    - 作図画面の図は元の比率のまま（計算結果の図のみ実寸法比率）
+    - 後で確認する際に作図部分も含まれるように改善
+    
+    v1.6.1 (2024-12-27)
+    - 計算結果の図を大幅に見やすく改善
+    - 線の太さを5pxに増加（小さい辺でも見やすく）
+    - 文字サイズを16pxに縮小（コンパクトに）
+    - 背景を半透明化（線が透けて見える）
+    - 最小表示長さを300pxに増加
+    - テキストオフセットを30pxに調整
+    - スマホでの視認性を大幅改善
+    
     v1.6.0 (2024-12-27)
     - PDF保存機能追加（GoodNotes、Notion、クラウドに保存可能）
     - PNG画像保存機能追加
@@ -70,6 +108,8 @@
     -->
     <!-- jsPDF ライブラリ（PDF保存用） -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- html2canvas ライブラリ（ページ全体キャプチャ用） -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -384,7 +424,7 @@
             
             <!-- バージョン情報 -->
             <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 13px;">
-                <div style="margin-bottom: 5px;">躯体採寸システム v1.6.0</div>
+                <div style="margin-bottom: 5px;">躯体採寸システム v1.9.0</div>
                 <div>最終更新: 2024-12-27</div>
             </div>
         </div>
@@ -434,6 +474,7 @@
         let useIndividualWidth = false; // 個別設定フラグ
         let commonHeight = null; // 躯体高さ
         let corners = {}; // コーナー情報 { 'x,y': { hasStep: bool, depth: number, lines: [...] } }
+        let saveMode = 'full'; // 保存範囲モード: 'result' = 計算結果のみ, 'full' = ページ全体
         
         // コーナーを検出
         function detectCorners() {
@@ -1351,6 +1392,48 @@
                     <div style="margin-bottom: 20px;">
                         <canvas id="result-canvas" width="500" height="400" style="width: 100%; border-radius: 10px;"></canvas>
                     </div>
+                    
+                    <!-- ファイル名入力欄 -->
+                    <div style="margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                        <label for="filename-input" style="font-size: 13px; color: #6b7280; font-weight: 500;">ファイル名：</label>
+                        <input 
+                            type="text" 
+                            id="filename-input" 
+                            placeholder="例：田中邸、A現場" 
+                            style="flex: 1; max-width: 250px; padding: 8px 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; outline: none; transition: border-color 0.2s;"
+                            onfocus="this.style.borderColor='#3b82f6'"
+                            onblur="this.style.borderColor='#e5e7eb'; saveFilename()"
+                            onchange="saveFilename()"
+                        >
+                    </div>
+                    
+                    <!-- 保存範囲の選択トグル -->
+                    <div style="margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                        <span style="font-size: 13px; color: #6b7280; font-weight: 500;">保存範囲：</span>
+                        <div style="display: flex; background: #f3f4f6; border-radius: 8px; padding: 3px;">
+                            <button id="toggle-result-only" onclick="setSaveMode('result')" style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                                計算結果のみ
+                            </button>
+                            <button id="toggle-full-page" onclick="setSaveMode('full')" style="padding: 8px 16px; background: transparent; color: #6b7280; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s;">
+                                ページ全体
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- ファイル名入力欄 -->
+                    <div style="margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                        <label for="filename-input" style="font-size: 13px; color: #6b7280; font-weight: 500;">ファイル名：</label>
+                        <input 
+                            type="text" 
+                            id="filename-input" 
+                            value="kutai-keisoku_${new Date().toISOString().slice(0,10)}" 
+                            style="padding: 8px 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; width: 280px; font-family: monospace; transition: border-color 0.2s;"
+                            onfocus="this.style.borderColor='#3b82f6'"
+                            onblur="this.style.borderColor='#e5e7eb'"
+                        />
+                    </div>
+                    
+                    <!-- 保存・共有ボタン -->
                     <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
                         <button onclick="downloadAsPDF()" style="flex: 1; min-width: 140px; padding: 12px 20px; background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
                             📄 PDFで保存
@@ -1368,6 +1451,9 @@
                 
                 // 図を描画
                 drawResultDiagram();
+                
+                // ファイル名入力欄に保存された値を復元
+                loadFilename();
             } else {
                 // 入力漏れがある場合、赤文字で警告表示
                 const warningHtml = `
@@ -1434,7 +1520,7 @@
             const realLines = [];
             let currentX = 0;
             let currentY = 0;
-            const minLength = 200; // 最小表示長さ（px）- 数字が重ならないサイズ
+            const minLength = 300; // 最小表示長さ（px）- 見やすさ優先
             
             // 最初の線の始点を設定
             realLines.push({
@@ -1557,7 +1643,7 @@
                 const line = rLine.line;
                 
                 ctx.strokeStyle = '#1a1a1a';
-                ctx.lineWidth = 3;
+                ctx.lineWidth = 5;
                 ctx.lineCap = 'round';
                 
                 ctx.beginPath();
@@ -1597,28 +1683,28 @@
                     const perpX = -dy / lineLength;
                     const perpY = dx / lineLength;
                     
-                    // テキストのオフセット（線の外側、40px離す）
-                    const offset = 40;
+                    // テキストのオフセット（線の外側、30px離す）
+                    const offset = 30;
                     const textX = transformX(midX + perpX * offset);
                     const textY = transformY(midY + perpY * offset);
                     
-                    // 芯寸法（計算結果）を大きく目立つように表示
-                    ctx.font = 'bold 22px sans-serif';
+                    // 芯寸法（計算結果）をコンパクトに表示
+                    ctx.font = 'bold 16px sans-serif';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     
                     const resultText = `${Math.floor(result)}`;
                     const resultMetrics = ctx.measureText(resultText);
-                    const padding = 8;
+                    const padding = 6;
                     
-                    // 黄色の背景で目立たせる
-                    ctx.fillStyle = '#fef3c7';
-                    ctx.fillRect(textX - resultMetrics.width/2 - padding, textY - 13, resultMetrics.width + padding*2, 26);
+                    // 黄色の半透明背景で目立たせる（線が透けて見える）
+                    ctx.fillStyle = 'rgba(254, 243, 199, 0.85)';
+                    ctx.fillRect(textX - resultMetrics.width/2 - padding, textY - 10, resultMetrics.width + padding*2, 20);
                     
                     // 枠線を追加
                     ctx.strokeStyle = '#f59e0b';
-                    ctx.lineWidth = 2;
-                    ctx.strokeRect(textX - resultMetrics.width/2 - padding, textY - 13, resultMetrics.width + padding*2, 26);
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeRect(textX - resultMetrics.width/2 - padding, textY - 10, resultMetrics.width + padding*2, 20);
                     
                     // 文字を描画（濃い青で強調）
                     ctx.fillStyle = '#1e40af';
@@ -1626,15 +1712,15 @@
                     
                     // 躯体幅を小さく表示（芯寸法の下、背景付き）
                     if (dim.width) {
-                        ctx.font = '11px sans-serif';
+                        ctx.font = '10px sans-serif';
                         const widthText = `幅:${dim.width}`;
                         const widthMetrics = ctx.measureText(widthText);
-                        const widthY = textY + 20;
-                        const widthPadding = 4;
+                        const widthY = textY + 16;
+                        const widthPadding = 3;
                         
-                        // 背景（薄い灰色）
-                        ctx.fillStyle = '#f3f4f6';
-                        ctx.fillRect(textX - widthMetrics.width/2 - widthPadding, widthY - 8, widthMetrics.width + widthPadding*2, 16);
+                        // 背景（半透明の薄い灰色）
+                        ctx.fillStyle = 'rgba(243, 244, 246, 0.85)';
+                        ctx.fillRect(textX - widthMetrics.width/2 - widthPadding, widthY - 7, widthMetrics.width + widthPadding*2, 14);
                         
                         // 文字（灰色）
                         ctx.fillStyle = '#6b7280';
@@ -1735,6 +1821,59 @@
                     }
                 }
             }
+            
+            // 凡例を右下にシンプルに描画（影付き文字）
+            const legendX = resultCanvas.width - 85;
+            const legendY = resultCanvas.height - 70;
+            
+            // 凡例のタイトル
+            ctx.font = 'bold 12px sans-serif';
+            ctx.textAlign = 'left';
+            
+            // タイトルの影
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.fillText('点の種類', legendX + 1, legendY + 1);
+            ctx.fillText('点の種類', legendX - 1, legendY - 1);
+            ctx.fillText('点の種類', legendX + 1, legendY - 1);
+            ctx.fillText('点の種類', legendX - 1, legendY + 1);
+            
+            // タイトル本体
+            ctx.fillStyle = '#1f2937';
+            ctx.fillText('点の種類', legendX, legendY);
+            
+            // 凡例の項目
+            const legendItems = [
+                { color: '#ef4444', label: 'コーナー' },
+                { color: '#3b82f6', label: 'エンド' },
+                { color: '#10b981', label: '壁' }
+            ];
+            
+            legendItems.forEach((item, index) => {
+                const itemY = legendY + 22 + index * 18;
+                
+                // 色の丸（影付き）
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.beginPath();
+                ctx.arc(legendX + 6, itemY + 1, 5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = item.color;
+                ctx.beginPath();
+                ctx.arc(legendX + 5, itemY, 5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // ラベルの影
+                ctx.font = '11px sans-serif';
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                ctx.fillText(item.label, legendX + 16, itemY + 5);
+                ctx.fillText(item.label, legendX + 14, itemY + 3);
+                ctx.fillText(item.label, legendX + 16, itemY + 3);
+                ctx.fillText(item.label, legendX + 14, itemY + 5);
+                
+                // ラベル本体
+                ctx.fillStyle = '#374151';
+                ctx.fillText(item.label, legendX + 15, itemY + 4);
+            });
         }
         
         // 点のラベルを取得
@@ -2771,15 +2910,106 @@
         // 保存・共有機能
         // ==============================================
         
+        // 保存モードの切り替え
+        function setSaveMode(mode) {
+            saveMode = mode;
+            
+            const resultOnlyBtn = document.getElementById('toggle-result-only');
+            const fullPageBtn = document.getElementById('toggle-full-page');
+            
+            if (mode === 'result') {
+                // 計算結果のみ
+                resultOnlyBtn.style.background = '#3b82f6';
+                resultOnlyBtn.style.color = 'white';
+                fullPageBtn.style.background = 'transparent';
+                fullPageBtn.style.color = '#6b7280';
+            } else {
+                // ページ全体
+                resultOnlyBtn.style.background = 'transparent';
+                resultOnlyBtn.style.color = '#6b7280';
+                fullPageBtn.style.background = '#3b82f6';
+                fullPageBtn.style.color = 'white';
+            }
+        }
+        
+        // ファイル名を保存
+        function saveFilename() {
+            const input = document.getElementById('filename-input');
+            if (input) {
+                localStorage.setItem('kutai-filename', input.value.trim());
+            }
+        }
+        
+        // ファイル名を読み込み
+        function loadFilename() {
+            const input = document.getElementById('filename-input');
+            if (input) {
+                const savedName = localStorage.getItem('kutai-filename');
+                if (savedName) {
+                    input.value = savedName;
+                }
+            }
+        }
+        
+        // ファイル名を取得（空の場合はデフォルト値）
+        function getFilename() {
+            const input = document.getElementById('filename-input');
+            let name = '';
+            
+            if (input && input.value.trim()) {
+                name = input.value.trim();
+            } else {
+                name = 'kutai-keisoku';
+            }
+            
+            // 日付を追加
+            const date = new Date().toISOString().slice(0, 10);
+            return `${name}_${date}`;
+        }
+        
         // PDFとして保存
-        function downloadAsPDF() {
-            const canvas = document.getElementById('result-canvas');
-            if (!canvas) {
+        async function downloadAsPDF() {
+            const measurementScreen = document.getElementById('measurement-screen');
+            if (!measurementScreen || measurementScreen.style.display === 'none') {
                 alert('計算結果がありません');
                 return;
             }
             
             try {
+                let canvas, titleText;
+                
+                if (saveMode === 'result') {
+                    // 計算結果のみ：results-contentをキャプチャ
+                    const resultsContent = document.getElementById('results-content');
+                    if (!resultsContent) {
+                        alert('計算結果がありません');
+                        return;
+                    }
+                    canvas = await html2canvas(resultsContent, {
+                        scale: 2,
+                        backgroundColor: '#ffffff',
+                        logging: false
+                    });
+                    titleText = '躯体採寸システム - 計算結果';
+                } else {
+                    // ページ全体：containerをキャプチャ
+                    const container = measurementScreen.querySelector('.container');
+                    if (!container) {
+                        canvas = await html2canvas(measurementScreen, {
+                            scale: 2,
+                            backgroundColor: '#ffffff',
+                            logging: false
+                        });
+                    } else {
+                        canvas = await html2canvas(container, {
+                            scale: 2,
+                            backgroundColor: '#ffffff',
+                            logging: false
+                        });
+                    }
+                    titleText = '躯体採寸システム';
+                }
+                
                 // jsPDFを使用してPDFを作成
                 const { jsPDF } = window.jspdf;
                 const pdf = new jsPDF({
@@ -2792,23 +3022,47 @@
                 const imgData = canvas.toDataURL('image/png');
                 
                 // A4サイズに合わせて画像を配置
-                const imgWidth = 190; // A4幅 - 余白
+                const pageWidth = 210; // A4幅
+                const pageHeight = 297; // A4高さ
+                const margin = 10;
+                const imgWidth = pageWidth - margin * 2; // 両側マージン
                 const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                const maxHeight = pageHeight - margin * 2 - 25; // マージン + ヘッダー分
                 
                 // タイトルを追加
                 pdf.setFontSize(16);
-                pdf.text('躯体採寸システム - 計算結果', 105, 15, { align: 'center' });
+                pdf.text(titleText, pageWidth / 2, 15, { align: 'center' });
                 
                 // 日付を追加
                 const date = new Date().toLocaleDateString('ja-JP');
                 pdf.setFontSize(10);
-                pdf.text(date, 105, 22, { align: 'center' });
+                pdf.text(date, pageWidth / 2, 22, { align: 'center' });
                 
-                // 画像を追加
-                pdf.addImage(imgData, 'PNG', 10, 30, imgWidth, imgHeight);
+                // PDFを1ページに収めるように縮小
+                let finalImgWidth, finalImgHeight;
+                
+                if (imgHeight <= maxHeight) {
+                    // そのままのサイズで収まる
+                    finalImgWidth = imgWidth;
+                    finalImgHeight = imgHeight;
+                } else {
+                    // 縮小して1ページに収める
+                    finalImgHeight = maxHeight;
+                    finalImgWidth = (canvas.width * finalImgHeight) / canvas.height;
+                    
+                    // 幅がはみ出る場合は、幅基準で縮小
+                    if (finalImgWidth > imgWidth) {
+                        finalImgWidth = imgWidth;
+                        finalImgHeight = (canvas.height * finalImgWidth) / canvas.width;
+                    }
+                }
+                
+                // 中央配置
+                const xOffset = margin + (imgWidth - finalImgWidth) / 2;
+                pdf.addImage(imgData, 'PNG', xOffset, 30, finalImgWidth, finalImgHeight);
                 
                 // ファイル名を生成
-                const filename = `躯体採寸_${new Date().toISOString().slice(0,10)}.pdf`;
+                const filename = getFilename() + '.pdf';
                 
                 // PDFを保存
                 pdf.save(filename);
@@ -2820,20 +3074,52 @@
         }
         
         // PNGとして保存
-        function downloadAsPNG() {
-            const canvas = document.getElementById('result-canvas');
-            if (!canvas) {
+        async function downloadAsPNG() {
+            const measurementScreen = document.getElementById('measurement-screen');
+            if (!measurementScreen || measurementScreen.style.display === 'none') {
                 alert('計算結果がありません');
                 return;
             }
             
             try {
+                let canvas;
+                
+                if (saveMode === 'result') {
+                    // 計算結果のみ：results-contentをキャプチャ
+                    const resultsContent = document.getElementById('results-content');
+                    if (!resultsContent) {
+                        alert('計算結果がありません');
+                        return;
+                    }
+                    canvas = await html2canvas(resultsContent, {
+                        scale: 2,
+                        backgroundColor: '#ffffff',
+                        logging: false
+                    });
+                } else {
+                    // ページ全体：containerをキャプチャ
+                    const container = measurementScreen.querySelector('.container');
+                    if (!container) {
+                        canvas = await html2canvas(measurementScreen, {
+                            scale: 2,
+                            backgroundColor: '#ffffff',
+                            logging: false
+                        });
+                    } else {
+                        canvas = await html2canvas(container, {
+                            scale: 2,
+                            backgroundColor: '#ffffff',
+                            logging: false
+                        });
+                    }
+                }
+                
                 // キャンバスを画像として取得
                 const imgData = canvas.toDataURL('image/png');
                 
                 // ダウンロードリンクを作成
                 const link = document.createElement('a');
-                link.download = `躯体採寸_${new Date().toISOString().slice(0,10)}.png`;
+                link.download = getFilename() + '.png';
                 link.href = imgData;
                 link.click();
                 
@@ -2845,8 +3131,8 @@
         
         // 共有機能（Web Share API使用）
         async function shareResult() {
-            const canvas = document.getElementById('result-canvas');
-            if (!canvas) {
+            const measurementScreen = document.getElementById('measurement-screen');
+            if (!measurementScreen || measurementScreen.style.display === 'none') {
                 alert('計算結果がありません');
                 return;
             }
@@ -2860,14 +3146,46 @@
                     return;
                 }
                 
+                let canvas;
+                
+                if (saveMode === 'result') {
+                    // 計算結果のみ：results-contentをキャプチャ
+                    const resultsContent = document.getElementById('results-content');
+                    if (!resultsContent) {
+                        alert('計算結果がありません');
+                        return;
+                    }
+                    canvas = await html2canvas(resultsContent, {
+                        scale: 2,
+                        backgroundColor: '#ffffff',
+                        logging: false
+                    });
+                } else {
+                    // ページ全体：containerをキャプチャ
+                    const container = measurementScreen.querySelector('.container');
+                    if (!container) {
+                        canvas = await html2canvas(measurementScreen, {
+                            scale: 2,
+                            backgroundColor: '#ffffff',
+                            logging: false
+                        });
+                    } else {
+                        canvas = await html2canvas(container, {
+                            scale: 2,
+                            backgroundColor: '#ffffff',
+                            logging: false
+                        });
+                    }
+                }
+                
                 // キャンバスをBlobに変換
                 canvas.toBlob(async (blob) => {
                     try {
-                        const file = new File([blob], `躯体採寸_${new Date().toISOString().slice(0,10)}.png`, { type: 'image/png' });
+                        const file = new File([blob], getFilename() + '.png', { type: 'image/png' });
                         
                         const shareData = {
-                            title: '躯体採寸システム - 計算結果',
-                            text: '躯体採寸の計算結果です',
+                            title: saveMode === 'result' ? '躯体採寸システム - 計算結果' : '躯体採寸システム',
+                            text: saveMode === 'result' ? '躯体採寸の計算結果です' : '躯体採寸の作図と計算結果です',
                             files: [file]
                         };
                         
