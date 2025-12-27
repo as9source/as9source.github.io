@@ -8,10 +8,39 @@
     ========================================
     躯体採寸システム
     ========================================
-    バージョン: 1.9.0
+    バージョン: 1.10.4
     最終更新: 2024-12-27
     
     [更新履歴]
+    v1.10.4 (2024-12-27)
+    - 右L字の計算結果の図の破綻を修正
+    - 線の接続関係を考慮して座標を調整
+    - 共有点を持つ線が正しく繋がるように改善
+    - L字やコの字などの形状が正しく表示される
+    
+    v1.10.3 (2024-12-27)
+    - 計算結果の図の描画ロジックを根本的に修正
+    - 元の座標関係を保持したまま実寸法を適用
+    - L字などの形状が正しく表示されるように
+    - 線を順番に連結する問題を解消
+    
+    v1.10.2 (2024-12-27)
+    - 左L字パターンのコーナー部を修正（辺Aの始点をcornerに）
+    - 計算結果の図のY軸反転問題を修正（上下が正しく表示される）
+    - L字の角が正しくコーナーとして認識されるように修正
+    
+    v1.10.1 (2024-12-27)
+    - 上部の大きいクリアボタンを削除（作図コントロールのクリアボタンのみ）
+    - 段差がある場合、エンド（青）を上に、壁（緑）を下に配置
+    - 点の間隔を広げて重ならないように改善（offset: 12 → 20）
+    - 自由作図の座標変換問題を修正
+    
+    v1.10.0 (2024-12-27)
+    - 基本パターン（I字、L字、コの字）が画面からはみ出る問題を修正
+    - キャンバスサイズに応じて自動的に図形を配置
+    - クリアボタンを実装（作図と入力をリセット）
+    - 確認ダイアログ付きで誤操作を防止
+    
     v1.9.0 (2024-12-27)
     - ファイル名を自由に設定できる機能を追加
     - 保存範囲トグルの上に入力欄を追加
@@ -424,14 +453,16 @@
             
             <!-- バージョン情報 -->
             <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 13px;">
-                <div style="margin-bottom: 5px;">躯体採寸システム v1.9.0</div>
+                <div style="margin-bottom: 5px;">躯体採寸システム v1.10.4</div>
                 <div>最終更新: 2024-12-27</div>
             </div>
         </div>
         
         <!-- 採寸画面 -->
         <div id="measurement-screen" class="measurement-screen">
-            <button id="back-btn" class="back-btn" onclick="backToSelect()">← パターン選択に戻る</button>
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <button id="back-btn" class="back-btn" onclick="backToSelect()" style="flex: 1;">← パターン選択に戻る</button>
+            </div>
             
             <h1 id="pattern-title">採寸入力</h1>
             
@@ -441,9 +472,10 @@
                 <canvas id="canvas"></canvas>
             </div>
             
-            <div id="drawing-controls" style="display: none; margin-top: 10px; display: flex; gap: 10px;">
-                <button onclick="undoLastLine()" style="flex: 1; padding: 12px; background: #f59e0b; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">↶ 戻る</button>
-                <button onclick="finishDrawing()" style="flex: 1; padding: 12px; background: #10b981; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">✓ 作図終了</button>
+            <div id="drawing-controls" style="display: none; margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap;">
+                <button onclick="clearDrawing()" style="flex: 1; min-width: 120px; padding: 12px; background: #ef4444; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">🗑️ クリア</button>
+                <button onclick="undoLastLine()" style="flex: 1; min-width: 120px; padding: 12px; background: #f59e0b; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">↶ 戻る</button>
+                <button onclick="finishDrawing()" style="flex: 1; min-width: 120px; padding: 12px; background: #10b981; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">✓ 作図終了</button>
             </div>
             
             <div class="dimension-inputs" id="dimension-inputs"></div>
@@ -614,11 +646,16 @@
         
         // I字パターン
         function createIPattern() {
+            // キャンバスの中央に配置
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const lineLength = Math.min(canvas.width, canvas.height) * 0.6; // キャンバスの60%の長さ
+            
             lines = [
                 { 
                     id: 'A', 
-                    x1: 100, y1: 200, 
-                    x2: 400, y2: 200, 
+                    x1: centerX - lineLength/2, y1: centerY, 
+                    x2: centerX + lineLength/2, y2: centerY, 
                     name: '辺A', 
                     start: 'wall', // デフォルトは壁
                     end: 'wall'
@@ -631,22 +668,26 @@
         
         // 左L字パターン（┌型）
         function createLPatternLeft() {
+            // キャンバスサイズに応じて配置
+            const size = Math.min(canvas.width, canvas.height) * 0.5;
+            const margin = Math.min(canvas.width, canvas.height) * 0.2;
+            
             lines = [
                 { 
                     id: 'A', 
-                    x1: 150, y1: 100, 
-                    x2: 150, y2: 320, 
+                    x1: margin, y1: margin, 
+                    x2: margin, y2: margin + size, 
                     name: '辺A（縦）', 
-                    start: 'wall',  // 最初の線の始点は壁
-                    end: 'wall'  // エンドは壁
+                    start: 'corner',  // コーナー（辺Bと接続）
+                    end: 'wall'  // 壁
                 },
                 { 
                     id: 'B', 
-                    x1: 150, y1: 100, 
-                    x2: 400, y2: 100, 
+                    x1: margin, y1: margin, 
+                    x2: margin + size, y2: margin, 
                     name: '辺B（横）', 
-                    start: 'corner',
-                    end: 'wall'  // エンドは壁
+                    start: 'corner',  // コーナー（辺Aと接続）
+                    end: 'wall'  // 壁
                 }
             ];
             drawLines();
@@ -656,19 +697,23 @@
         
         // 右L字パターン（┐型）
         function createLPatternRight() {
+            // キャンバスサイズに応じて配置
+            const size = Math.min(canvas.width, canvas.height) * 0.5;
+            const margin = Math.min(canvas.width, canvas.height) * 0.2;
+            
             lines = [
                 { 
                     id: 'A', 
-                    x1: 100, y1: 100, 
-                    x2: 350, y2: 100, 
+                    x1: margin, y1: margin, 
+                    x2: margin + size, y2: margin, 
                     name: '辺A（横）', 
                     start: 'wall',  // エンドは壁
                     end: 'corner'
                 },
                 { 
                     id: 'B', 
-                    x1: 350, y1: 100, 
-                    x2: 350, y2: 320, 
+                    x1: margin + size, y1: margin, 
+                    x2: margin + size, y2: margin + size, 
                     name: '辺B（縦）', 
                     start: 'corner',
                     end: 'wall'  // エンドは壁
@@ -681,27 +726,32 @@
         
         // コの字パターン
         function createUPattern() {
+            // キャンバスサイズに応じて配置
+            const width = Math.min(canvas.width, canvas.height) * 0.5;
+            const height = Math.min(canvas.width, canvas.height) * 0.4;
+            const margin = Math.min(canvas.width, canvas.height) * 0.2;
+            
             lines = [
                 { 
                     id: 'A', 
-                    x1: 120, y1: 320, 
-                    x2: 120, y2: 100, 
+                    x1: margin, y1: margin + height, 
+                    x2: margin, y2: margin, 
                     name: '辺A', 
                     start: 'wall',  // エンドは壁
                     end: 'corner'
                 },
                 { 
                     id: 'B', 
-                    x1: 120, y1: 100, 
-                    x2: 380, y2: 100, 
+                    x1: margin, y1: margin, 
+                    x2: margin + width, y2: margin, 
                     name: '辺B', 
                     start: 'corner',
                     end: 'corner'
                 },
                 { 
                     id: 'C', 
-                    x1: 380, y1: 100, 
-                    x2: 380, y2: 320, 
+                    x1: margin + width, y1: margin, 
+                    x2: margin + width, y2: margin + height, 
                     name: '辺C', 
                     start: 'corner',
                     end: 'wall'  // エンドは壁
@@ -772,20 +822,66 @@
             // コーナーを検出
             detectCorners();
             
+            if (lines.length === 0) return;
+            
+            // 基本パターンのみ座標変換を適用（自由作図は元のまま）
+            const shouldTransform = currentPattern !== 'custom';
+            
+            let transform = (x, y) => ({ x, y }); // デフォルトは変換なし
+            
+            if (shouldTransform) {
+                // 全ての点から境界ボックスを計算
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                lines.forEach(line => {
+                    minX = Math.min(minX, line.x1, line.x2);
+                    minY = Math.min(minY, line.y1, line.y2);
+                    maxX = Math.max(maxX, line.x1, line.x2);
+                    maxY = Math.max(maxY, line.y1, line.y2);
+                });
+                
+                const shapeWidth = maxX - minX;
+                const shapeHeight = maxY - minY;
+                
+                // マージン
+                const margin = 50;
+                const canvasWidth = canvas.width - margin * 2;
+                const canvasHeight = canvas.height - margin * 2;
+                
+                // スケール係数を計算（アスペクト比を維持）
+                const scaleX = canvasWidth / shapeWidth;
+                const scaleY = canvasHeight / shapeHeight;
+                const scale = Math.min(scaleX, scaleY, 1); // 最大1倍（拡大しない）
+                
+                // オフセットを計算（中央配置）
+                const scaledWidth = shapeWidth * scale;
+                const scaledHeight = shapeHeight * scale;
+                const offsetX = margin + (canvasWidth - scaledWidth) / 2 - minX * scale;
+                const offsetY = margin + (canvasHeight - scaledHeight) / 2 - minY * scale;
+                
+                // 座標変換関数を上書き
+                transform = (x, y) => ({
+                    x: x * scale + offsetX,
+                    y: y * scale + offsetY
+                });
+            }
+            
             ctx.strokeStyle = '#333';
             ctx.lineWidth = 5;
             ctx.lineCap = 'round';
             
             // 線を描画
             lines.forEach((line, index) => {
+                const p1 = transform(line.x1, line.y1);
+                const p2 = transform(line.x2, line.y2);
+                
                 ctx.beginPath();
-                ctx.moveTo(line.x1, line.y1);
-                ctx.lineTo(line.x2, line.y2);
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
                 ctx.stroke();
                 
                 // ラベル位置計算
-                const midX = (line.x1 + line.x2) / 2;
-                const midY = (line.y1 + line.y2) / 2;
+                const midX = (p1.x + p2.x) / 2;
+                const midY = (p1.y + p2.y) / 2;
                 
                 // 入力された外法寸法を表示
                 const dim = dimensions[line.id];
@@ -882,20 +978,25 @@
                             if (length > 0) {
                                 const perpX = -avgDy / length;
                                 const perpY = avgDx / length;
-                                const offset = 12;
+                                const offset = 20; // 12から20に増加（点が重ならないように）
                                 
-                                // 2つの点をそれぞれの状態で描画
-                                drawPoint(cornerX + perpX * offset, cornerY + perpY * offset, state1);
-                                drawPoint(cornerX - perpX * offset, cornerY - perpY * offset, state2);
+                                // 2つの点をそれぞれの状態で描画（座標変換適用）
+                                // エンドを上に、壁を下に配置
+                                const p1 = transform(cornerX + perpX * offset, cornerY + perpY * offset);
+                                const p2 = transform(cornerX - perpX * offset, cornerY - perpY * offset);
+                                drawPoint(p1.x, p1.y, state2); // state2を上に
+                                drawPoint(p2.x, p2.y, state1); // state1を下に
                             } else {
                                 // 方向が定まらない場合は1つだけ
-                                drawPoint(cornerX, cornerY, state1);
+                                const p = transform(cornerX, cornerY);
+                                drawPoint(p.x, p.y, state1);
                             }
                         }
                     } else {
-                        // 段差なし：1つの点
+                        // 段差なし：1つの点（座標変換適用）
                         const state = firstLine[firstLineRef.point] || 'wall';
-                        drawPoint(cornerX, cornerY, state);
+                        const p = transform(cornerX, cornerY);
+                        drawPoint(p.x, p.y, state);
                     }
                 }
             }
@@ -1518,18 +1619,9 @@
             
             // 実寸法を使って図形を再構築
             const realLines = [];
-            let currentX = 0;
-            let currentY = 0;
             const minLength = 300; // 最小表示長さ（px）- 見やすさ優先
             
-            // 最初の線の始点を設定
-            realLines.push({
-                x1: currentX,
-                y1: currentY,
-                line: lines[0]
-            });
-            
-            // 各線を実寸法の比率で配置
+            // 各線の実寸法に基づいて座標を計算
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i];
                 const dim = dimensions[line.id];
@@ -1553,23 +1645,37 @@
                 // 実寸法をピクセルに変換（1mm = 0.2px、ただし最小長さを保証）
                 let displayLength = Math.max(realLength * 0.2, minLength);
                 
-                // 新しい終点を計算
-                const nextX = currentX + dirX * displayLength;
-                const nextY = currentY + dirY * displayLength;
+                // 始点座標を決定
+                let startX = line.x1;
+                let startY = line.y1;
                 
-                realLines[realLines.length - 1].x2 = nextX;
-                realLines[realLines.length - 1].y2 = nextY;
-                
-                // 次の線の始点を設定
-                if (i < lines.length - 1) {
-                    currentX = nextX;
-                    currentY = nextY;
-                    realLines.push({
-                        x1: currentX,
-                        y1: currentY,
-                        line: lines[i + 1]
-                    });
+                // 他の線との接続を確認
+                for (let j = 0; j < realLines.length; j++) {
+                    const prevLine = realLines[j].line;
+                    
+                    // 現在の線の始点が、既存の線の終点と一致する場合
+                    if (Math.abs(line.x1 - prevLine.x2) < 1 && Math.abs(line.y1 - prevLine.y2) < 1) {
+                        startX = realLines[j].x2;
+                        startY = realLines[j].y2;
+                        break;
+                    }
+                    
+                    // 現在の線の始点が、既存の線の始点と一致する場合
+                    if (Math.abs(line.x1 - prevLine.x1) < 1 && Math.abs(line.y1 - prevLine.y1) < 1) {
+                        startX = realLines[j].x1;
+                        startY = realLines[j].y1;
+                        break;
+                    }
                 }
+                
+                // 終点を計算
+                realLines.push({
+                    x1: startX,
+                    y1: startY,
+                    x2: startX + dirX * displayLength,
+                    y2: startY + dirY * displayLength,
+                    line: line
+                });
             }
             
             if (realLines.length === 0) return;
@@ -2891,6 +2997,49 @@
             updateDrawingControls();
         }
         
+        // クリア（すべてリセット）
+        function clearDrawing() {
+            // 確認ダイアログを表示
+            if (lines.length > 0 && !confirm('すべての作図をクリアしますか？')) {
+                return;
+            }
+            
+            // すべてをリセット
+            lines = [];
+            dimensions = {};
+            drawingPoints = [];
+            corners = {};
+            commonWidth = null;
+            
+            // キャンバスをクリア
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 入力フォームをクリア
+            document.getElementById('dimension-inputs').innerHTML = '';
+            
+            // 計算結果をクリア
+            document.getElementById('results-content').innerHTML = '<p style="color: #999; text-align: center;">寸法を入力してください</p>';
+            
+            // コントロールを非表示
+            updateDrawingControls();
+            
+            // 自由作図の場合は、イベントリスナーを再設定
+            if (currentPattern === 'custom') {
+                // 既存のイベントリスナーをすべて削除
+                canvas.removeEventListener('click', handlePointClick);
+                canvas.removeEventListener('touchend', handlePointClickTouch);
+                
+                // 作図用イベントリスナーを再設定
+                canvas.addEventListener('click', handleCanvasClick);
+                canvas.addEventListener('mousemove', handleCanvasMouseMove);
+                canvas.addEventListener('touchstart', handleTouchDrawing);
+                canvas.addEventListener('touchmove', handleTouchDrawingMove);
+            } else {
+                // 基本パターンの場合は、パターンを再作成
+                selectPattern(currentPattern);
+            }
+        }
+        
         // 描画コントロールの表示・非表示
         function updateDrawingControls() {
             const controls = document.getElementById('drawing-controls');
@@ -2904,6 +3053,55 @@
             document.getElementById('pattern-select-screen').style.display = 'block';
             document.getElementById('measurement-screen').style.display = 'none';
             loadSavedPatterns();
+        }
+        
+        // クリア機能
+        function clearAll() {
+            // 確認ダイアログ
+            if (!confirm('すべての作図と入力内容をクリアしますか？')) {
+                return;
+            }
+            
+            // 線をクリア
+            lines = [];
+            
+            // 寸法入力をクリア
+            dimensions = {};
+            
+            // 作図点をクリア
+            drawingPoints = [];
+            
+            // コーナーをクリア
+            corners = {};
+            
+            // 共通幅をクリア
+            commonWidth = null;
+            
+            // キャンバスをクリア
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 入力フォームをクリア
+            document.getElementById('dimension-inputs').innerHTML = '';
+            
+            // 計算結果をクリア
+            document.getElementById('results-content').innerHTML = '<p style="color: #999; text-align: center;">寸法を入力してください</p>';
+            
+            // コントロールボタンを非表示
+            updateDrawingControls();
+            
+            // パターンを再作成
+            if (currentPattern === 'I字') {
+                createIPattern();
+            } else if (currentPattern === '左L字') {
+                createLPatternLeft();
+            } else if (currentPattern === '右L字') {
+                createLPatternRight();
+            } else if (currentPattern === 'コの字') {
+                createUPattern();
+            } else if (currentPattern === 'custom') {
+                setupCustomDrawing();
+            }
         }
         
         // ==============================================
