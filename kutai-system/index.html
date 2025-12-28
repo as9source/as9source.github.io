@@ -392,8 +392,8 @@
                 <button class="pattern-btn custom" onclick="selectPattern('custom')">自由に線を引く</button>
             </div>
             <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 13px;">
-                <div style="margin-bottom: 5px;">躯体採寸システム v1.11.1</div>
-                <div>最終更新: 2024-12-27</div>
+                <div style="margin-bottom: 5px;">躯体採寸システム v1.12.0</div>
+                <div>最終更新: 2025-12-28</div>
             </div>
         </div>
         
@@ -426,49 +426,20 @@
             <h2>🎯 このシステムについて</h2>
             <p><strong>外法寸法から躯体芯寸法を自動計算します。</strong></p>
             <p>現場で測った寸法を入力すると、施工に必要な芯寸法が自動で計算されます。</p>
-            <h2>📝 基本的な流れ</h2>
-            <ol>
-                <li><strong>パターンを選ぶ</strong> - I字、L字、コの字、または自由作図</li>
-                <li><strong>寸法を入力する</strong> - 外法寸法、躯体幅、躯体高さ</li>
-                <li><strong>計算結果を確認する</strong> - 躯体芯寸法が自動計算される</li>
-                <li><strong>保存・共有する</strong> - PDF、画像、またはLINEなどで共有</li>
-            </ol>
-            <h2>✏️ 寸法の入力方法</h2>
-            <h3>外法寸法</h3>
-            <ul><li>各辺の長さを入力（mm単位）。実際に測った寸法をそのまま入力</li></ul>
-            <h3>躯体幅</h3>
-            <ul><li>全ての辺に共通の幅を設定、または「辺ごとに躯体幅を設定」にチェックして個別設定</li></ul>
-            <h3>躯体高さ</h3>
-            <ul><li>全体の高さを入力（mm単位）</li></ul>
             <h2>🔴 点の種類について（重要）</h2>
-            <p>計算結果は点の種類によって変わります：</p>
-            <h3>🔴 赤（コーナー）</h3>
-            <ul><li>2つの辺が接続する角。<strong>両側の辺の幅の半分ずつを引く</strong></li></ul>
-            <h3>🔵 青（エンド）</h3>
-            <ul><li>辺の端点（壁なし）。<strong>隣接する辺の幅を引かない</strong></li></ul>
-            <h3>🟢 緑（壁）</h3>
-            <ul><li>壁や段差に接する点。<strong>隣接する辺の幅を引かない</strong></li></ul>
-            <p>作図終了後、点をタップすると種類を循環して変更できます。</p>
+            <p><span style="color: #e74c3c; font-size: 16px;">●</span> <strong>赤＝コーナー</strong>：躯体幅÷2を引く<br>
+            <span style="color: #3498db; font-size: 16px;">●</span> <strong>青＝エンド</strong>：壁なし（引かない）<br>
+            <span style="color: #2ecc71; font-size: 16px;">●</span> <strong>緑＝壁</strong>：壁あり（引かない）</p>
+            <p>作図後の点をタップして切り替えてください。</p>
+            <hr style="margin: 20px 0;">
+            <h3>⚠️ 斜めコーナーについて</h3>
+            <p>90度ではない接続点（斜めコーナー）の場合、外法寸法から芯寸法を正確に逆算できないため警告が表示されます。その箇所は<strong>現地で芯寸法を直接測定</strong>し、計算結果ではなく実測値を使用してください。</p>
             <button onclick="closeManual()" style="width: 100%; padding: 12px; background: #3b82f6; color: white; border: none; border-radius: 8px; margin-top: 20px; font-weight: bold; cursor: pointer;">閉じる</button>
         </div>
     </div>
 
     <script>
-        // --- 100% 元のロジックを継承し、二重宣言のみを削除 ---
-        let currentPattern = null;
-        let lines = [];
-        let dimensions = {};
-        let isDrawing = false;
-        let isDragging = false;
-        let startPoint = null;
-        let canvas, ctx;
-        let drawingPoints = [];
-        let lastClickTime = 0;
-        let lastTapTime = 0;
-        let commonWidth = null;
-        let useIndividualWidth = false;
-        let commonHeight = null;
-        let corners = {};
+        let currentPattern = null, lines = [], dimensions = {}, isDrawing = false, isDragging = false, startPoint = null, canvas, ctx, drawingPoints = [], lastClickTime = 0, lastTapTime = 0, commonWidth = null, useIndividualWidth = false, commonHeight = null, corners = {};
 
         window.onload = function() {
             canvas = document.getElementById('canvas');
@@ -479,43 +450,42 @@
 
         function resizeCanvas() {
             const rect = canvas.getBoundingClientRect();
-            canvas.width = rect.width;
-            canvas.height = rect.height;
-            if (lines.length > 0) drawLines();
+            canvas.width = rect.width; canvas.height = rect.height;
+            drawLines();
         }
 
         function detectCorners() {
             const newCorners = {};
             const tolerance = 5;
-            lines.forEach((line) => {
-                const startKey = findCornerKeyForDetection(line.x1, line.y1, tolerance, newCorners);
-                if (!newCorners[startKey]) {
-                    const oldCorner = corners[startKey];
-                    newCorners[startKey] = { x: line.x1, y: line.y1, hasStep: oldCorner ? oldCorner.hasStep : false, depth: oldCorner ? oldCorner.depth : null, lines: [] };
+            lines.forEach(line => {
+                const sKey = findCornerKeyForDetection(line.x1, line.y1, tolerance, newCorners);
+                if (!newCorners[sKey]) {
+                    const old = corners[sKey];
+                    newCorners[sKey] = { x: line.x1, y: line.y1, hasStep: old?old.hasStep:false, depth: old?old.depth:null, lines: [] };
                 }
-                newCorners[startKey].lines.push({ lineId: line.id, point: 'start' });
-                const endKey = findCornerKeyForDetection(line.x2, line.y2, tolerance, newCorners);
-                if (!newCorners[endKey]) {
-                    const oldCorner = corners[endKey];
-                    newCorners[endKey] = { x: line.x2, y: line.y2, hasStep: oldCorner ? oldCorner.hasStep : false, depth: oldCorner ? oldCorner.depth : null, lines: [] };
+                newCorners[sKey].lines.push({ lineId: line.id, point: 'start' });
+                const eKey = findCornerKeyForDetection(line.x2, line.y2, tolerance, newCorners);
+                if (!newCorners[eKey]) {
+                    const old = corners[eKey];
+                    newCorners[eKey] = { x: line.x2, y: line.y2, hasStep: old?old.hasStep:false, depth: old?old.depth:null, lines: [] };
                 }
-                newCorners[endKey].lines.push({ lineId: line.id, point: 'end' });
+                newCorners[eKey].lines.push({ lineId: line.id, point: 'end' });
             });
             corners = newCorners;
         }
 
-        function findCornerKeyForDetection(x, y, tolerance, cornersObj) {
-            for (const key in cornersObj) {
-                const corner = cornersObj[key];
-                if (Math.sqrt(Math.pow(x - corner.x, 2) + Math.pow(y - corner.y, 2)) < tolerance) return key;
+        function findCornerKeyForDetection(x, y, tol, obj) {
+            for (const key in obj) {
+                const c = obj[key];
+                if (Math.sqrt(Math.pow(x-c.x, 2) + Math.pow(y-c.y, 2)) < tol) return key;
             }
             return `${Math.round(x)},${Math.round(y)}`;
         }
 
-        function findCornerKey(x, y, tolerance) {
+        function findCornerKey(x, y, tol) {
             for (const key in corners) {
-                const corner = corners[key];
-                if (Math.sqrt(Math.pow(x - corner.x, 2) + Math.pow(y - corner.y, 2)) < tolerance) return key;
+                const c = corners[key];
+                if (Math.sqrt(Math.pow(x-c.x, 2) + Math.pow(y-c.y, 2)) < tol) return key;
             }
             return `${Math.round(x)},${Math.round(y)}`;
         }
@@ -535,9 +505,8 @@
         }
 
         function createIPattern() {
-            const cx = canvas.width / 2; const cy = canvas.height / 2;
             const l = Math.min(canvas.width, canvas.height) * 0.6;
-            lines = [{ id: 'A', x1: cx - l/2, y1: cy, x2: cx + l/2, y2: cy, name: '辺A', start: 'wall', end: 'wall' }];
+            lines = [{ id: 'A', x1: canvas.width/2 - l/2, y1: canvas.height/2, x2: canvas.width/2 + l/2, y2: canvas.height/2, name: '辺A', start: 'wall', end: 'wall' }];
             drawLines(); createInputs(); setupPointClickListener();
         }
 
@@ -574,7 +543,6 @@
             detectCorners();
             const shouldTransform = currentPattern !== 'custom';
             let transform = (x, y) => ({ x, y });
-
             if (shouldTransform && lines.length > 0) {
                 let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
                 lines.forEach(l => {
@@ -585,7 +553,6 @@
                 const offsetX = 50 - minX * scale; const offsetY = 50 - minY * scale;
                 transform = (x, y) => ({ x: x * scale + offsetX, y: y * scale + offsetY });
             }
-
             lines.forEach(line => {
                 const p1 = transform(line.x1, line.y1); const p2 = transform(line.x2, line.y2);
                 ctx.strokeStyle = '#333'; ctx.lineWidth = 5; ctx.lineCap = 'round';
@@ -593,11 +560,8 @@
                 const midX = (p1.x + p2.x) / 2; const midY = (p1.y + p2.y) / 2;
                 ctx.fillStyle = '#333'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center';
                 ctx.fillText(line.name, midX, midY - 15);
-                if(dimensions[line.id]?.length) {
-                    ctx.fillStyle = '#3b82f6'; ctx.fillText(dimensions[line.id].length, midX, midY + 15);
-                }
+                if(dimensions[line.id]?.length) { ctx.fillStyle = '#3b82f6'; ctx.fillText(dimensions[line.id].length, midX, midY + 15); }
             });
-
             for (const key in corners) {
                 const c = corners[key]; const p = transform(c.x, c.y);
                 const firstLine = lines.find(l => l.id === c.lines[0].lineId);
@@ -616,25 +580,49 @@
             const container = document.getElementById('dimension-inputs');
             container.innerHTML = '';
             detectCorners();
-
             const head = document.createElement('div');
             head.innerHTML = `
                 <div style="background:#f8f9fa; padding:15px; border-radius:10px; margin-bottom:15px; display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                    <div><label>躯体幅(mm)</label><input type="number" id="common-width" value="${commonWidth||''}" oninput="updateCommonWidth(this.value)" style="width:100%; padding:10px; border-radius:5px; border:1px solid #ddd;"></div>
-                    <div><label>躯体高さ(mm)</label><input type="number" id="common-height" value="${commonHeight||''}" oninput="updateCommonHeight(this.value)" style="width:100%; padding:10px; border-radius:5px; border:1px solid #ddd;"></div>
-                </div>
-            `;
+                    <div><label>躯体幅(mm)</label><input type="number" id="common-width" value="${commonWidth||''}" oninput="updateCommonWidth(this.value)" style="width:100%; padding:10px; border:1px solid #ddd;"></div>
+                    <div><label>躯体高さ(mm)</label><input type="number" id="common-height" value="${commonHeight||''}" oninput="updateCommonHeight(this.value)" style="width:100%; padding:10px; border:1px solid #ddd;"></div>
+                </div>`;
             container.appendChild(head);
 
-            lines.forEach((line) => {
+            lines.forEach((line, lineIndex) => {
                 const div = document.createElement('div');
                 div.className = 'dimension-item';
                 div.setAttribute('data-line-id', line.id);
-                
-                // --- 二重宣言の修正 ---
-                let diagonalCornerWarning = ''; 
-                if (isLineDiagonal(line)) {
-                    diagonalCornerWarning = `<div style="margin-top:10px; padding:10px; background:#fee; border:1px solid #e74c3c; border-radius:8px; color:#c0392b; font-size:13px;">⚠️ 斜めコーナーです。芯寸法は現地測定してください。</div>`;
+
+                // --- 斜めコーナー警告 & 角度入力の移動ロジック ---
+                let diagonalWarningHTML = '';
+                let angleInputHTML = '';
+
+                // 斜め線判定
+                const lineIsDiagonal = isLineDiagonal(line);
+
+                // 始点・終点の接続情報をチェック
+                ['start', 'end'].forEach(pt => {
+                    if (line[pt] === 'corner') {
+                        const key = findCornerKey(line[pt==='start'?'x1':'x2'], line[pt==='start'?'y1':'y2'], 5);
+                        const corner = corners[key];
+                        if (corner && corner.lines.length >= 2) {
+                            const otherRef = corner.lines.find(ref => ref.lineId !== line.id);
+                            const otherLine = lines.find(l => l.id === otherRef.lineId);
+                            if (otherLine && !is90Degrees(line, otherLine, pt, otherRef.point)) {
+                                diagonalWarningHTML += `<div style="margin-top:5px; padding:10px; background:#fee; border:1px solid #e74c3c; border-radius:8px; color:#c0392b; font-size:12px; font-weight:bold;">⚠️ ${pt==='start'?'始点':'終点'}は斜めコーナーです。芯寸法は現地で測定してください。</div>`;
+                            }
+                        }
+                    }
+                });
+
+                // 辺そのものが斜めの場合、その辺のセクションで角度を入力
+                if (lineIsDiagonal) {
+                    const angle = getLineAngle(line).toFixed(1);
+                    angleInputHTML = `
+                        <div style="margin-top:10px; padding:10px; background:#fff3cd; border-radius:8px; border:1px solid #ffc107;">
+                            <label style="color:#856404; font-size:12px; font-weight:bold;">角度設定（度）</label>
+                            <input type="number" value="${angle}" oninput="updateLineAngle('${line.id}', this.value)" style="width:100%; padding:8px; border:1px solid #ffc107; border-radius:5px;">
+                        </div>`;
                 }
 
                 div.innerHTML = `
@@ -645,78 +633,108 @@
                             <button onclick="changePointState('${line.id}', 'end')" style="padding:5px 10px; font-size:12px; border-radius:5px; border:none; background:${getStateColor(line.end)}; color:white; cursor:pointer;">終点:${getStateLabel(line.end)}</button>
                         </div>
                     </div>
-                    ${diagonalCornerWarning}
+                    ${diagonalWarningHTML}
                     <input type="number" placeholder="外法寸法 (mm)" oninput="updateDimension('${line.id}', 'length', this.value)" value="${dimensions[line.id]?.length||''}" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px;">
+                    ${angleInputHTML}
                 `;
                 container.appendChild(div);
+
+                // 段差設定（コーナー接続部）
+                const endKey = findCornerKey(line.x2, line.y2, 5);
+                const endCorner = corners[endKey];
+                if (endCorner && endCorner.lines.length >= 2 && lineIndex < lines.length - 1) {
+                    const cornerDiv = document.createElement('div');
+                    cornerDiv.style.cssText = 'margin: 5px 0 15px 0; padding: 10px; background: #e8f5e9; border-radius: 6px; border: 1px solid #4caf50;';
+                    cornerDiv.innerHTML = `
+                        <label style="display:flex; align-items:center; cursor:pointer; color:#2e7d32; font-weight:bold; font-size:13px;">
+                            <input type="checkbox" ${endCorner.hasStep ? 'checked' : ''} onchange="toggleCornerStep('${endKey}', this.checked)" style="margin-right:8px;"> 段差あり設定
+                        </label>
+                        ${endCorner.hasStep ? `<input type="number" placeholder="深さ(mm)" value="${endCorner.depth||''}" oninput="updateCornerDepth('${endKey}', this.value)" style="width:100%; margin-top:5px; padding:8px; border:1px solid #4caf50; border-radius:5px;">` : ''}
+                    `;
+                    container.appendChild(cornerDiv);
+                }
             });
         }
 
-        function updateCommonWidth(v) { commonWidth = v ? parseFloat(v) : null; calculate(); }
-        function updateCommonHeight(v) { commonHeight = v ? parseFloat(v) : null; calculate(); }
-        function updateDimension(id, key, v) { if(!dimensions[id]) dimensions[id] = {}; dimensions[id][key] = v ? parseFloat(v) : null; drawLines(); calculate(); }
-        function getStateColor(s) { const c = {'corner':'#e74c3c', 'end':'#3498db', 'wall':'#2ecc71'}; return c[s]||'#2ecc71'; }
-        function getStateLabel(s) { const l = {'corner':'角', 'end':'端', 'wall':'壁'}; return l[s]||'壁'; }
-        function isLineDiagonal(line) { return Math.abs(line.x1 - line.x2) > 10 && Math.abs(line.y1 - line.y2) > 10; }
+        function updateCommonWidth(v) { commonWidth = v?parseFloat(v):null; calculate(); }
+        function updateCommonHeight(v) { commonHeight = v?parseFloat(v):null; calculate(); }
+        function updateDimension(id, k, v) { if(!dimensions[id]) dimensions[id]={}; dimensions[id][k]=v?parseFloat(v):null; drawLines(); calculate(); }
+        function getStateColor(s) { const c={'corner':'#e74c3c','end':'#3498db','wall':'#2ecc71'}; return c[s]||'#2ecc71'; }
+        function getStateLabel(s) { const l={'corner':'角','end':'端','wall':'壁'}; return l[s]||'壁'; }
+        function isLineDiagonal(l) { return Math.abs(l.x1-l.x2)>10 && Math.abs(l.y1-l.y2)>10; }
+        function getLineAngle(l) { return Math.atan2(l.y2-l.y1, l.x2-l.x1)*(180/Math.PI); }
+        function updateLineAngle(id, deg) {
+            const l = lines.find(line => line.id === id);
+            const r = parseFloat(deg)*(Math.PI/180); const len = Math.sqrt(Math.pow(l.x2-l.x1,2)+Math.pow(l.y2-l.y1,2));
+            l.x2 = l.x1+len*Math.cos(r); l.y2 = l.y1+len*Math.sin(r);
+            drawLines(); createInputs();
+        }
 
-        function changePointState(id, point) {
-            const line = lines.find(l => l.id === id);
+        function is90Degrees(l1, l2, p1, p2) {
+            const v1 = {x: l1.x2-l1.x1, y: l1.y2-l1.y1}; const v2 = {x: l2.x2-l2.x1, y: l2.y2-l2.y1};
+            const dot = v1.x*v2.x + v1.y*v2.y; const mag = Math.sqrt(v1.x**2+v1.y**2)*Math.sqrt(v2.x**2+v2.y**2);
+            return Math.abs(dot/mag) < 0.1;
+        }
+
+        function changePointState(id, pt) {
+            const l = lines.find(line => line.id === id);
             const states = ['wall', 'corner', 'end'];
-            line[point] = states[(states.indexOf(line[point]) + 1) % 3];
+            l[pt] = states[(states.indexOf(l[pt]) + 1) % 3];
             drawLines(); createInputs(); calculate();
         }
 
+        function toggleCornerStep(key, has) {
+            corners[key].hasStep = has;
+            corners[key].lines.forEach((ref, idx) => {
+                const l = lines.find(line => line.id === ref.lineId);
+                l[ref.point] = has ? (idx === 0 ? 'end' : 'wall') : 'corner';
+            });
+            drawLines(); createInputs(); calculate();
+        }
+
+        function updateCornerDepth(key, d) { corners[key].depth = d?parseFloat(d):null; calculate(); }
+
         function calculate() {
-            const results = document.getElementById('results-content');
-            if (!commonWidth || !lines.every(l => dimensions[l.id]?.length)) {
-                results.innerHTML = '<p style="color: #999; text-align: center;">全ての寸法を入力してください</p>';
-                return;
+            const res = document.getElementById('results-content');
+            if(!commonWidth || !lines.every(l => dimensions[l.id]?.length)) {
+                res.innerHTML = '<p style="color:#999; text-align:center;">全ての寸法を入力してください</p>'; return;
             }
             let html = '';
             lines.forEach(l => {
                 let val = dimensions[l.id].length;
-                if (l.start === 'corner') val -= commonWidth / 2;
-                if (l.end === 'corner') val -= commonWidth / 2;
-                html += `<div class="result-item"><span class="result-label">${l.name} 芯寸法</span><span class="result-value">${Math.floor(val)} mm</span></div>`;
+                if(l.start === 'corner') val -= commonWidth/2;
+                if(l.end === 'corner') val -= commonWidth/2;
+                html += `<div class="result-item"><span>${l.name} 芯寸法</span><span class="result-value">${Math.floor(val)} mm</span></div>`;
             });
-            html += `<div style="display:flex; gap:10px; margin-top:20px;"><button onclick="downloadPDF()" style="flex:1; padding:12px; background:#e74c3c; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">📄 PDF保存</button><button onclick="downloadPNG()" style="flex:1; padding:12px; background:#3498db; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">🖼️ 画像保存</button></div>`;
-            results.innerHTML = html;
+            html += `<div style="display:flex; gap:10px; margin-top:10px;"><button onclick="downloadPDF()" style="flex:1; padding:12px; background:#e74c3c; color:white; border:none; border-radius:8px; cursor:pointer;">📄 PDF保存</button></div>`;
+            res.innerHTML = html;
         }
 
         async function downloadPDF() {
             const { jsPDF } = window.jspdf; const pdf = new jsPDF();
-            const container = document.querySelector('.container');
-            const canvasImg = await html2canvas(container);
+            const canvasImg = await html2canvas(document.body);
             pdf.addImage(canvasImg.toDataURL('image/png'), 'PNG', 10, 10, 190, 0);
-            pdf.save(`keisoku_${new Date().toISOString().slice(0,10)}.pdf`);
+            pdf.save(`keisoku_${new Date().getTime()}.pdf`);
         }
-
-        async function downloadPNG() {
-            const container = document.querySelector('.container');
-            const canvasImg = await html2canvas(container);
-            const link = document.createElement('a'); link.download = 'keisoku.png';
-            link.href = canvasImg.toDataURL(); link.click();
-        }
-
-        function backToSelect() { location.reload(); }
-        function openManual() { document.getElementById('manual-modal').style.display = 'block'; }
-        function closeManual() { document.getElementById('manual-modal').style.display = 'none'; }
 
         function setupCustomDrawing() {
             document.getElementById('drawing-controls').style.display = 'flex';
-            canvas.onmousedown = function(e) {
-                const rect = canvas.getBoundingClientRect(); const x = e.clientX - rect.left; const y = e.clientY - rect.top;
+            canvas.onmousedown = (e) => {
+                const rect = canvas.getBoundingClientRect(); const x = e.clientX-rect.left, y = e.clientY-rect.top;
                 drawingPoints.push({x, y});
-                if (drawingPoints.length > 1) {
-                    const p1 = drawingPoints[drawingPoints.length-2]; const p2 = drawingPoints[drawingPoints.length-1];
+                if(drawingPoints.length > 1) {
+                    const p1 = drawingPoints[drawingPoints.length-2], p2 = drawingPoints[drawingPoints.length-1];
                     const id = String.fromCharCode(65 + lines.length);
-                    lines.push({ id, x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y, name: `辺${id}`, start: 'wall', end: 'wall' });
+                    lines.push({id, x1:p1.x, y1:p1.y, x2:p2.x, y2:p2.y, name:`辺${id}`, start:'wall', end:'wall'});
                 }
                 drawLines();
             };
         }
         function finishDrawing() { canvas.onmousedown = null; createInputs(); }
-        function clearDrawing() { lines = []; drawingPoints = []; drawLines(); createInputs(); }
+        function backToSelect() { location.reload(); }
+        function openManual() { document.getElementById('manual-modal').style.display='block'; }
+        function closeManual() { document.getElementById('manual-modal').style.display='none'; }
+        function clearDrawing() { lines=[]; drawingPoints=[]; drawLines(); createInputs(); }
         function undoLastLine() { lines.pop(); drawingPoints.pop(); drawLines(); createInputs(); }
         function savePattern() { alert('保存しました'); }
         function loadSavedPatterns() {}
