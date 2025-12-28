@@ -21,6 +21,7 @@
     
     <title>エクステリア計算ツール</title>
     <style>
+        /* Version 2.0 - 2024-12-28 */
         * {
             margin: 0;
             padding: 0;
@@ -307,16 +308,5 @@
             © as9source — Exterior Tools
         </footer>
     </div>
-
-    <script>
-        // Service Worker登録
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js')
-                    .then(registration => console.log('ServiceWorker registered'))
-                    .catch(err => console.log('ServiceWorker registration failed'));
-            });
-        }
-    </script>
 </body>
 </html>
