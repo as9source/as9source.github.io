@@ -2990,29 +2990,6 @@
                 return false;
             }
 
-            // 2つの線が90度かどうか判定
-        function is90Degrees(line1, line2, point1, point2) {
-            // 線1の方向ベクトル
-            const dx1 = line1.x2 - line1.x1;
-            const dy1 = line1.y2 - line1.y1;
-            
-            // 線2の方向ベクトル
-            const dx2 = line2.x2 - line2.x1;
-            const dy2 = line2.y2 - line2.y1;
-            
-            // 内積を計算（90度なら0に近い）
-            const dotProduct = dx1 * dx2 + dy1 * dy2;
-            const magnitude1 = Math.sqrt(dx1 * dx1 + dy1 * dy1);
-            const magnitude2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
-            
-            if (magnitude1 === 0 || magnitude2 === 0) return false;
-            
-            const cosAngle = dotProduct / (magnitude1 * magnitude2);
-            
-            // 90度の場合、cosは0に近い（許容誤差0.1）
-            return Math.abs(cosAngle) < 0.1;
-        }
-            
             // 線1または線2が斜め線の場合、斜めコーナー
             const line1IsDiagonal = isLineDiagonal(line1);
             const line2IsDiagonal = isLineDiagonal(line2);
