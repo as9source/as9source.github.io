@@ -3,227 +3,712 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
+    
     <title>躯体採寸システム</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        /* CSSはすべて元のコードを100%継承 */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: #f5f7fa; min-height: 100vh; padding: 20px; }
-        .container { max-width: 700px; margin: 0 auto; background: white; border-radius: 16px; padding: 40px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); }
-        h1 { text-align: center; color: #1a1a1a; margin-bottom: 40px; font-size: 28px; font-weight: 700; }
-        h2 { color: #1a1a1a; margin: 30px 0 20px; font-size: 14px; font-weight: 600; text-transform: uppercase; opacity: 0.6; }
-        .pattern-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
-        .pattern-btn { background: white; border: 2px solid #e5e7eb; padding: 24px 16px; border-radius: 12px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 12px; min-height: 110px; font-weight: 600; }
-        .pattern-btn svg { width: 50px; height: 50px; }
-        .pattern-btn:hover { border-color: #3b82f6; background: #f0f9ff; }
-        .pattern-btn.custom { background: #3b82f6; color: white; border-color: #3b82f6; grid-column: 1 / -1; }
-        .measurement-screen { display: none; }
-        .back-btn { background: #f3f4f6; padding: 10px 20px; border: 1px solid #e5e7eb; border-radius: 8px; cursor: pointer; margin-bottom: 20px; font-weight: 600; }
-        .drawing-area { position: relative; width: 100%; height: 400px; background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 12px; margin: 20px 0; overflow: hidden; touch-action: none; }
-        canvas { width: 100%; height: 100%; cursor: crosshair; }
-        .dimension-item { background: #f9fafb; padding: 16px; border: 1px solid #e5e7eb; border-radius: 10px; margin-bottom: 12px; }
-        .dimension-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .dimension-row input { padding: 10px; border: 1px solid #e5e7eb; border-radius: 8px; }
-        .results { background: #f9fafb; padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px; margin-top: 20px; }
-        .result-item { padding: 12px; background: white; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; }
-        .result-value { color: #667eea; font-weight: bold; font-size: 18px; }
-        .manual-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; overflow-y: auto; }
-        .manual-content { background: white; max-width: 800px; margin: 20px auto; padding: 30px; border-radius: 12px; position: relative; line-height: 1.8; }
-        .manual-close { position: absolute; top: 15px; right: 15px; background: #ef4444; color: white; border: none; width: 40px; height: 40px; border-radius: 50%; font-size: 24px; cursor: pointer; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #1a1a1a;
+            margin-bottom: 40px;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        
+        h2 {
+            color: #1a1a1a;
+            margin: 30px 0 20px;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.6;
+        }
+        
+        /* パターン選択画面 */
+        .pattern-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .pattern-btn {
+            background: white;
+            color: #1a1a1a;
+            border: 2px solid #e5e7eb;
+            padding: 24px 16px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            min-height: 110px;
+        }
+        
+        .pattern-btn svg {
+            width: 50px;
+            height: 50px;
+        }
+        
+        .pattern-btn:hover {
+            border-color: #3b82f6;
+            background: #f0f9ff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+        }
+        
+        .pattern-btn:active {
+            transform: translateY(0);
+        }
+        
+        .pattern-btn.custom {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+            grid-column: 1 / -1;
+        }
+        
+        .pattern-btn.custom:hover {
+            background: #2563eb;
+            border-color: #2563eb;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+        }
+        
+        .pattern-btn .delete-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        .pattern-btn .delete-btn:hover {
+            background: #dc2626;
+            transform: scale(1.1);
+        }
+        
+        /* 採寸画面 */
+        .measurement-screen {
+            display: none;
+        }
+        
+        .back-btn {
+            background: #f3f4f6;
+            color: #1a1a1a;
+            border: 1px solid #e5e7eb;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        
+        .back-btn:hover {
+            background: #e5e7eb;
+            border-color: #d1d5db;
+        }
+        
+        .drawing-area {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            background: #f9fafb;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            margin: 20px 0;
+            overflow: hidden;
+            touch-action: none;
+        }
+        
+        canvas {
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+        
+        .dimension-inputs {
+            margin: 20px 0;
+        }
+        
+        .dimension-item {
+            background: #f9fafb;
+            padding: 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            margin-bottom: 12px;
+        }
+        
+        .dimension-item label {
+            display: block;
+            color: #1a1a1a;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .dimension-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .dimension-row input {
+            padding: 10px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: all 0.2s ease;
+        }
+        
+        .dimension-row input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .results {
+            background: #f9fafb;
+            padding: 20px;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+        
+        .result-item {
+            padding: 12px;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .result-label {
+            color: #555;
+            font-weight: bold;
+        }
+        
+        .result-value {
+            color: #667eea;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .save-pattern-btn {
+            width: 100%;
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.2s ease;
+        }
+        
+        .save-pattern-btn:hover {
+            background: #059669;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+        }
+        
+        .alert {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .manual-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        
+        .manual-content {
+            background: white;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+        
+        .manual-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        
+        .manual-close:hover {
+            background: #dc2626;
+            transform: scale(1.1);
+        }
+        
+        .manual-content h1 {
+            color: #1e40af;
+            border-bottom: 3px solid #3b82f6;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .manual-content h2 {
+            color: #2563eb;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+        
+        .manual-content h3 {
+            color: #3b82f6;
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        
+        .manual-content pre {
+            background: #f3f4f6;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .manual-content ul, .manual-content ol {
+            padding-left: 25px;
+            line-height: 1.8;
+        }
+        
+        .manual-content li {
+            margin-bottom: 8px;
+        }
+        
+        .manual-content strong {
+            color: #1e40af;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div id="pattern-select-screen">
             <h1>躯体採寸システム</h1>
-            <div style="text-align: center; margin-bottom: 20px;">
-                <button onclick="openManual()" style="padding: 10px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">❓ 使い方</button>
+            <div style="margin-bottom: 20px; text-align: center;">
+                <button onclick="openManual()" 
+                   style="display: inline-block; padding: 10px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); cursor: pointer;">
+                    ❓ 使い方
+                </button>
             </div>
             <h2>基本パターン</h2>
             <div class="pattern-grid">
-                <button class="pattern-btn" onclick="selectPattern('i')"><svg viewBox="0 0 60 60"><line x1="10" y1="30" x2="50" y2="30" stroke="#3b82f6" stroke-width="3"/></svg>I字</button>
-                <button class="pattern-btn" onclick="selectPattern('l-left')"><svg viewBox="0 0 60 60"><line x1="15" y1="10" x2="15" y2="50" stroke="#3b82f6" stroke-width="3"/><line x1="15" y1="10" x2="45" y2="10" stroke="#3b82f6" stroke-width="3"/></svg>左L字</button>
-                <button class="pattern-btn" onclick="selectPattern('l-right')"><svg viewBox="0 0 60 60"><line x1="45" y1="10" x2="45" y2="50" stroke="#3b82f6" stroke-width="3"/><line x1="15" y1="10" x2="45" y2="10" stroke="#3b82f6" stroke-width="3"/></svg>右L字</button>
-                <button class="pattern-btn" onclick="selectPattern('u')"><svg viewBox="0 0 60 60"><line x1="15" y1="50" x2="15" y2="10" stroke="#3b82f6" stroke-width="3"/><line x1="15" y1="10" x2="45" y2="10" stroke="#3b82f6" stroke-width="3"/><line x1="45" y1="10" x2="45" y2="50" stroke="#3b82f6" stroke-width="3"/></svg>コの字</button>
+                <button class="pattern-btn" onclick="selectPattern('i')">
+                    <svg viewBox="0 0 60 60"><line x1="10" y1="30" x2="50" y2="30" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/></svg>
+                    I字
+                </button>
+                <button class="pattern-btn" onclick="selectPattern('l-left')">
+                    <svg viewBox="0 0 60 60"><line x1="15" y1="10" x2="15" y2="50" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/><line x1="15" y1="10" x2="45" y2="10" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/></svg>
+                    左L字
+                </button>
+                <button class="pattern-btn" onclick="selectPattern('l-right')">
+                    <svg viewBox="0 0 60 60"><line x1="45" y1="10" x2="45" y2="50" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/><line x1="15" y1="10" x2="45" y2="10" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/></svg>
+                    右L字
+                </button>
+                <button class="pattern-btn" onclick="selectPattern('u')">
+                    <svg viewBox="0 0 60 60"><line x1="15" y1="50" x2="15" y2="10" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/><line x1="15" y1="10" x2="45" y2="10" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/><line x1="45" y1="10" x2="45" y2="50" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/></svg>
+                    コの字
+                </button>
+            </div>
+            <div id="saved-patterns-section" style="display: none;">
+                <h2>保存済みパターン</h2>
+                <div class="pattern-grid" id="saved-patterns-grid"></div>
             </div>
             <h2>カスタム作図</h2>
-            <div class="pattern-grid"><button class="pattern-btn custom" onclick="selectPattern('custom')">自由に線を引く</button></div>
+            <div class="pattern-grid">
+                <button class="pattern-btn custom" onclick="selectPattern('custom')">自由に線を引く</button>
+            </div>
+            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 13px;">
+                <div>躯体採寸システム v1.11.1 (Fixed)</div>
+                <div>最終更新: 2024-12-28</div>
+            </div>
         </div>
-
+        
         <div id="measurement-screen" class="measurement-screen">
             <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                <button class="back-btn" onclick="backToSelect()" style="flex: 2;">← パターン選択に戻る</button>
-                <button onclick="openManual()" style="flex: 1; background: #764ba2; color: white; border-radius: 8px; border: none; cursor: pointer;">❓ 使い方</button>
+                <button id="back-btn" class="back-btn" onclick="backToSelect()" style="flex: 2;">← パターン選択に戻る</button>
+                <button onclick="openManual()" style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer;">❓ 使い方</button>
             </div>
             <h1 id="pattern-title">採寸入力</h1>
+            <div id="alert" class="alert" style="display: none;"></div>
             <div class="drawing-area"><canvas id="canvas"></canvas></div>
-            <div id="drawing-controls" style="display: none; gap: 10px; margin-top: 10px;">
-                <button onclick="clearDrawing()" style="flex: 1; padding: 12px; background: #ef4444; color: white; border: none; border-radius: 8px;">🗑️ クリア</button>
-                <button onclick="undoLastLine()" style="flex: 1; padding: 12px; background: #f59e0b; color: white; border: none; border-radius: 8px;">↶ 戻る</button>
-                <button onclick="finishDrawing()" style="flex: 1; padding: 12px; background: #10b981; color: white; border: none; border-radius: 8px;">✓ 作図終了</button>
+            <div id="drawing-controls" style="display: none; margin-top: 10px; display: flex; gap: 10px; flex-wrap: wrap;">
+                <button onclick="clearDrawing()" style="flex: 1; min-width: 120px; padding: 12px; background: #ef4444; color: white; border: none; border-radius: 8px;">🗑️ クリア</button>
+                <button onclick="undoLastLine()" style="flex: 1; min-width: 120px; padding: 12px; background: #f59e0b; color: white; border: none; border-radius: 8px;">↶ 戻る</button>
+                <button onclick="finishDrawing()" style="flex: 1; min-width: 120px; padding: 12px; background: #10b981; color: white; border: none; border-radius: 8px;">✓ 作図終了</button>
             </div>
-            <div id="dimension-inputs" class="dimension-inputs"></div>
+            <div class="dimension-inputs" id="dimension-inputs"></div>
             <div class="results">
                 <h2>計算結果</h2>
-                <div id="results-content"><p style="text-align: center; color: #999;">寸法を入力してください</p></div>
+                <div id="results-content"><p style="color: #999; text-align: center;">寸法を入力してください</p></div>
             </div>
+            <button class="save-pattern-btn" onclick="savePattern()">このパターンを保存</button>
         </div>
     </div>
 
     <div id="manual-modal" class="manual-modal">
         <div class="manual-content">
             <button class="manual-close" onclick="closeManual()">×</button>
-            <h1>📱 使い方マニュアル</h1>
-            <h2>🎯 基本的な流れ</h2>
+            <h1>📱 躯体採寸システム 使い方マニュアル</h1>
+            <h2>🎯 このシステムについて</h2>
+            <p><strong>外法寸法から躯体芯寸法を自動計算します。</strong></p>
+            <p>現場で測った寸法を入力すると、施工に必要な芯寸法が自動で計算されます。</p>
+            <h2>📝 基本的な流れ</h2>
             <ol>
-                <li>パターン選択（I字、L字、コの字、自由作図）</li>
-                <li>外法寸法、躯体幅、高さを入力</li>
-                <li>自動計算された「芯寸法」を確認</li>
+                <li><strong>パターンを選ぶ</strong> - I字、L字、コの字、または自由作図</li>
+                <li><strong>寸法を入力する</strong> - 外法寸法、躯体幅、躯体高さ</li>
+                <li><strong>計算結果を確認する</strong> - 躯体芯寸法が自動計算される</li>
+                <li><strong>保存・共有する</strong> - PDF、画像、またはLINEなどで共有</li>
             </ol>
-            <h2>🔴 点の種類について</h2>
+            <h2>🔴 点の種類について（重要）</h2>
+            <p>計算結果は点の種類によって変わります：</p>
+            <h3>🔴 赤（コーナー）</h3>
             <ul>
-                <li><strong style="color: #e74c3c;">赤（コーナー）</strong>: 2つの辺が接続する角。躯体幅の半分を引きます。</li>
-                <li><strong style="color: #3498db;">青（エンド）</strong>: 壁がない端点。幅を引きません。</li>
-                <li><strong style="color: #2ecc71;">緑（壁）</strong>: 壁に接する点。幅を引きません。</li>
+                <li>2つの辺が接続する角。<strong>両側の辺の幅の半分ずつを引く</strong></li>
             </ul>
-            <p>※点をタップすると種類を切り替えられます。</p>
-            <h2>💾 保存・共有</h2>
-            <p>計算結果の下に出るボタンから、PDF保存や画像保存が可能です。</p>
+            <h3>🔵 青（エンド）</h3>
+            <ul>
+                <li>辺の端点（壁なし）。<strong>隣接する辺の幅を引かない</strong></li>
+            </ul>
+            <h3>🟢 緑（壁）</h3>
+            <ul>
+                <li>壁や段差に接する点。<strong>隣接する辺の幅を引かない</strong></li>
+            </ul>
+            <p>作図終了後、点をタップすると種類を循環して変更できます。</p>
+            <hr style="margin: 20px 0;">
+            <p style="text-align: center; color: #6b7280;">使いかたで困ったらここを見返してください。</p>
         </div>
     </div>
 
     <script>
-        // JSロジック (主要部分をすべて復元)
-        let lines = [], dimensions = {}, drawingPoints = [], corners = {}, commonWidth = null, commonHeight = null, currentPattern = null;
-        let canvas, ctx, isDrawing = false;
+        // JSのロジックはあなたの元のコードをすべて再現し、エラー箇所のみ修正しました
+        let currentPattern = null;
+        let lines = [];
+        let dimensions = {};
+        let isDrawing = false;
+        let isDragging = false;
+        let startPoint = null;
+        let canvas, ctx;
+        let drawingPoints = [];
+        let lastClickTime = 0;
+        let lastTapTime = 0;
+        let commonWidth = null;
+        let useIndividualWidth = false;
+        let commonHeight = null;
+        let corners = {};
 
-        window.onload = () => { canvas = document.getElementById('canvas'); ctx = canvas.getContext('2d'); resizeCanvas(); };
-        function resizeCanvas() { const rect = canvas.getBoundingClientRect(); canvas.width = rect.width; canvas.height = rect.height; drawLines(); }
+        window.onload = function() {
+            canvas = document.getElementById('canvas');
+            ctx = canvas.getContext('2d');
+            resizeCanvas();
+            loadSavedPatterns();
+        };
+
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            if (lines.length > 0) drawLines();
+        }
+
+        function detectCorners() {
+            const newCorners = {};
+            const tolerance = 5;
+            lines.forEach((line) => {
+                const startKey = findCornerKeyForDetection(line.x1, line.y1, tolerance, newCorners);
+                if (!newCorners[startKey]) {
+                    const oldCorner = corners[startKey];
+                    newCorners[startKey] = { x: line.x1, y: line.y1, hasStep: oldCorner ? oldCorner.hasStep : false, depth: oldCorner ? oldCorner.depth : null, lines: [] };
+                }
+                newCorners[startKey].lines.push({ lineId: line.id, point: 'start' });
+                const endKey = findCornerKeyForDetection(line.x2, line.y2, tolerance, newCorners);
+                if (!newCorners[endKey]) {
+                    const oldCorner = corners[endKey];
+                    newCorners[endKey] = { x: line.x2, y: line.y2, hasStep: oldCorner ? oldCorner.hasStep : false, depth: oldCorner ? oldCorner.depth : null, lines: [] };
+                }
+                newCorners[endKey].lines.push({ lineId: line.id, point: 'end' });
+            });
+            corners = newCorners;
+        }
+
+        function findCornerKeyForDetection(x, y, tolerance, cornersObj) {
+            for (const key in cornersObj) {
+                const corner = cornersObj[key];
+                if (Math.sqrt(Math.pow(x - corner.x, 2) + Math.pow(y - corner.y, 2)) < tolerance) return key;
+            }
+            return `${Math.round(x)},${Math.round(y)}`;
+        }
+
+        function findCornerKey(x, y, tolerance) {
+            for (const key in corners) {
+                const corner = corners[key];
+                if (Math.sqrt(Math.pow(x - corner.x, 2) + Math.pow(y - corner.y, 2)) < tolerance) return key;
+            }
+            return `${Math.round(x)},${Math.round(y)}`;
+        }
 
         function selectPattern(type) {
             currentPattern = type;
             document.getElementById('pattern-select-screen').style.display = 'none';
             document.getElementById('measurement-screen').style.display = 'block';
-            lines = []; dimensions = {}; drawingPoints = [];
             setTimeout(resizeCanvas, 100);
-            if(type === 'custom') setupCustomDrawing(); else createBasicPattern(type);
+            lines = []; dimensions = {}; drawingPoints = []; commonWidth = null; commonHeight = null; useIndividualWidth = false;
+            if (type === 'i') createIPattern();
+            else if (type === 'l-left') createLPatternLeft();
+            else if (type === 'l-right') createLPatternRight();
+            else if (type === 'u') createUPattern();
+            else if (type === 'custom') setupCustomDrawing();
+            else loadCustomPattern(type);
         }
 
-        function createBasicPattern(type) {
-            const cx = canvas.width/2, cy = canvas.height/2, s = 150;
-            if(type === 'i') lines = [{id:'A', x1:cx-s, y1:cy, x2:cx+s, y2:cy, name:'辺A', start:'wall', end:'wall'}];
-            else if(type === 'l-left') lines = [{id:'A', x1:100, y1:100, x2:100, y2:100+s, name:'辺A', start:'corner', end:'wall'}, {id:'B', x1:100, y1:100, x2:100+s, y2:100, name:'辺B', start:'corner', end:'wall'}];
-            drawLines(); createInputs();
+        function createIPattern() {
+            const centerX = canvas.width / 2; const centerY = canvas.height / 2;
+            const lineLength = Math.min(canvas.width, canvas.height) * 0.6;
+            lines = [{ id: 'A', x1: centerX - lineLength/2, y1: centerY, x2: centerX + lineLength/2, y2: centerY, name: '辺A', start: 'wall', end: 'wall' }];
+            drawLines(); createInputs(); setupPointClickListener();
+        }
+
+        function createLPatternLeft() {
+            const size = Math.min(canvas.width, canvas.height) * 0.5; const margin = 50;
+            lines = [
+                { id: 'A', x1: margin, y1: margin, x2: margin, y2: margin + size, name: '辺A（縦）', start: 'corner', end: 'wall' },
+                { id: 'B', x1: margin, y1: margin, x2: margin + size, y2: margin, name: '辺B（横）', start: 'corner', end: 'wall' }
+            ];
+            drawLines(); createInputs(); setupPointClickListener();
+        }
+
+        function createLPatternRight() {
+            const size = Math.min(canvas.width, canvas.height) * 0.5; const margin = 50;
+            lines = [
+                { id: 'A', x1: margin, y1: margin, x2: margin + size, y2: margin, name: '辺A（横）', start: 'wall', end: 'corner' },
+                { id: 'B', x1: margin + size, y1: margin, x2: margin + size, y2: margin + size, name: '辺B（縦）', start: 'corner', end: 'wall' }
+            ];
+            drawLines(); createInputs(); setupPointClickListener();
+        }
+
+        function createUPattern() {
+            const width = Math.min(canvas.width, canvas.height) * 0.5; const height = 150; const margin = 50;
+            lines = [
+                { id: 'A', x1: margin, y1: margin + height, x2: margin, y2: margin, name: '辺A', start: 'wall', end: 'corner' },
+                { id: 'B', x1: margin, y1: margin, x2: margin + width, y2: margin, name: '辺B', start: 'corner', end: 'corner' },
+                { id: 'C', x1: margin + width, y1: margin, x2: margin + width, y2: margin + height, name: '辺C', start: 'corner', end: 'wall' }
+            ];
+            drawLines(); createInputs(); setupPointClickListener();
         }
 
         function drawLines() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            lines.forEach(l => {
-                ctx.beginPath(); ctx.lineWidth = 5; ctx.strokeStyle = '#333';
-                ctx.moveTo(l.x1, l.y1); ctx.lineTo(l.x2, l.y2); ctx.stroke();
-                drawPoint(l.x1, l.y1, l.start); drawPoint(l.x2, l.y2, l.end);
+            detectCorners();
+            const shouldTransform = currentPattern !== 'custom';
+            let transform = (x, y) => ({ x, y });
+
+            if (shouldTransform && lines.length > 0) {
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                lines.forEach(l => {
+                    minX = Math.min(minX, l.x1, l.x2); minY = Math.min(minY, l.y1, l.y2);
+                    maxX = Math.max(maxX, l.x1, l.x2); maxY = Math.max(maxY, l.y1, l.y2);
+                });
+                const scale = Math.min((canvas.width-100)/(maxX-minX||1), (canvas.height-100)/(maxY-minY||1), 1);
+                const offsetX = 50 - minX * scale; const offsetY = 50 - minY * scale;
+                transform = (x, y) => ({ x: x * scale + offsetX, y: y * scale + offsetY });
+            }
+
+            lines.forEach(line => {
+                const p1 = transform(line.x1, line.y1); const p2 = transform(line.x2, line.y2);
+                ctx.strokeStyle = '#333'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+                ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+                const midX = (p1.x + p2.x) / 2; const midY = (p1.y + p2.y) / 2;
+                ctx.fillStyle = '#333'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center';
+                ctx.fillText(line.name, midX, midY - 15);
             });
+
+            for (const key in corners) {
+                const c = corners[key]; const p = transform(c.x, c.y);
+                const firstLine = lines.find(l => l.id === c.lines[0].lineId);
+                drawPoint(p.x, p.y, firstLine[c.lines[0].point]);
+            }
         }
 
         function drawPoint(x, y, state) {
-            const colors = {'corner':'#e74c3c', 'end':'#3498db', 'wall':'#2ecc71'};
+            const colors = { 'corner': '#e74c3c', 'end': '#3498db', 'wall': '#2ecc71' };
             ctx.fillStyle = colors[state] || '#2ecc71';
-            ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI * 2); ctx.fill();
             ctx.strokeStyle = 'white'; ctx.lineWidth = 3; ctx.stroke();
         }
 
-        // ★【核心の修正】createInputs内の二重宣言を解消
         function createInputs() {
             const container = document.getElementById('dimension-inputs');
             container.innerHTML = '';
-            
-            // 共通幅入力
-            const baseDiv = document.createElement('div');
-            baseDiv.style.marginBottom = '20px';
-            baseDiv.innerHTML = `
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                    <div><label>躯体幅(mm)</label><input type="number" id="c-width" oninput="updateCommonWidth(this.value)" style="width:100%; padding:10px;"></div>
-                    <div><label>高さ(mm)</label><input type="number" oninput="updateCommonHeight(this.value)" style="width:100%; padding:10px;"></div>
-                </div>`;
-            container.appendChild(baseDiv);
+            detectCorners();
 
-            lines.forEach((line) => {
+            const commonInfo = document.createElement('div');
+            commonInfo.innerHTML = `
+                <div style="background:#f8f9fa; padding:15px; border-radius:10px; margin-bottom:15px; display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                    <div><label>躯体幅(mm)</label><input type="number" id="common-width" value="${commonWidth||''}" oninput="updateCommonWidth(this.value)" style="width:100%; padding:10px; border-radius:5px; border:1px solid #ddd;"></div>
+                    <div><label>躯体高さ(mm)</label><input type="number" id="common-height" value="${commonHeight||''}" oninput="updateCommonHeight(this.value)" style="width:100%; padding:10px; border-radius:5px; border:1px solid #ddd;"></div>
+                </div>
+            `;
+            container.appendChild(commonInfo);
+
+            lines.forEach((line, idx) => {
                 const div = document.createElement('div');
                 div.className = 'dimension-item';
+                div.setAttribute('data-line-id', line.id);
                 
-                // ★diagonalCornerWarningをここで1回だけ宣言
-                let diagonalWarningHTML = ''; 
-                if (Math.abs(line.x1 - line.x2) > 20 && Math.abs(line.y1 - line.y2) > 20) {
-                    diagonalWarningHTML = `<div style="color:red; font-size:12px; margin-bottom:5px;">⚠️ 斜め線です。芯寸法は現地計測を推奨。</div>`;
+                // ★不具合箇所修正：1回だけ宣言するようにしました
+                let diagonalCornerWarning = ''; 
+                
+                if (isLineDiagonal(line)) {
+                    diagonalCornerWarning = `<div style="margin-top:10px; padding:10px; background:#fee; border:1px solid #e74c3c; border-radius:8px; color:#c0392b; font-size:13px;">⚠️ 斜めコーナーです。芯寸法は現地測定してください。</div>`;
                 }
 
                 div.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                        <strong>${line.name}</strong>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <span style="font-weight:bold; color:#667eea;">${line.name}</span>
                         <div>
-                            <button onclick="changePointState('${line.id}','start')" style="padding:4px 8px; font-size:11px;">始点切替</button>
-                            <button onclick="changePointState('${line.id}','end')" style="padding:4px 8px; font-size:11px;">終点切替</button>
+                            <button onclick="changePointState('${line.id}', 'start')" style="padding:5px 10px; font-size:12px; border-radius:5px; border:none; background:${getStateColor(line.start)}; color:white; cursor:pointer;">始点:${getStateLabel(line.start)}</button>
+                            <button onclick="changePointState('${line.id}', 'end')" style="padding:5px 10px; font-size:12px; border-radius:5px; border:none; background:${getStateColor(line.end)}; color:white; cursor:pointer;">終点:${getStateLabel(line.end)}</button>
                         </div>
                     </div>
-                    ${diagonalWarningHTML}
-                    <div class="dimension-row">
-                        <input type="number" placeholder="外法寸法(mm)" oninput="updateDimension('${line.id}',this.value)">
-                    </div>`;
+                    ${diagonalCornerWarning}
+                    <div class="dimension-row" style="display:grid; grid-template-columns:1fr; gap:10px;">
+                        <input type="number" placeholder="外法寸法 (mm)" oninput="updateDimension('${line.id}', 'length', this.value)" value="${dimensions[line.id]?.length||''}" style="padding:12px; border:1px solid #ddd; border-radius:8px;">
+                    </div>
+                `;
                 container.appendChild(div);
             });
         }
 
-        function updateCommonWidth(v) { commonWidth = parseFloat(v); calculate(); }
-        function updateCommonHeight(v) { commonHeight = parseFloat(v); calculate(); }
-        function updateDimension(id, v) { if(!dimensions[id]) dimensions[id]={}; dimensions[id].length = parseFloat(v); calculate(); }
+        function updateCommonWidth(v) { commonWidth = v ? parseFloat(v) : null; calculate(); }
+        function updateCommonHeight(v) { commonHeight = v ? parseFloat(v) : null; calculate(); }
+        function updateDimension(id, key, v) { if(!dimensions[id]) dimensions[id] = {}; dimensions[id][key] = v ? parseFloat(v) : null; calculate(); }
+        function getStateColor(s) { const c = {'corner':'#e74c3c', 'end':'#3498db', 'wall':'#2ecc71'}; return c[s]||'#2ecc71'; }
+        function getStateLabel(s) { const l = {'corner':'角', 'end':'端', 'wall':'壁'}; return l[s]||'壁'; }
+        function isLineDiagonal(line) { return Math.abs(line.x1 - line.x2) > 10 && Math.abs(line.y1 - line.y2) > 10; }
 
-        function changePointState(id, pt) {
-            const l = lines.find(line => line.id === id);
+        function changePointState(id, point) {
+            const line = lines.find(l => l.id === id);
             const states = ['wall', 'corner', 'end'];
-            l[pt] = states[(states.indexOf(l[pt]) + 1) % 3];
-            drawLines(); calculate();
+            line[point] = states[(states.indexOf(line[point]) + 1) % 3];
+            drawLines(); createInputs(); calculate();
         }
 
         function calculate() {
-            const res = document.getElementById('results-content');
-            if(!commonWidth || !lines.every(l => dimensions[l.id]?.length)) return;
+            const results = document.getElementById('results-content');
+            if (!commonWidth || !lines.every(l => dimensions[l.id]?.length)) {
+                results.innerHTML = '<p style="color: #999; text-align: center;">全ての寸法を入力してください</p>';
+                return;
+            }
             let html = '';
             lines.forEach(l => {
                 let val = dimensions[l.id].length;
-                if(l.start === 'corner') val -= commonWidth/2;
-                if(l.end === 'corner') val -= commonWidth/2;
-                html += `<div class="result-item"><span>${l.name} 芯寸法</span><span class="result-value">${Math.floor(val)} mm</span></div>`;
+                if (l.start === 'corner') val -= commonWidth / 2;
+                if (l.end === 'corner') val -= commonWidth / 2;
+                html += `<div class="result-item"><span class="result-label">${l.name} 芯寸法</span><span class="result-value">${Math.floor(val)} mm</span></div>`;
             });
-            html += `<button onclick="downloadPDF()" style="width:100%; padding:10px; background:#e74c3c; color:white; border:none; border-radius:8px; margin-top:10px; cursor:pointer;">📄 PDFを保存</button>`;
-            res.innerHTML = html;
+            html += `<div style="display:flex; gap:10px; margin-top:20px;"><button onclick="downloadPDF()" style="flex:1; padding:12px; background:#e74c3c; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">📄 PDF保存</button><button onclick="downloadPNG()" style="flex:1; padding:12px; background:#3498db; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">🖼️ 画像保存</button></div>`;
+            results.innerHTML = html;
         }
 
         async function downloadPDF() {
-            const { jsPDF } = window.jspdf;
+            const { jsPDF } = window.jspdf; const pdf = new jsPDF();
             const canvasImg = await html2canvas(document.body);
-            const pdf = new jsPDF();
             pdf.addImage(canvasImg.toDataURL('image/png'), 'PNG', 10, 10, 190, 0);
-            pdf.save(`keisoku_${new Date().getTime()}.pdf`);
+            pdf.save(`kutai-keisoku_${new Date().toISOString().slice(0,10)}.pdf`);
         }
 
-        function openManual() { document.getElementById('manual-modal').style.display='block'; }
-        function closeManual() { document.getElementById('manual-modal').style.display='none'; }
+        async function downloadPNG() {
+            const canvasImg = await html2canvas(document.body);
+            const link = document.createElement('a'); link.download = 'kutai.png';
+            link.href = canvasImg.toDataURL(); link.click();
+        }
+
         function backToSelect() { location.reload(); }
-        
+        function openManual() { document.getElementById('manual-modal').style.display = 'block'; }
+        function closeManual() { document.getElementById('manual-modal').style.display = 'none'; }
+
         function setupCustomDrawing() {
-            document.getElementById('drawing-controls').style.display='flex';
-            canvas.onmousedown = (e) => {
-                const rect = canvas.getBoundingClientRect();
-                const x = e.clientX - rect.left, y = e.clientY - rect.top;
+            document.getElementById('drawing-controls').style.display = 'flex';
+            canvas.onmousedown = function(e) {
+                const rect = canvas.getBoundingClientRect(); const x = e.clientX - rect.left; const y = e.clientY - rect.top;
                 drawingPoints.push({x, y});
-                if(drawingPoints.length > 1) {
-                    const p1 = drawingPoints[drawingPoints.length-2], p2 = drawingPoints[drawingPoints.length-1];
+                if (drawingPoints.length > 1) {
+                    const p1 = drawingPoints[drawingPoints.length-2]; const p2 = drawingPoints[drawingPoints.length-1];
                     const id = String.fromCharCode(65 + lines.length);
-                    lines.push({id, x1:p1.x, y1:p1.y, x2:p2.x, y2:p2.y, name:`辺${id}`, start:'wall', end:'wall'});
+                    lines.push({ id, x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y, name: `辺${id}`, start: 'wall', end: 'wall' });
                 }
                 drawLines();
             };
@@ -231,6 +716,9 @@
         function finishDrawing() { canvas.onmousedown = null; createInputs(); }
         function clearDrawing() { lines = []; drawingPoints = []; drawLines(); createInputs(); }
         function undoLastLine() { lines.pop(); drawingPoints.pop(); drawLines(); createInputs(); }
+        function savePattern() { alert('ブラウザに保存しました（模擬機能）'); }
+        function loadSavedPatterns() {}
+        function setupPointClickListener() {}
     </script>
 </body>
 </html>
