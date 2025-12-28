@@ -14,10 +14,14 @@
     ========================================
     躯体採寸システム
     ========================================
-    バージョン: 1.13.2
+    バージョン: 1.13.3
     最終更新: 2024-12-28
     
     [更新履歴]
+    v1.13.3 (2024-12-28)
+    - 90度（直角）のコーナーには角度入力欄を表示しない
+    - 90度以外のコーナーのみ角度入力欄を表示
+    
     v1.13.2 (2024-12-28)
     - 角度自動計算機能を削除
     - 角度は現場で測定して手動入力する仕様に変更
@@ -485,7 +489,7 @@
             
             <!-- バージョン情報 -->
             <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 13px;">
-                <div style="margin-bottom: 5px;">躯体採寸システム v1.13.2</div>
+                <div style="margin-bottom: 5px;">躯体採寸システム v1.13.3</div>
                 <div>最終更新: 2024-12-28</div>
             </div>
         </div>
@@ -1420,11 +1424,14 @@
                     const nextLine = lines[lineIndex + 1];
                     const cornerLabel = `${line.name}━${nextLine.name}`;
                     
-                    // コーナー角度を計算（v1.13.0 / v1.13.2で手動入力に変更）
+                    // コーナーが90度かどうか判定（NEW - v1.13.3）
+                    const is90 = is90Degrees(line, nextLine, 'end', 'start');
+                    
+                    // 90度以外の場合のみ角度入力欄を表示（NEW - v1.13.3）
                     const storedAngle = corners[endKey]?.angle;
                     const angleValue = storedAngle !== undefined && storedAngle !== null ? storedAngle.toFixed(1) : '';
                     
-                    cornerDiv.innerHTML = `
+                    const angleInputSection = !is90 ? `
                         <div style="margin-bottom: 12px;">
                             <label style="display: block; color: #2e7d32; font-weight: bold; margin-bottom: 5px; font-size: 13px;">
                                 📐 ${cornerLabel} コーナーの角度（度）
@@ -1439,6 +1446,10 @@
                                 ℹ️ 現場で測定した角度を手動で入力してください
                             </p>
                         </div>
+                    ` : '';
+                    
+                    cornerDiv.innerHTML = `
+                        ${angleInputSection}
                         <label style="display: flex; align-items: center; cursor: pointer; margin-bottom: 8px;">
                             <input type="checkbox" ${endCorner.hasStep ? 'checked' : ''} 
                                    onchange="toggleCornerStep('${endKey}', this.checked)"
