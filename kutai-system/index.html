@@ -1332,6 +1332,63 @@
                         }
                     }
                 }
+
+                // 斜めコーナーの警告チェック（NEW - v1.12.0）
+                let diagonalCornerWarning = '';
+                
+                // 始点が斜めコーナーかチェック
+                if (startState === 'corner' || startState === 'end') {
+                    const startKey = findCornerKey(line.x1, line.y1, 5);
+                    const startCorner = corners[startKey];
+                    if (startCorner && startCorner.lines && startCorner.lines.length >= 2) {
+                        for (let ref of startCorner.lines) {
+                            if (ref.lineId !== line.id) {
+                                const adjacentLine = lines.find(l => l.id === ref.lineId);
+                                if (adjacentLine && isDiagonalCorner(line, adjacentLine, 'start', ref.point)) {
+                                    diagonalCornerWarning += `
+                                        <div style="margin-top: 10px; padding: 12px; background: #fee; border: 2px solid #e74c3c; border-radius: 8px;">
+                                            <p style="margin: 0; color: #c0392b; font-weight: bold; font-size: 14px;">
+                                                ⚠️ 始点は斜めコーナーです
+                                            </p>
+                                            <p style="margin: 5px 0 0 0; color: #c0392b; font-size: 13px;">
+                                                外法寸法から芯寸法を計算できません。<br>
+                                                <strong>現地で芯寸法を直接測定してください。</strong>
+                                            </p>
+                                        </div>
+                                    `;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // 終点が斜めコーナーかチェック
+                if (endState === 'corner' || endState === 'end') {
+                    const endKey = findCornerKey(line.x2, line.y2, 5);
+                    const endCorner = corners[endKey];
+                    if (endCorner && endCorner.lines && endCorner.lines.length >= 2) {
+                        for (let ref of endCorner.lines) {
+                            if (ref.lineId !== line.id) {
+                                const adjacentLine = lines.find(l => l.id === ref.lineId);
+                                if (adjacentLine && isDiagonalCorner(line, adjacentLine, 'end', ref.point)) {
+                                    diagonalCornerWarning += `
+                                        <div style="margin-top: 10px; padding: 12px; background: #fee; border: 2px solid #e74c3c; border-radius: 8px;">
+                                            <p style="margin: 0; color: #c0392b; font-weight: bold; font-size: 14px;">
+                                                ⚠️ 終点は斜めコーナーです
+                                            </p>
+                                            <p style="margin: 5px 0 0 0; color: #c0392b; font-size: 13px;">
+                                                外法寸法から芯寸法を計算できません。<br>
+                                                <strong>現地で芯寸法を直接測定してください。</strong>
+                                            </p>
+                                        </div>
+                                    `;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
                 
                 div.innerHTML = `
                     <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -2932,6 +2989,29 @@
             if (is90Degrees(line1, line2, point1, point2)) {
                 return false;
             }
+
+            // 2つの線が90度かどうか判定
+        function is90Degrees(line1, line2, point1, point2) {
+            // 線1の方向ベクトル
+            const dx1 = line1.x2 - line1.x1;
+            const dy1 = line1.y2 - line1.y1;
+            
+            // 線2の方向ベクトル
+            const dx2 = line2.x2 - line2.x1;
+            const dy2 = line2.y2 - line2.y1;
+            
+            // 内積を計算（90度なら0に近い）
+            const dotProduct = dx1 * dx2 + dy1 * dy2;
+            const magnitude1 = Math.sqrt(dx1 * dx1 + dy1 * dy1);
+            const magnitude2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+            
+            if (magnitude1 === 0 || magnitude2 === 0) return false;
+            
+            const cosAngle = dotProduct / (magnitude1 * magnitude2);
+            
+            // 90度の場合、cosは0に近い（許容誤差0.1）
+            return Math.abs(cosAngle) < 0.1;
+        }
             
             // 線1または線2が斜め線の場合、斜めコーナー
             const line1IsDiagonal = isLineDiagonal(line1);
