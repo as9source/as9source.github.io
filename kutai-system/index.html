@@ -1275,12 +1275,70 @@
                         </button>
                     </div>
                 `;
+
+                // 斜めコーナーの警告チェック（NEW - v1.12.0）
+                let diagonalCornerWarning = '';
+                
+                // 始点が斜めコーナーかチェック
+                if (startState === 'corner' || startState === 'end') {
+                    const startKey = findCornerKey(line.x1, line.y1, 5);
+                    const startCorner = corners[startKey];
+                    if (startCorner && startCorner.lines && startCorner.lines.length >= 2) {
+                        for (let ref of startCorner.lines) {
+                            if (ref.lineId !== line.id) {
+                                const adjacentLine = lines.find(l => l.id === ref.lineId);
+                                if (adjacentLine && isDiagonalCorner(line, adjacentLine, 'start', ref.point)) {
+                                    diagonalCornerWarning += `
+                                        <div style="margin-top: 10px; padding: 12px; background: #fee; border: 2px solid #e74c3c; border-radius: 8px;">
+                                            <p style="margin: 0; color: #c0392b; font-weight: bold; font-size: 14px;">
+                                                ⚠️ 始点は斜めコーナーです
+                                            </p>
+                                            <p style="margin: 5px 0 0 0; color: #c0392b; font-size: 13px;">
+                                                外法寸法から芯寸法を計算できません。<br>
+                                                <strong>現地で芯寸法を直接測定してください。</strong>
+                                            </p>
+                                        </div>
+                                    `;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // 終点が斜めコーナーかチェック
+                if (endState === 'corner' || endState === 'end') {
+                    const endKey = findCornerKey(line.x2, line.y2, 5);
+                    const endCorner = corners[endKey];
+                    if (endCorner && endCorner.lines && endCorner.lines.length >= 2) {
+                        for (let ref of endCorner.lines) {
+                            if (ref.lineId !== line.id) {
+                                const adjacentLine = lines.find(l => l.id === ref.lineId);
+                                if (adjacentLine && isDiagonalCorner(line, adjacentLine, 'end', ref.point)) {
+                                    diagonalCornerWarning += `
+                                        <div style="margin-top: 10px; padding: 12px; background: #fee; border: 2px solid #e74c3c; border-radius: 8px;">
+                                            <p style="margin: 0; color: #c0392b; font-weight: bold; font-size: 14px;">
+                                                ⚠️ 終点は斜めコーナーです
+                                            </p>
+                                            <p style="margin: 5px 0 0 0; color: #c0392b; font-size: 13px;">
+                                                外法寸法から芯寸法を計算できません。<br>
+                                                <strong>現地で芯寸法を直接測定してください。</strong>
+                                            </p>
+                                        </div>
+                                    `;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
                 
                 div.innerHTML = `
                     <label style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                         <span style="font-weight: bold; color: #667eea;">${line.name}${isDiagonal ? ' <span style="color: #ff9800;">⚠️斜め</span>' : ''}</span>
                         ${pointButtons}
                     </label>
+                    ${diagonalCornerWarning}
                     <div class="dimension-row" style="display: grid; grid-template-columns: ${useIndividualWidth ? '1fr 1fr' : '1fr'}; gap: 10px;">
                         <input type="number" placeholder="外法寸法 (mm)" 
                                oninput="updateDimension('${line.id}', 'length', this.value)"
@@ -1685,7 +1743,7 @@
             
             // コーナーキーを取得
             const x = point === 'start' ? currentLine.x1 : currentLine.x2;
-            const y = point === 'start' ? currentLine.y1 : currentLine.y2;
+            const y = point === 'start' ? currentLine.y1 : currentLine.y2;　
             const cornerKey = findCornerKey(x, y, 5);
             
             if (!corners || !corners[cornerKey]) return 0;
@@ -2866,6 +2924,20 @@
             
             // 90度の場合、cosは0に近い（許容誤差0.1）
             return Math.abs(cosAngle) < 0.1;
+        }
+
+        // 斜めコーナーかどうか判定（NEW - v1.12.0）
+        function isDiagonalCorner(line1, line2, point1, point2) {
+            // 90度の場合はfalse（斜めコーナーではない）
+            if (is90Degrees(line1, line2, point1, point2)) {
+                return false;
+            }
+            
+            // 線1または線2が斜め線の場合、斜めコーナー
+            const line1IsDiagonal = isLineDiagonal(line1);
+            const line2IsDiagonal = isLineDiagonal(line2);
+            
+            return line1IsDiagonal || line2IsDiagonal;
         }
         
         // 点の状態を切り替え
