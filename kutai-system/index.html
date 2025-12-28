@@ -1291,7 +1291,7 @@
                                     diagonalCornerWarning += `
                                         <div style="margin-top: 10px; padding: 12px; background: #fee; border: 2px solid #e74c3c; border-radius: 8px;">
                                             <p style="margin: 0; color: #c0392b; font-weight: bold; font-size: 14px;">
-                                                ⚠️ 始点は斜めコーナーです
+                                                ⚠️ 始点は斜めコーナーです（角度: ${getCornerAngle(line, adjacentLine).toFixed(1)}°）
                                             </p>
                                             <p style="margin: 5px 0 0 0; color: #c0392b; font-size: 13px;">
                                                 外法寸法から芯寸法を計算できません。<br>
@@ -1318,7 +1318,7 @@
                                     diagonalCornerWarning += `
                                         <div style="margin-top: 10px; padding: 12px; background: #fee; border: 2px solid #e74c3c; border-radius: 8px;">
                                             <p style="margin: 0; color: #c0392b; font-weight: bold; font-size: 14px;">
-                                                ⚠️ 終点は斜めコーナーです
+                                                ⚠️ 終点は斜めコーナーです（角度: ${getCornerAngle(line, adjacentLine).toFixed(1)}°）
                                             </p>
                                             <p style="margin: 5px 0 0 0; color: #c0392b; font-size: 13px;">
                                                 外法寸法から芯寸法を計算できません。<br>
@@ -2926,7 +2926,7 @@
             // 90度の場合、cosは0に近い（許容誤差0.1）
             return Math.abs(cosAngle) < 0.1;
         }
-
+        
         // 斜めコーナーかどうか判定（NEW - v1.12.0）
         function isDiagonalCorner(line1, line2, point1, point2) {
             // 90度の場合はfalse（斜めコーナーではない）
@@ -2940,6 +2940,16 @@
             
             return line1IsDiagonal || line2IsDiagonal;
         }
+
+        // コーナーの角度を計算
+function getCornerAngle(line1, line2) {
+    const angle1 = Math.atan2(line1.y2 - line1.y1, line1.x2 - line1.x1) * (180 / Math.PI);
+    const angle2 = Math.atan2(line2.y2 - line2.y1, line2.x2 - line2.x1) * (180 / Math.PI);
+    let angleDiff = angle2 - angle1;
+    while (angleDiff > 180) angleDiff -= 360;
+    while (angleDiff < -180) angleDiff += 360;
+    return Math.abs(angleDiff);
+}
         
         // 点の状態を切り替え
         function togglePointState(lineIndex, point) {
