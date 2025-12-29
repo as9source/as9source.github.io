@@ -14,10 +14,13 @@
     ========================================
     躯体採寸システム
     ========================================
-    バージョン: 1.13.3
+    バージョン: 1.13.4
     最終更新: 2024-12-28
     
     [更新履歴]
+    v1.13.4 (2024-12-28)
+    - パターン選択画面に「目次に戻る」ボタンを追加
+    
     v1.13.3 (2024-12-28)
     - 90度（直角）のコーナーには角度入力欄を表示しない
     - 90度以外のコーナーのみ角度入力欄を表示
@@ -437,8 +440,12 @@
         <div id="pattern-select-screen">
             <h1>躯体採寸システム</h1>
             
-            <!-- 使い方ボタン -->
-            <div style="margin-bottom: 20px; text-align: center;">
+            <!-- ボタンエリア -->
+            <div style="margin-bottom: 20px; text-align: center; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                <button onclick="window.location.href='https://as9source.github.io/'" 
+                   style="display: inline-block; padding: 10px 20px; background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); cursor: pointer;">
+                    ← 目次に戻る
+                </button>
                 <button onclick="openManual()" 
                    style="display: inline-block; padding: 10px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); cursor: pointer;">
                     ❓ 使い方
@@ -489,7 +496,7 @@
             
             <!-- バージョン情報 -->
             <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 13px;">
-                <div style="margin-bottom: 5px;">躯体採寸システム v1.13.3</div>
+                <div style="margin-bottom: 5px;">躯体採寸システム v1.13.4</div>
                 <div>最終更新: 2024-12-28</div>
             </div>
         </div>
