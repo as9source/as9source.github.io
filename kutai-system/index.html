@@ -14,10 +14,14 @@
     ========================================
     躯体採寸システム
     ========================================
-    バージョン: 1.14.2
+    バージョン: 1.14.3
     最終更新: 2024-12-28
     
     [更新履歴]
+    v1.14.3 (2024-12-28)
+    - 共有時の計算結果に計算式を追加
+    - 各辺の計算過程が分かるように表示
+    
     v1.14.2 (2024-12-28)
     - 共有時の図面表示を修正（真っ白→正常表示）
     - canvasをtoDataURL()で画像化して埋め込み
@@ -511,7 +515,7 @@
             
             <!-- バージョン情報 -->
             <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 13px;">
-                <div style="margin-bottom: 5px;">躯体採寸システム v1.14.2</div>
+                <div style="margin-bottom: 5px;">躯体採寸システム v1.14.3</div>
                 <div>最終更新: 2024-12-28</div>
             </div>
         </div>
@@ -3094,6 +3098,58 @@
             return `kutai-keisoku_${date}`;
         }
         
+        
+        // 共有用の計算結果HTMLを生成（v1.14.3）
+        function generateResultsHTML() {
+            let resultsHTML = '<div style="display: flex; flex-direction: column; gap: 12px;">';
+            
+            lines.forEach(line => {
+                const dim = dimensions[line.id];
+                if (!dim || !dim.length) return;
+                
+                let result = dim.length;
+                let formula = '';
+                const isDiagonal = isLineDiagonal(line);
+                const baseLabel = isDiagonal ? '芯寸法' : '外法';
+                
+                formula = `${baseLabel} ${dim.length}mm`;
+                
+                if (line.start === 'corner') {
+                    const adjacentWidth = getAdjacentLineWidth(line.id, 'start');
+                    if (adjacentWidth > 0) {
+                        result -= adjacentWidth / 2;
+                        formula += ` - 躯体幅 ${adjacentWidth}mm ÷ 2`;
+                    }
+                }
+                
+                if (line.end === 'corner') {
+                    const adjacentWidth = getAdjacentLineWidth(line.id, 'end');
+                    if (adjacentWidth > 0) {
+                        result -= adjacentWidth / 2;
+                        formula += ` - 躯体幅 ${adjacentWidth}mm ÷ 2`;
+                    }
+                }
+                
+                const startLabel = getPointLabel(line.start);
+                const endLabel = getPointLabel(line.end);
+                
+                resultsHTML += `
+                    <div style="padding: 12px; background: white; border-radius: 6px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <span style="color: #374151; font-weight: 600;">${line.name} ${startLabel}━${endLabel}</span>
+                            <strong style="color: #1e40af; font-size: 20px;">${Math.floor(result)} mm</strong>
+                        </div>
+                        <div style="color: #6b7280; font-size: 11px; margin-top: 4px;">
+                            (${formula} = ${Math.floor(result)}mm)
+                        </div>
+                    </div>
+                `;
+            });
+            
+            resultsHTML += '</div>';
+            return resultsHTML;
+        }
+        
         async function downloadAsPDF() {
             const resultsContent = document.getElementById('results-content');
             if (!resultsContent || !resultsContent.innerHTML || resultsContent.innerHTML.includes('入力が完了していません')) {
@@ -3153,16 +3209,7 @@
                 const resultsDiv = document.createElement('div');
                 resultsDiv.style.cssText = 'padding: 20px; background: #fef3c7; border-radius: 10px; border: 2px solid #f59e0b;';
                 resultsDiv.innerHTML = '<h3 style="font-size: 18px; color: #92400e; margin: 0 0 15px 0;">📊 計算結果</h3>';
-                
-                const resultItems = resultsContent.querySelectorAll('.result-item');
-                let resultsHTML = '<div style="display: flex; flex-direction: column; gap: 8px;">';
-                resultItems.forEach(item => {
-                    const label = item.querySelector('.result-label')?.innerHTML || '';
-                    const value = item.querySelector('.result-value')?.textContent || '';
-                    resultsHTML += `<div style="display: flex; justify-content: space-between; padding: 10px; background: white; border-radius: 6px;"><span style="color: #374151;">${label}</span><strong style="color: #1e40af; font-size: 18px;">${value}</strong></div>`;
-                });
-                resultsHTML += '</div>';
-                resultsDiv.innerHTML += resultsHTML;
+                resultsDiv.innerHTML += generateResultsHTML();
                 resultDiv.appendChild(resultsDiv);
                 
                 // 一時的にbodyに追加
@@ -3259,15 +3306,7 @@
                 resultsDiv.style.cssText = 'padding: 20px; background: #fef3c7; border-radius: 10px; border: 2px solid #f59e0b;';
                 resultsDiv.innerHTML = '<h3 style="font-size: 18px; color: #92400e; margin: 0 0 15px 0;">📊 計算結果</h3>';
                 
-                const resultItems = resultsContent.querySelectorAll('.result-item');
-                let resultsHTML = '<div style="display: flex; flex-direction: column; gap: 8px;">';
-                resultItems.forEach(item => {
-                    const label = item.querySelector('.result-label')?.innerHTML || '';
-                    const value = item.querySelector('.result-value')?.textContent || '';
-                    resultsHTML += `<div style="display: flex; justify-content: space-between; padding: 10px; background: white; border-radius: 6px;"><span style="color: #374151;">${label}</span><strong style="color: #1e40af; font-size: 18px;">${value}</strong></div>`;
-                });
-                resultsHTML += '</div>';
-                resultsDiv.innerHTML += resultsHTML;
+                resultsDiv.innerHTML += generateResultsHTML();
                 resultDiv.appendChild(resultsDiv);
                 
                 document.body.appendChild(resultDiv);
@@ -3354,15 +3393,7 @@
                 resultsDiv.style.cssText = 'padding: 20px; background: #fef3c7; border-radius: 10px; border: 2px solid #f59e0b;';
                 resultsDiv.innerHTML = '<h3 style="font-size: 18px; color: #92400e; margin: 0 0 15px 0;">📊 計算結果</h3>';
                 
-                const resultItems = resultsContent.querySelectorAll('.result-item');
-                let resultsHTML = '<div style="display: flex; flex-direction: column; gap: 8px;">';
-                resultItems.forEach(item => {
-                    const label = item.querySelector('.result-label')?.innerHTML || '';
-                    const value = item.querySelector('.result-value')?.textContent || '';
-                    resultsHTML += `<div style="display: flex; justify-content: space-between; padding: 10px; background: white; border-radius: 6px;"><span style="color: #374151;">${label}</span><strong style="color: #1e40af; font-size: 18px;">${value}</strong></div>`;
-                });
-                resultsHTML += '</div>';
-                resultsDiv.innerHTML += resultsHTML;
+                resultsDiv.innerHTML += generateResultsHTML();
                 resultDiv.appendChild(resultsDiv);
                 
                 document.body.appendChild(resultDiv);
