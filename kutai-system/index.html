@@ -14,10 +14,25 @@
     ========================================
     躯体採寸システム
     ========================================
-    バージョン: 1.13.4
+    バージョン: 1.14.2
     最終更新: 2024-12-28
     
     [更新履歴]
+    v1.14.2 (2024-12-28)
+    - 共有時の図面表示を修正（真っ白→正常表示）
+    - canvasをtoDataURL()で画像化して埋め込み
+    
+    v1.14.1 (2024-12-28)
+    - パターン選択後の描画タイミングを改善
+    - canvasサイズ取得のフォールバック処理追加
+    - 「点しか見えない」問題の根本的な修正
+    
+    v1.14.0 (2024-12-28)
+    - 現場名入力欄を追加
+    - 共有機能のエラーハンドリング強化
+    - 計算結果のみをA4サイズで共有（採寸寸法を薄く記載）
+    - パターン描画の不具合修正（点しか見えない問題）
+    
     v1.13.4 (2024-12-28)
     - パターン選択画面に「目次に戻る」ボタンを追加
     
@@ -496,7 +511,7 @@
             
             <!-- バージョン情報 -->
             <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 13px;">
-                <div style="margin-bottom: 5px;">躯体採寸システム v1.13.4</div>
+                <div style="margin-bottom: 5px;">躯体採寸システム v1.14.2</div>
                 <div>最終更新: 2024-12-28</div>
             </div>
         </div>
@@ -512,6 +527,15 @@
             </div>
             
             <h1 id="pattern-title">採寸入力</h1>
+            
+            <!-- 現場名入力欄（NEW - v1.14.0） -->
+            <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 2px solid #ffc107;">
+                <label style="display: block; color: #856404; font-weight: bold; margin-bottom: 8px; font-size: 14px;">
+                    📍 現場名
+                </label>
+                <input type="text" id="site-name" placeholder="例: 〇〇様邸" 
+                       style="width: 100%; padding: 12px; border: 2px solid #ffc107; border-radius: 8px; font-size: 16px;">
+            </div>
             
             <div id="alert" class="alert" style="display: none;"></div>
             
@@ -690,8 +714,13 @@
         
         function resizeCanvas() {
             const rect = canvas.getBoundingClientRect();
-            canvas.width = rect.width;
-            canvas.height = rect.height;
+            // サイズが取得できない場合のフォールバック（v1.14.1）
+            const width = rect.width || canvas.parentElement?.clientWidth || 800;
+            const height = rect.height || canvas.parentElement?.clientHeight || 600;
+            
+            canvas.width = width;
+            canvas.height = height;
+            
             if (lines.length > 0) {
                 drawLines();
             }
@@ -702,8 +731,6 @@
             document.getElementById('pattern-select-screen').style.display = 'none';
             document.getElementById('measurement-screen').style.display = 'block';
             
-            setTimeout(resizeCanvas, 100);
-            
             lines = [];
             dimensions = {};
             drawingPoints = [];
@@ -711,24 +738,31 @@
             commonHeight = null;
             useIndividualWidth = false;
             
-            if (type === 'i') {
-                document.getElementById('pattern-title').textContent = 'I字型 採寸';
-                createIPattern();
-            } else if (type === 'l-left') {
-                document.getElementById('pattern-title').textContent = '左L字型 採寸';
-                createLPatternLeft();
-            } else if (type === 'l-right') {
-                document.getElementById('pattern-title').textContent = '右L字型 採寸';
-                createLPatternRight();
-            } else if (type === 'u') {
-                document.getElementById('pattern-title').textContent = 'コの字型 採寸';
-                createUPattern();
-            } else if (type === 'custom') {
-                document.getElementById('pattern-title').textContent = '自由作図';
-                setupCustomDrawing();
-            } else {
-                loadCustomPattern(type);
-            }
+            // canvasサイズを確実に設定してから描画（v1.14.1）
+            setTimeout(() => {
+                resizeCanvas();
+                
+                setTimeout(() => {
+                    if (type === 'i') {
+                        document.getElementById('pattern-title').textContent = 'I字型 採寸';
+                        createIPattern();
+                    } else if (type === 'l-left') {
+                        document.getElementById('pattern-title').textContent = '左L字型 採寸';
+                        createLPatternLeft();
+                    } else if (type === 'l-right') {
+                        document.getElementById('pattern-title').textContent = '右L字型 採寸';
+                        createLPatternRight();
+                    } else if (type === 'u') {
+                        document.getElementById('pattern-title').textContent = 'コの字型 採寸';
+                        createUPattern();
+                    } else if (type === 'custom') {
+                        document.getElementById('pattern-title').textContent = '自由作図';
+                        setupCustomDrawing();
+                    } else {
+                        loadCustomPattern(type);
+                    }
+                }, 50);
+            }, 10);
         }
         
         function createIPattern() {
@@ -905,8 +939,13 @@
                     maxY = Math.max(maxY, line.y1, line.y2);
                 });
                 
-                const shapeWidth = maxX - minX;
-                const shapeHeight = maxY - minY;
+                let shapeWidth = maxX - minX;
+                let shapeHeight = maxY - minY;
+                
+                // 幅または高さが0の場合の対策（v1.14.0）
+                if (shapeWidth < 1) shapeWidth = 100;
+                if (shapeHeight < 1) shapeHeight = 100;
+                
                 const margin = 50;
                 const canvasWidth = canvas.width - margin * 2;
                 const canvasHeight = canvas.height - margin * 2;
@@ -3056,31 +3095,90 @@
         }
         
         async function downloadAsPDF() {
-            const measurementScreen = document.getElementById('measurement-screen');
-            if (!measurementScreen || measurementScreen.style.display === 'none') {
+            const resultsContent = document.getElementById('results-content');
+            if (!resultsContent || !resultsContent.innerHTML || resultsContent.innerHTML.includes('入力が完了していません')) {
                 alert('計算結果がありません');
                 return;
             }
             
             try {
-                let canvas, titleText;
+                const siteName = document.getElementById('site-name')?.value || '';
                 
-                const container = measurementScreen.querySelector('.container');
-                if (!container) {
-                    canvas = await html2canvas(measurementScreen, {
-                        scale: 2,
-                        backgroundColor: '#ffffff',
-                        logging: false
-                    });
-                } else {
-                    canvas = await html2canvas(container, {
-                        scale: 2,
-                        backgroundColor: '#ffffff',
-                        logging: false
-                    });
+                //計算結果部分のHTMLを作成
+                const resultDiv = document.createElement('div');
+                resultDiv.style.cssText = 'width: 800px; padding: 40px; background: white; font-family: sans-serif;';
+                
+                // ヘッダー
+                resultDiv.innerHTML = `
+                    <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px solid #2563eb; padding-bottom: 20px;">
+                        <h1 style="font-size: 28px; color: #1e40af; margin: 0 0 10px 0;">躯体採寸システム</h1>
+                        ${siteName ? `<h2 style="font-size: 20px; color: #374151; margin: 0 0 10px 0;">📍 ${siteName}</h2>` : ''}
+                        <p style="font-size: 14px; color: #6b7280; margin: 0;">${new Date().toLocaleDateString('ja-JP', {year: 'numeric', month: 'long', day: 'numeric'})}</p>
+                    </div>
+                `;
+                
+                // 図面
+                const resultCanvas = document.getElementById('result-canvas');
+                if (resultCanvas) {
+                    const canvasDiv = document.createElement('div');
+                    canvasDiv.style.cssText = 'margin-bottom: 30px; padding: 20px; background: #f0f9ff; border-radius: 10px;';
+                    canvasDiv.innerHTML = '<h3 style="font-size: 18px; color: #1e40af; margin: 0 0 15px 0;">📐 測定図</h3>';
+                    
+                    // canvasを画像に変換して埋め込む（v1.14.2）
+                    const canvasImg = document.createElement('img');
+                    canvasImg.src = resultCanvas.toDataURL('image/png');
+                    canvasImg.style.cssText = 'width: 100%; height: auto; display: block;';
+                    canvasDiv.appendChild(canvasImg);
+                    resultDiv.appendChild(canvasDiv);
                 }
-                titleText = '躯体採寸システム';
                 
+                // 採寸寸法（薄い文字）
+                const measurementsDiv = document.createElement('div');
+                measurementsDiv.style.cssText = 'margin-bottom: 30px; padding: 20px; background: #f9fafb; border-radius: 10px; border: 1px solid #e5e7eb;';
+                measurementsDiv.innerHTML = '<h3 style="font-size: 16px; color: #6b7280; margin: 0 0 15px 0;">📏 採寸寸法（参考）</h3>';
+                
+                let measurementsHTML = '<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; font-size: 13px; color: #9ca3af;">';
+                lines.forEach(line => {
+                    const dim = dimensions[line.id];
+                    if (dim && dim.length) {
+                        const isDiagonal = isLineDiagonal(line);
+                        measurementsHTML += `<div>${line.name}: ${dim.length}mm ${isDiagonal ? '(芯)' : '(外法)'}</div>`;
+                    }
+                });
+                measurementsHTML += '</div>';
+                measurementsDiv.innerHTML += measurementsHTML;
+                resultDiv.appendChild(measurementsDiv);
+                
+                // 計算結果
+                const resultsDiv = document.createElement('div');
+                resultsDiv.style.cssText = 'padding: 20px; background: #fef3c7; border-radius: 10px; border: 2px solid #f59e0b;';
+                resultsDiv.innerHTML = '<h3 style="font-size: 18px; color: #92400e; margin: 0 0 15px 0;">📊 計算結果</h3>';
+                
+                const resultItems = resultsContent.querySelectorAll('.result-item');
+                let resultsHTML = '<div style="display: flex; flex-direction: column; gap: 8px;">';
+                resultItems.forEach(item => {
+                    const label = item.querySelector('.result-label')?.innerHTML || '';
+                    const value = item.querySelector('.result-value')?.textContent || '';
+                    resultsHTML += `<div style="display: flex; justify-content: space-between; padding: 10px; background: white; border-radius: 6px;"><span style="color: #374151;">${label}</span><strong style="color: #1e40af; font-size: 18px;">${value}</strong></div>`;
+                });
+                resultsHTML += '</div>';
+                resultsDiv.innerHTML += resultsHTML;
+                resultDiv.appendChild(resultsDiv);
+                
+                // 一時的にbodyに追加
+                document.body.appendChild(resultDiv);
+                
+                // html2canvasでキャプチャ
+                const canvas = await html2canvas(resultDiv, {
+                    scale: 2,
+                    backgroundColor: '#ffffff',
+                    logging: false
+                });
+                
+                // 削除
+                document.body.removeChild(resultDiv);
+                
+                // PDF作成
                 const { jsPDF } = window.jspdf;
                 const pdf = new jsPDF({
                     orientation: 'portrait',
@@ -3089,128 +3187,213 @@
                 });
                 
                 const imgData = canvas.toDataURL('image/png');
-                
                 const pageWidth = 210;
                 const pageHeight = 297;
                 const margin = 10;
                 const imgWidth = pageWidth - margin * 2;
                 const imgHeight = (canvas.height * imgWidth) / canvas.width;
-                const maxHeight = pageHeight - margin * 2 - 25;
                 
-                pdf.setFontSize(16);
-                pdf.text(titleText, pageWidth / 2, 15, { align: 'center' });
+                pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, Math.min(imgHeight, pageHeight - margin * 2));
                 
-                const date = new Date().toLocaleDateString('ja-JP');
-                pdf.setFontSize(10);
-                pdf.text(date, pageWidth / 2, 22, { align: 'center' });
-                
-                let finalImgWidth, finalImgHeight;
-                
-                if (imgHeight <= maxHeight) {
-                    finalImgWidth = imgWidth;
-                    finalImgHeight = imgHeight;
-                } else {
-                    finalImgHeight = maxHeight;
-                    finalImgWidth = (canvas.width * finalImgHeight) / canvas.height;
-                    
-                    if (finalImgWidth > imgWidth) {
-                        finalImgWidth = imgWidth;
-                        finalImgHeight = (canvas.height * finalImgWidth) / canvas.width;
-                    }
-                }
-                
-                const xOffset = margin + (imgWidth - finalImgWidth) / 2;
-                pdf.addImage(imgData, 'PNG', xOffset, 30, finalImgWidth, finalImgHeight);
-                
-                const filename = getFilename() + '.pdf';
+                const filename = (siteName ? siteName + '_' : '') + getFilename() + '.pdf';
                 pdf.save(filename);
                 
             } catch (error) {
                 console.error('PDF保存エラー:', error);
-                alert('PDFの保存に失敗しました');
+                alert('PDFの保存に失敗しました: ' + error.message);
             }
         }
         
         async function downloadAsPNG() {
-            const measurementScreen = document.getElementById('measurement-screen');
-            if (!measurementScreen || measurementScreen.style.display === 'none') {
+            const resultsContent = document.getElementById('results-content');
+            if (!resultsContent || !resultsContent.innerHTML || resultsContent.innerHTML.includes('入力が完了していません')) {
                 alert('計算結果がありません');
                 return;
             }
             
             try {
-                let canvas;
+                const siteName = document.getElementById('site-name')?.value || '';
                 
-                const container = measurementScreen.querySelector('.container');
-                if (!container) {
-                    canvas = await html2canvas(measurementScreen, {
-                        scale: 2,
-                        backgroundColor: '#ffffff',
-                        logging: false
-                    });
-                } else {
-                    canvas = await html2canvas(container, {
-                        scale: 2,
-                        backgroundColor: '#ffffff',
-                        logging: false
-                    });
+                // 計算結果部分のHTMLを作成（PDFと同じ）
+                const resultDiv = document.createElement('div');
+                resultDiv.style.cssText = 'width: 800px; padding: 40px; background: white; font-family: sans-serif;';
+                
+                resultDiv.innerHTML = `
+                    <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px solid #2563eb; padding-bottom: 20px;">
+                        <h1 style="font-size: 28px; color: #1e40af; margin: 0 0 10px 0;">躯体採寸システム</h1>
+                        ${siteName ? `<h2 style="font-size: 20px; color: #374151; margin: 0 0 10px 0;">📍 ${siteName}</h2>` : ''}
+                        <p style="font-size: 14px; color: #6b7280; margin: 0;">${new Date().toLocaleDateString('ja-JP', {year: 'numeric', month: 'long', day: 'numeric'})}</p>
+                    </div>
+                `;
+                
+                const resultCanvas = document.getElementById('result-canvas');
+                if (resultCanvas) {
+                    const canvasDiv = document.createElement('div');
+                    canvasDiv.style.cssText = 'margin-bottom: 30px; padding: 20px; background: #f0f9ff; border-radius: 10px;';
+                    canvasDiv.innerHTML = '<h3 style="font-size: 18px; color: #1e40af; margin: 0 0 15px 0;">📐 測定図</h3>';
+                    // canvasを画像に変換して埋め込む（v1.14.2）
+                    const canvasImg = document.createElement('img');
+                    canvasImg.src = resultCanvas.toDataURL('image/png');
+                    canvasImg.style.cssText = 'width: 100%; height: auto; display: block;';
+                    canvasDiv.appendChild(canvasImg);
+                    resultDiv.appendChild(canvasDiv);
                 }
                 
-                const imgData = canvas.toDataURL('image/png');
+                const measurementsDiv = document.createElement('div');
+                measurementsDiv.style.cssText = 'margin-bottom: 30px; padding: 20px; background: #f9fafb; border-radius: 10px; border: 1px solid #e5e7eb;';
+                measurementsDiv.innerHTML = '<h3 style="font-size: 16px; color: #6b7280; margin: 0 0 15px 0;">📏 採寸寸法（参考）</h3>';
                 
+                let measurementsHTML = '<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; font-size: 13px; color: #9ca3af;">';
+                lines.forEach(line => {
+                    const dim = dimensions[line.id];
+                    if (dim && dim.length) {
+                        const isDiagonal = isLineDiagonal(line);
+                        measurementsHTML += `<div>${line.name}: ${dim.length}mm ${isDiagonal ? '(芯)' : '(外法)'}</div>`;
+                    }
+                });
+                measurementsHTML += '</div>';
+                measurementsDiv.innerHTML += measurementsHTML;
+                resultDiv.appendChild(measurementsDiv);
+                
+                const resultsDiv = document.createElement('div');
+                resultsDiv.style.cssText = 'padding: 20px; background: #fef3c7; border-radius: 10px; border: 2px solid #f59e0b;';
+                resultsDiv.innerHTML = '<h3 style="font-size: 18px; color: #92400e; margin: 0 0 15px 0;">📊 計算結果</h3>';
+                
+                const resultItems = resultsContent.querySelectorAll('.result-item');
+                let resultsHTML = '<div style="display: flex; flex-direction: column; gap: 8px;">';
+                resultItems.forEach(item => {
+                    const label = item.querySelector('.result-label')?.innerHTML || '';
+                    const value = item.querySelector('.result-value')?.textContent || '';
+                    resultsHTML += `<div style="display: flex; justify-content: space-between; padding: 10px; background: white; border-radius: 6px;"><span style="color: #374151;">${label}</span><strong style="color: #1e40af; font-size: 18px;">${value}</strong></div>`;
+                });
+                resultsHTML += '</div>';
+                resultsDiv.innerHTML += resultsHTML;
+                resultDiv.appendChild(resultsDiv);
+                
+                document.body.appendChild(resultDiv);
+                
+                const canvas = await html2canvas(resultDiv, {
+                    scale: 2,
+                    backgroundColor: '#ffffff',
+                    logging: false
+                });
+                
+                document.body.removeChild(resultDiv);
+                
+                const imgData = canvas.toDataURL('image/png');
                 const link = document.createElement('a');
-                link.download = getFilename() + '.png';
+                link.download = (siteName ? siteName + '_' : '') + getFilename() + '.png';
                 link.href = imgData;
                 link.click();
                 
             } catch (error) {
                 console.error('PNG保存エラー:', error);
-                alert('画像の保存に失敗しました');
+                alert('画像の保存に失敗しました: ' + error.message);
             }
         }
         
         async function shareResult() {
-            const measurementScreen = document.getElementById('measurement-screen');
-            if (!measurementScreen || measurementScreen.style.display === 'none') {
+            const resultsContent = document.getElementById('results-content');
+            if (!resultsContent || !resultsContent.innerHTML || resultsContent.innerHTML.includes('入力が完了していません')) {
                 alert('計算結果がありません');
                 return;
             }
             
+            // 共有機能のチェック
+            if (!navigator.share && !navigator.canShare) {
+                alert('この端末では共有機能が使えません。画像として保存します。');
+                await downloadAsPNG();
+                return;
+            }
+            
             try {
-                if (!navigator.share && !navigator.canShare) {
-                    alert('この端末では共有機能が使えません。画像として保存します。');
-                    downloadAsPNG();
-                    return;
+                const siteName = document.getElementById('site-name')?.value || '';
+                
+                // 計算結果部分のHTMLを作成
+                const resultDiv = document.createElement('div');
+                resultDiv.style.cssText = 'width: 800px; padding: 40px; background: white; font-family: sans-serif;';
+                
+                resultDiv.innerHTML = `
+                    <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px solid #2563eb; padding-bottom: 20px;">
+                        <h1 style="font-size: 28px; color: #1e40af; margin: 0 0 10px 0;">躯体採寸システム</h1>
+                        ${siteName ? `<h2 style="font-size: 20px; color: #374151; margin: 0 0 10px 0;">📍 ${siteName}</h2>` : ''}
+                        <p style="font-size: 14px; color: #6b7280; margin: 0;">${new Date().toLocaleDateString('ja-JP', {year: 'numeric', month: 'long', day: 'numeric'})}</p>
+                    </div>
+                `;
+                
+                const resultCanvas = document.getElementById('result-canvas');
+                if (resultCanvas) {
+                    const canvasDiv = document.createElement('div');
+                    canvasDiv.style.cssText = 'margin-bottom: 30px; padding: 20px; background: #f0f9ff; border-radius: 10px;';
+                    canvasDiv.innerHTML = '<h3 style="font-size: 18px; color: #1e40af; margin: 0 0 15px 0;">📐 測定図</h3>';
+                    // canvasを画像に変換して埋め込む（v1.14.2）
+                    const canvasImg = document.createElement('img');
+                    canvasImg.src = resultCanvas.toDataURL('image/png');
+                    canvasImg.style.cssText = 'width: 100%; height: auto; display: block;';
+                    canvasDiv.appendChild(canvasImg);
+                    resultDiv.appendChild(canvasDiv);
                 }
                 
-                let canvas;
+                const measurementsDiv = document.createElement('div');
+                measurementsDiv.style.cssText = 'margin-bottom: 30px; padding: 20px; background: #f9fafb; border-radius: 10px; border: 1px solid #e5e7eb;';
+                measurementsDiv.innerHTML = '<h3 style="font-size: 16px; color: #6b7280; margin: 0 0 15px 0;">📏 採寸寸法（参考）</h3>';
                 
-                const container = measurementScreen.querySelector('.container');
-                if (!container) {
-                    canvas = await html2canvas(measurementScreen, {
-                        scale: 2,
-                        backgroundColor: '#ffffff',
-                        logging: false
-                    });
-                } else {
-                    canvas = await html2canvas(container, {
-                        scale: 2,
-                        backgroundColor: '#ffffff',
-                        logging: false
-                    });
-                }
+                let measurementsHTML = '<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; font-size: 13px; color: #9ca3af;">';
+                lines.forEach(line => {
+                    const dim = dimensions[line.id];
+                    if (dim && dim.length) {
+                        const isDiagonal = isLineDiagonal(line);
+                        measurementsHTML += `<div>${line.name}: ${dim.length}mm ${isDiagonal ? '(芯)' : '(外法)'}</div>`;
+                    }
+                });
+                measurementsHTML += '</div>';
+                measurementsDiv.innerHTML += measurementsHTML;
+                resultDiv.appendChild(measurementsDiv);
+                
+                const resultsDiv = document.createElement('div');
+                resultsDiv.style.cssText = 'padding: 20px; background: #fef3c7; border-radius: 10px; border: 2px solid #f59e0b;';
+                resultsDiv.innerHTML = '<h3 style="font-size: 18px; color: #92400e; margin: 0 0 15px 0;">📊 計算結果</h3>';
+                
+                const resultItems = resultsContent.querySelectorAll('.result-item');
+                let resultsHTML = '<div style="display: flex; flex-direction: column; gap: 8px;">';
+                resultItems.forEach(item => {
+                    const label = item.querySelector('.result-label')?.innerHTML || '';
+                    const value = item.querySelector('.result-value')?.textContent || '';
+                    resultsHTML += `<div style="display: flex; justify-content: space-between; padding: 10px; background: white; border-radius: 6px;"><span style="color: #374151;">${label}</span><strong style="color: #1e40af; font-size: 18px;">${value}</strong></div>`;
+                });
+                resultsHTML += '</div>';
+                resultsDiv.innerHTML += resultsHTML;
+                resultDiv.appendChild(resultsDiv);
+                
+                document.body.appendChild(resultDiv);
+                
+                const canvas = await html2canvas(resultDiv, {
+                    scale: 2,
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                    useCORS: true
+                });
+                
+                document.body.removeChild(resultDiv);
                 
                 canvas.toBlob(async (blob) => {
+                    if (!blob) {
+                        throw new Error('画像の生成に失敗しました');
+                    }
+                    
                     try {
-                        const file = new File([blob], getFilename() + '.png', { type: 'image/png' });
+                        const filename = (siteName ? siteName + '_' : '') + getFilename() + '.png';
+                        const file = new File([blob], filename, { type: 'image/png' });
                         
                         const shareData = {
-                            title: '躯体採寸システム',
-                            text: '躯体採寸の作図と計算結果です',
+                            title: '躯体採寸システム' + (siteName ? ` - ${siteName}` : ''),
+                            text: '躯体採寸の計算結果です',
                             files: [file]
                         };
                         
+                        // canShareでファイル共有可能かチェック
                         if (navigator.canShare && !navigator.canShare(shareData)) {
+                            // ファイル共有不可の場合はURLのみ共有
                             await navigator.share({
                                 title: shareData.title,
                                 text: shareData.text,
@@ -3221,18 +3404,20 @@
                         }
                         
                     } catch (shareError) {
-                        if (shareError.name !== 'AbortError') {
-                            console.error('共有エラー:', shareError);
-                            alert('共有に失敗しました。画像として保存します。');
-                            downloadAsPNG();
+                        if (shareError.name === 'AbortError') {
+                            // ユーザーがキャンセルした場合
+                            return;
                         }
+                        console.error('共有エラー:', shareError);
+                        alert('共有に失敗しました。画像として保存します。');
+                        await downloadAsPNG();
                     }
                 }, 'image/png');
                 
             } catch (error) {
                 console.error('共有エラー:', error);
-                alert('共有に失敗しました。画像として保存します。');
-                downloadAsPNG();
+                alert('共有の準備に失敗しました: ' + error.message + '\n画像として保存します。');
+                await downloadAsPNG();
             }
         }
         
