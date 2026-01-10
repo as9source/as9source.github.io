@@ -14,15 +14,31 @@
     ========================================
     躯体採寸システム
     ========================================
-    バージョン: 1.14.4
+    バージョン: 1.16.0
     最終更新: 2024-12-28
     
     [更新履歴]
+    v1.16.0 (2024-12-28)
+    - 入力データの保存機能を追加
+    - 保存データ一覧画面を追加
+    - 現場名・色による検索機能を追加
+    - 保存データの読み込み・編集・削除機能を実装
+    - 上書き保存に対応
+    
+    v1.15.1 (2024-12-28)
+    - 色選択に「その他」を追加
+    - 「サッシ色」→「色」に名称変更
+    
+    v1.15.0 (2024-12-28)
+    - サッシ色入力欄を追加（ドロップダウン式：B7, B1, YW, H2, S1）
+    - 現場名とサッシ色を必須項目に設定
+    - 未入力時は計算結果を表示しない
+    - 共有時に現場名とサッシ色を表示
+    
     v1.14.4 (2024-12-28)
-    - 共有時のレイアウトをA4サイズに最適化
-    - 採寸寸法セクションを削除（計算式に含まれるため）
-    - 計算結果部分をコンパクト化（フォント・余白削減）
-    - 全体の余白を調整してスッキリ表示
+    - 共有時の採寸寸法（参考）セクションを削除
+    - 計算結果をコンパクト化（フォントサイズ縮小、余白削減）
+    - A4サイズに収まるよう最適化
     
     v1.14.3 (2024-12-28)
     - 共有時の計算結果に計算式を追加
@@ -457,6 +473,13 @@
         .manual-content strong {
             color: #1e40af;
         }
+        
+        /* 保存データアイテムのホバー効果（NEW - v1.16.0） */
+        .saved-data-item:hover {
+            border-color: #3b82f6 !important;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+            transform: translateY(-2px);
+        }
     </style>
 </head>
 <body>
@@ -470,6 +493,10 @@
                 <button onclick="window.location.href='https://as9source.github.io/'" 
                    style="display: inline-block; padding: 10px 20px; background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); cursor: pointer;">
                     ← 目次に戻る
+                </button>
+                <button onclick="showSavedDataList()" 
+                   style="display: inline-block; padding: 10px 20px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); cursor: pointer;">
+                    📂 保存データから開く
                 </button>
                 <button onclick="openManual()" 
                    style="display: inline-block; padding: 10px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); cursor: pointer;">
@@ -521,15 +548,58 @@
             
             <!-- バージョン情報 -->
             <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 13px;">
-                <div style="margin-bottom: 5px;">躯体採寸システム v1.14.4</div>
+                <div style="margin-bottom: 5px;">躯体採寸システム v1.16.0</div>
                 <div>最終更新: 2024-12-28</div>
+            </div>
+        </div>
+        
+        <!-- 保存データリスト画面（NEW - v1.16.0） -->
+        <div id="saved-data-screen" style="display: none;">
+            <h1>📂 保存データ</h1>
+            
+            <button onclick="backToSelectFromSaved()" 
+                style="margin-bottom: 20px; padding: 12px 24px; background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer;">
+                ← パターン選択に戻る
+            </button>
+            
+            <!-- 検索バー -->
+            <div style="margin-bottom: 20px; background: #f3f4f6; padding: 15px; border-radius: 8px;">
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px;">
+                    <input type="text" id="search-site-name" placeholder="🔍 現場名で検索" 
+                           oninput="filterSavedData()"
+                           style="padding: 10px; border: 2px solid #d1d5db; border-radius: 8px; font-size: 14px;">
+                    <select id="search-color" onchange="filterSavedData()"
+                            style="padding: 10px; border: 2px solid #d1d5db; border-radius: 8px; font-size: 14px; background: white;">
+                        <option value="">すべての色</option>
+                        <option value="B7">B7</option>
+                        <option value="B1">B1</option>
+                        <option value="YW">YW</option>
+                        <option value="H2">H2</option>
+                        <option value="S1">S1</option>
+                        <option value="その他">その他</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- 保存データ一覧 -->
+            <div id="saved-data-list"></div>
+            
+            <!-- データがない場合 -->
+            <div id="no-saved-data" style="display: none; text-align: center; padding: 40px; color: #9ca3af;">
+                <div style="font-size: 48px; margin-bottom: 16px;">📭</div>
+                <div style="font-size: 18px; font-weight: bold; margin-bottom: 8px;">保存データがありません</div>
+                <div style="font-size: 14px;">採寸画面で「保存」ボタンを押すとデータが保存されます</div>
             </div>
         </div>
         
         <!-- 採寸画面 -->
         <div id="measurement-screen" class="measurement-screen">
             <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                <button id="back-btn" class="back-btn" onclick="backToSelect()" style="flex: 2;">← パターン選択に戻る</button>
+                <button id="back-btn" class="back-btn" onclick="backToSelect()" style="flex: 1;">← パターン選択に戻る</button>
+                <button onclick="saveCurrentData()" 
+                   style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 12px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer;">
+                    💾 保存
+                </button>
                 <button onclick="openManual()" 
                    style="flex: 1; display: flex; align-items: center; justify-content: center; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer;">
                     ❓ 使い方
@@ -538,13 +608,33 @@
             
             <h1 id="pattern-title">採寸入力</h1>
             
-            <!-- 現場名入力欄（NEW - v1.14.0） -->
+            <!-- 現場名とサッシ色入力欄（NEW - v1.15.0） -->
             <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 2px solid #ffc107;">
-                <label style="display: block; color: #856404; font-weight: bold; margin-bottom: 8px; font-size: 14px;">
-                    📍 現場名
-                </label>
-                <input type="text" id="site-name" placeholder="例: 〇〇様邸" 
-                       style="width: 100%; padding: 12px; border: 2px solid #ffc107; border-radius: 8px; font-size: 16px;">
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 10px;">
+                    <div>
+                        <label style="display: block; color: #856404; font-weight: bold; margin-bottom: 8px; font-size: 14px;">
+                            📍 現場名 <span style="color: #dc2626;">*必須</span>
+                        </label>
+                        <input type="text" id="site-name" placeholder="例: 〇〇様邸" 
+                               oninput="checkRequiredFields()"
+                               style="width: 100%; padding: 12px; border: 2px solid #ffc107; border-radius: 8px; font-size: 16px;">
+                    </div>
+                    <div>
+                        <label style="display: block; color: #856404; font-weight: bold; margin-bottom: 8px; font-size: 14px;">
+                            🎨 色 <span style="color: #dc2626;">*必須</span>
+                        </label>
+                        <select id="sash-color" onchange="checkRequiredFields()"
+                                style="width: 100%; padding: 12px; border: 2px solid #ffc107; border-radius: 8px; font-size: 16px; background: white; cursor: pointer;">
+                            <option value="">選択してください</option>
+                            <option value="B7">B7</option>
+                            <option value="B1">B1</option>
+                            <option value="YW">YW</option>
+                            <option value="H2">H2</option>
+                            <option value="S1">S1</option>
+                            <option value="その他">その他</option>
+                        </select>
+                    </div>
+                </div>
             </div>
             
             <div id="alert" class="alert" style="display: none;"></div>
@@ -747,6 +837,11 @@
             commonWidth = null;
             commonHeight = null;
             useIndividualWidth = false;
+            currentSaveId = null; // 新規作成時はIDをリセット（v1.16.0）
+            
+            // 現場名と色をクリア（v1.16.0）
+            document.getElementById('site-name').value = '';
+            document.getElementById('sash-color').value = '';
             
             // canvasサイズを確実に設定してから描画（v1.14.1）
             setTimeout(() => {
@@ -1708,11 +1803,313 @@
             calculate();
         }
         
+        
+        // ========================================
+        // 保存データ管理（NEW - v1.16.0）
+        // ========================================
+        
+        let currentSaveId = null; // 現在編集中のデータID
+        
+        // データを保存
+        function saveCurrentData() {
+            const siteName = document.getElementById('site-name')?.value || '';
+            const sashColor = document.getElementById('sash-color')?.value || '';
+            
+            if (!siteName) {
+                alert('現場名を入力してください');
+                return;
+            }
+            
+            if (!sashColor) {
+                alert('色を選択してください');
+                return;
+            }
+            
+            // 保存データの構造
+            const saveData = {
+                id: currentSaveId || Date.now().toString(),
+                siteName: siteName,
+                sashColor: sashColor,
+                pattern: currentPattern,
+                lines: JSON.parse(JSON.stringify(lines)),
+                dimensions: JSON.parse(JSON.stringify(dimensions)),
+                commonWidth: commonWidth,
+                commonHeight: commonHeight,
+                useIndividualWidth: useIndividualWidth,
+                corners: JSON.parse(JSON.stringify(corners || {})),
+                savedAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            
+            // 既存データの取得
+            let savedDataList = JSON.parse(localStorage.getItem('kutai_saved_data') || '[]');
+            
+            // 上書きまたは新規追加
+            const existingIndex = savedDataList.findIndex(data => data.id === saveData.id);
+            if (existingIndex >= 0) {
+                saveData.savedAt = savedDataList[existingIndex].savedAt; // 作成日時は保持
+                savedDataList[existingIndex] = saveData;
+                alert('データを上書き保存しました');
+            } else {
+                savedDataList.push(saveData);
+                currentSaveId = saveData.id;
+                alert('データを保存しました');
+            }
+            
+            // 保存
+            localStorage.setItem('kutai_saved_data', JSON.stringify(savedDataList));
+        }
+        
+        // 保存データリスト画面を表示
+        function showSavedDataList() {
+            document.getElementById('pattern-select-screen').style.display = 'none';
+            document.getElementById('measurement-screen').style.display = 'none';
+            document.getElementById('saved-data-screen').style.display = 'block';
+            
+            displaySavedDataList();
+        }
+        
+        // 保存データリストを表示
+        function displaySavedDataList() {
+            const savedDataList = JSON.parse(localStorage.getItem('kutai_saved_data') || '[]');
+            const listElement = document.getElementById('saved-data-list');
+            const noDataElement = document.getElementById('no-saved-data');
+            
+            if (savedDataList.length === 0) {
+                listElement.style.display = 'none';
+                noDataElement.style.display = 'block';
+                return;
+            }
+            
+            listElement.style.display = 'block';
+            noDataElement.style.display = 'none';
+            
+            // 日付順にソート（新しい順）
+            savedDataList.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+            
+            let html = '<div style="display: flex; flex-direction: column; gap: 12px;">';
+            
+            savedDataList.forEach(data => {
+                const updatedDate = new Date(data.updatedAt).toLocaleDateString('ja-JP', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                html += `
+                    <div class="saved-data-item" data-id="${data.id}" style="background: white; border: 2px solid #e5e7eb; border-radius: 8px; padding: 16px; cursor: pointer; transition: all 0.2s;">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div onclick="loadSavedData('${data.id}')" style="flex: 1;">
+                                <div style="font-size: 18px; font-weight: bold; color: #1f2937; margin-bottom: 8px;">
+                                    📍 ${data.siteName} ／ 🎨 ${data.sashColor}
+                                </div>
+                                <div style="font-size: 13px; color: #6b7280;">
+                                    更新: ${updatedDate}
+                                </div>
+                            </div>
+                            <button onclick="event.stopPropagation(); deleteSavedData('${data.id}')" 
+                                style="padding: 8px 16px; background: #ef4444; color: white; border: none; border-radius: 6px; font-size: 13px; cursor: pointer;">
+                                🗑️ 削除
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            listElement.innerHTML = html;
+        }
+        
+        // 保存データを読み込み
+        function loadSavedData(id) {
+            const savedDataList = JSON.parse(localStorage.getItem('kutai_saved_data') || '[]');
+            const data = savedDataList.find(d => d.id === id);
+            
+            if (!data) {
+                alert('データが見つかりません');
+                return;
+            }
+            
+            // 現在のIDを設定
+            currentSaveId = id;
+            
+            // パターンを設定
+            currentPattern = data.pattern;
+            
+            // 画面遷移
+            document.getElementById('saved-data-screen').style.display = 'none';
+            document.getElementById('measurement-screen').style.display = 'block';
+            
+            // データを復元
+            lines = JSON.parse(JSON.stringify(data.lines));
+            dimensions = JSON.parse(JSON.stringify(data.dimensions));
+            commonWidth = data.commonWidth;
+            commonHeight = data.commonHeight;
+            useIndividualWidth = data.useIndividualWidth;
+            corners = JSON.parse(JSON.stringify(data.corners || {}));
+            
+            // 入力値を復元
+            document.getElementById('site-name').value = data.siteName;
+            document.getElementById('sash-color').value = data.sashColor;
+            
+            // パターンタイトル設定
+            const patternTitles = {
+                'i': 'I字型 採寸',
+                'l-left': '左L字型 採寸',
+                'l-right': '右L字型 採寸',
+                'u': 'コの字型 採寸',
+                'custom': '自由作図'
+            };
+            document.getElementById('pattern-title').textContent = patternTitles[currentPattern] || '採寸入力';
+            
+            // canvasサイズ設定と描画
+            setTimeout(() => {
+                resizeCanvas();
+                setTimeout(() => {
+                    drawLines();
+                    createInputs();
+                    calculate();
+                }, 50);
+            }, 10);
+        }
+        
+        // 保存データを削除
+        function deleteSavedData(id) {
+            if (!confirm('このデータを削除してもよろしいですか？')) {
+                return;
+            }
+            
+            let savedDataList = JSON.parse(localStorage.getItem('kutai_saved_data') || '[]');
+            savedDataList = savedDataList.filter(data => data.id !== id);
+            localStorage.setItem('kutai_saved_data', JSON.stringify(savedDataList));
+            
+            if (currentSaveId === id) {
+                currentSaveId = null;
+            }
+            
+            displaySavedDataList();
+            alert('データを削除しました');
+        }
+        
+        // 保存データをフィルタリング
+        function filterSavedData() {
+            const searchName = document.getElementById('search-site-name').value.toLowerCase();
+            const searchColor = document.getElementById('search-color').value;
+            
+            const savedDataList = JSON.parse(localStorage.getItem('kutai_saved_data') || '[]');
+            
+            let filteredList = savedDataList;
+            
+            // 現場名でフィルタ
+            if (searchName) {
+                filteredList = filteredList.filter(data => 
+                    data.siteName.toLowerCase().includes(searchName)
+                );
+            }
+            
+            // 色でフィルタ
+            if (searchColor) {
+                filteredList = filteredList.filter(data => 
+                    data.sashColor === searchColor
+                );
+            }
+            
+            const listElement = document.getElementById('saved-data-list');
+            const noDataElement = document.getElementById('no-saved-data');
+            
+            if (filteredList.length === 0) {
+                listElement.style.display = 'none';
+                noDataElement.style.display = 'block';
+                noDataElement.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #9ca3af;">
+                        <div style="font-size: 48px; margin-bottom: 16px;">🔍</div>
+                        <div style="font-size: 18px; font-weight: bold; margin-bottom: 8px;">検索結果が見つかりません</div>
+                        <div style="font-size: 14px;">別の検索条件をお試しください</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            listElement.style.display = 'block';
+            noDataElement.style.display = 'none';
+            
+            // 日付順にソート
+            filteredList.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+            
+            let html = '<div style="display: flex; flex-direction: column; gap: 12px;">';
+            
+            filteredList.forEach(data => {
+                const updatedDate = new Date(data.updatedAt).toLocaleDateString('ja-JP', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                html += `
+                    <div class="saved-data-item" data-id="${data.id}" style="background: white; border: 2px solid #e5e7eb; border-radius: 8px; padding: 16px; cursor: pointer; transition: all 0.2s;">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div onclick="loadSavedData('${data.id}')" style="flex: 1;">
+                                <div style="font-size: 18px; font-weight: bold; color: #1f2937; margin-bottom: 8px;">
+                                    📍 ${data.siteName} ／ 🎨 ${data.sashColor}
+                                </div>
+                                <div style="font-size: 13px; color: #6b7280;">
+                                    更新: ${updatedDate}
+                                </div>
+                            </div>
+                            <button onclick="event.stopPropagation(); deleteSavedData('${data.id}')" 
+                                style="padding: 8px 16px; background: #ef4444; color: white; border: none; border-radius: 6px; font-size: 13px; cursor: pointer;">
+                                🗑️ 削除
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            listElement.innerHTML = html;
+        }
+        
+        // 保存データリストからパターン選択に戻る
+        function backToSelectFromSaved() {
+            document.getElementById('saved-data-screen').style.display = 'none';
+            document.getElementById('pattern-select-screen').style.display = 'block';
+            
+            // 検索フィルタをリセット
+            document.getElementById('search-site-name').value = '';
+            document.getElementById('search-color').value = '';
+        }
+        
+        // ========================================
+        
+        
+        // 必須項目チェック（NEW - v1.15.0）
+        function checkRequiredFields() {
+            calculate();
+        }
+        
         function calculate() {
             const resultsContent = document.getElementById('results-content');
             let html = '';
             let hasAll = true;
             let missingItems = [];
+            
+            // 現場名とサッシ色の必須チェック（NEW - v1.15.0）
+            const siteName = document.getElementById('site-name')?.value || '';
+            const sashColor = document.getElementById('sash-color')?.value || '';
+            
+            if (!siteName) {
+                hasAll = false;
+                missingItems.push('現場名');
+            }
+            
+            if (!sashColor) {
+                hasAll = false;
+                missingItems.push('サッシ色');
+            }
             
             detectCorners();
             
@@ -3165,6 +3562,7 @@
             
             try {
                 const siteName = document.getElementById('site-name')?.value || '';
+                const sashColor = document.getElementById('sash-color')?.value || '';
                 
                 //計算結果部分のHTMLを作成
                 const resultDiv = document.createElement('div');
@@ -3174,7 +3572,7 @@
                 resultDiv.innerHTML = `
                     <div style="text-align: center; margin-bottom: 20px; border-bottom: 3px solid #2563eb; padding-bottom: 15px;">
                         <h1 style="font-size: 28px; color: #1e40af; margin: 0 0 10px 0;">躯体採寸システム</h1>
-                        ${siteName ? `<h2 style="font-size: 20px; color: #374151; margin: 0 0 10px 0;">📍 ${siteName}</h2>` : ''}
+                        ${siteName || sashColor ? `<h2 style="font-size: 18px; color: #374151; margin: 0 0 10px 0;">📍 ${siteName}${sashColor ? ` ／ 🎨 ${sashColor}` : ''}</h2>` : ''}
                         <p style="font-size: 14px; color: #6b7280; margin: 0;">${new Date().toLocaleDateString('ja-JP', {year: 'numeric', month: 'long', day: 'numeric'})}</p>
                     </div>
                 `;
@@ -3250,6 +3648,7 @@
             
             try {
                 const siteName = document.getElementById('site-name')?.value || '';
+                const sashColor = document.getElementById('sash-color')?.value || '';
                 
                 // 計算結果部分のHTMLを作成（PDFと同じ）
                 const resultDiv = document.createElement('div');
@@ -3258,7 +3657,7 @@
                 resultDiv.innerHTML = `
                     <div style="text-align: center; margin-bottom: 20px; border-bottom: 3px solid #2563eb; padding-bottom: 15px;">
                         <h1 style="font-size: 28px; color: #1e40af; margin: 0 0 10px 0;">躯体採寸システム</h1>
-                        ${siteName ? `<h2 style="font-size: 20px; color: #374151; margin: 0 0 10px 0;">📍 ${siteName}</h2>` : ''}
+                        ${siteName || sashColor ? `<h2 style="font-size: 18px; color: #374151; margin: 0 0 10px 0;">📍 ${siteName}${sashColor ? ` ／ 🎨 ${sashColor}` : ''}</h2>` : ''}
                         <p style="font-size: 14px; color: #6b7280; margin: 0;">${new Date().toLocaleDateString('ja-JP', {year: 'numeric', month: 'long', day: 'numeric'})}</p>
                     </div>
                 `;
@@ -3322,6 +3721,7 @@
             
             try {
                 const siteName = document.getElementById('site-name')?.value || '';
+                const sashColor = document.getElementById('sash-color')?.value || '';
                 
                 // 計算結果部分のHTMLを作成
                 const resultDiv = document.createElement('div');
@@ -3330,7 +3730,7 @@
                 resultDiv.innerHTML = `
                     <div style="text-align: center; margin-bottom: 20px; border-bottom: 3px solid #2563eb; padding-bottom: 15px;">
                         <h1 style="font-size: 28px; color: #1e40af; margin: 0 0 10px 0;">躯体採寸システム</h1>
-                        ${siteName ? `<h2 style="font-size: 20px; color: #374151; margin: 0 0 10px 0;">📍 ${siteName}</h2>` : ''}
+                        ${siteName || sashColor ? `<h2 style="font-size: 18px; color: #374151; margin: 0 0 10px 0;">📍 ${siteName}${sashColor ? ` ／ 🎨 ${sashColor}` : ''}</h2>` : ''}
                         <p style="font-size: 14px; color: #6b7280; margin: 0;">${new Date().toLocaleDateString('ja-JP', {year: 'numeric', month: 'long', day: 'numeric'})}</p>
                     </div>
                 `;
