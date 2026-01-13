@@ -14,10 +14,16 @@
     ========================================
     躯体採寸システム
     ========================================
-    バージョン: 1.16.0
+    バージョン: 1.16.1
     最終更新: 2024-12-28
     
     [更新履歴]
+    v1.16.1 (2024-12-28)
+    - 共有時の計算結果に躯体高さを表示
+    - 躯体高さ≤1100の場合、追加計算式を表示
+      (1100 - 20 - 躯体高さ = 答え)
+      (1100 - 30 - 躯体高さ = 答え)
+    
     v1.16.0 (2024-12-28)
     - 入力データの保存機能を追加
     - 保存データ一覧画面を追加
@@ -548,7 +554,7 @@
             
             <!-- バージョン情報 -->
             <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 13px;">
-                <div style="margin-bottom: 5px;">躯体採寸システム v1.16.0</div>
+                <div style="margin-bottom: 5px;">躯体採寸システム v1.16.1</div>
                 <div>最終更新: 2024-12-28</div>
             </div>
         </div>
@@ -3550,6 +3556,31 @@
             });
             
             resultsHTML += '</div>';
+            
+            // 躯体高さ情報を追加（v1.16.1）
+            if (commonHeight) {
+                resultsHTML += `
+                    <div style="margin-top: 12px; padding: 8px; background: #f0f9ff; border-radius: 4px; border: 1px solid #bfdbfe;">
+                        <div style="color: #1e40af; font-weight: 600; font-size: 12px; margin-bottom: 4px;">
+                            📏 躯体高さ: ${commonHeight}mm
+                        </div>
+                `;
+                
+                // 1100以下の場合の特別計算（v1.16.1）
+                if (commonHeight <= 1100) {
+                    const calc1 = 1100 - 20 - commonHeight;
+                    const calc2 = 1100 - 30 - commonHeight;
+                    resultsHTML += `
+                        <div style="color: #6b7280; font-size: 9px; line-height: 1.5; margin-top: 4px;">
+                            1100 - 20 - ${commonHeight} = ${calc1}mm<br>
+                            1100 - 30 - ${commonHeight} = ${calc2}mm
+                        </div>
+                    `;
+                }
+                
+                resultsHTML += `</div>`;
+            }
+            
             return resultsHTML;
         }
         
