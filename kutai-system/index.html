@@ -14,10 +14,23 @@
     ========================================
     躯体採寸システム
     ========================================
-    バージョン: 1.17.0
+    バージョン: 1.17.2
     最終更新: 2024-12-28
     
     [更新履歴]
+    v1.17.2 (2024-12-28)
+    - 点の形状を最終調整
+      コーナー: 赤▼（下向き三角）そのまま
+      壁: 緑■（正方形）に変更
+      エンド: 青★（星）に変更
+    - より視覚的に識別しやすく改善
+    
+    v1.17.1 (2024-12-28)
+    - 点の形状を変更して識別しやすく改善
+      コーナー: 赤▼（下向き三角）
+      壁: 緑◆（ひし形）
+      エンド: 青●（丸）
+    
     v1.17.0 (2024-12-28)
     - 自由作図に「✂️ 縁切り」機能を追加
     - 独立した複数の線を引けるようになった
@@ -582,7 +595,7 @@
             
             <!-- バージョン情報 -->
             <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 13px;">
-                <div style="margin-bottom: 5px;">躯体採寸システム v1.17.0</div>
+                <div style="margin-bottom: 5px;">躯体採寸システム v1.17.2</div>
                 <div>最終更新: 2024-12-28</div>
             </div>
         </div>
@@ -732,19 +745,19 @@
             <h2>🔴 点の種類について（重要）</h2>
             <p>計算結果は点の種類によって変わります：</p>
             
-            <h3>🔴 赤（コーナー）</h3>
+            <h3>🔻 赤▼（コーナー）</h3>
             <ul>
                 <li>2つの辺が接続する角</li>
                 <li><strong>両側の辺の幅の半分ずつを引く</strong></li>
             </ul>
             
-            <h3>🔵 青（エンド）</h3>
+            <h3>⭐ 青★（エンド）</h3>
             <ul>
                 <li>辺の端点（壁なし）</li>
                 <li><strong>隣接する辺の幅を引かない</strong></li>
             </ul>
             
-            <h3>🟢 緑（壁）</h3>
+            <h3>🟩 緑■（壁）</h3>
             <ul>
                 <li>壁や段差に接する点</li>
                 <li><strong>隣接する辺の幅を引かない</strong></li>
@@ -779,6 +792,7 @@
         let useIndividualWidth = false;
         let commonHeight = null;
         let corners = {};
+        let isAfterCut = false;  // 縁切り直後フラグ（v1.17.2）
         
         // コーナーを検出
         function detectCorners() {
@@ -1254,17 +1268,92 @@
             const colors = {
                 'corner': '#e74c3c',
                 'end': '#3498db',
-                'wall': '#2ecc71'
+                'wall': '#2ecc71',
+                'cut': '#f59e0b'  // 縁切り端点：オレンジ（v1.17.2）
             };
             
-            ctx.fillStyle = colors[state] || colors['end'];
-            ctx.beginPath();
-            ctx.arc(x, y, 10, 0, Math.PI * 2);
-            ctx.fill();
+            const color = colors[state] || colors['end'];
             
-            ctx.strokeStyle = 'white';
-            ctx.lineWidth = 3;
-            ctx.stroke();
+            ctx.save();
+            
+            // 形状に応じて描画（v1.17.2）
+            if (state === 'corner') {
+                // コーナー: 赤い▼（下向き三角形）
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.moveTo(x, y + 10);           // 下の頂点
+                ctx.lineTo(x - 10, y - 8);       // 左上
+                ctx.lineTo(x + 10, y - 8);       // 右上
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                
+            } else if (state === 'wall') {
+                // 壁: 緑の■（正方形）（v1.17.2）
+                ctx.fillStyle = color;
+                ctx.fillRect(x - 10, y - 10, 20, 20);
+                
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(x - 10, y - 10, 20, 20);
+                
+            } else if (state === 'cut') {
+                // 縁切り端点: 黄色の★（星）（v1.17.2）
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                const outerRadius = 12;
+                const innerRadius = 5;
+                const spikes = 5;
+                
+                for (let i = 0; i < spikes * 2; i++) {
+                    const angle = (i * Math.PI) / spikes - Math.PI / 2;
+                    const radius = i % 2 === 0 ? outerRadius : innerRadius;
+                    const px = x + Math.cos(angle) * radius;
+                    const py = y + Math.sin(angle) * radius;
+                    if (i === 0) {
+                        ctx.moveTo(px, py);
+                    } else {
+                        ctx.lineTo(px, py);
+                    }
+                }
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                
+            } else {
+                // エンド: 青い★（星）（v1.17.2）
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                const outerRadius = 12;
+                const innerRadius = 5;
+                const spikes = 5;
+                
+                for (let i = 0; i < spikes * 2; i++) {
+                    const angle = (i * Math.PI) / spikes - Math.PI / 2;
+                    const radius = i % 2 === 0 ? outerRadius : innerRadius;
+                    const px = x + Math.cos(angle) * radius;
+                    const py = y + Math.sin(angle) * radius;
+                    if (i === 0) {
+                        ctx.moveTo(px, py);
+                    } else {
+                        ctx.lineTo(px, py);
+                    }
+                }
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            }
+            
+            ctx.restore();
         }
         
         // 2つの線が90度かどうか判定
@@ -1475,9 +1564,9 @@
             infoDiv.style.cssText = 'background: #e3f2fd; padding: 12px; border-radius: 8px; margin-bottom: 15px;';
             infoDiv.innerHTML = `
                 <p style="margin: 0; color: #555; font-size: 14px; line-height: 1.6;">
-                    <span style="color: #e74c3c; font-size: 16px;">●</span> <strong>赤＝コーナー</strong>（躯体幅÷2を引く）　
-                    <span style="color: #3498db; font-size: 16px;">●</span> <strong>青＝エンド</strong>（壁なし）　
-                    <span style="color: #2ecc71; font-size: 16px;">●</span> <strong>緑＝壁</strong>（壁あり）
+                    <span style="color: #e74c3c; font-size: 16px;">▼</span> <strong>赤い三角＝コーナー</strong>（躯体幅÷2を引く）　
+                    <span style="color: #3498db; font-size: 16px;">★</span> <strong>青い星＝エンド</strong>（壁なし）　
+                    <span style="color: #2ecc71; font-size: 16px;">■</span> <strong>緑の四角＝壁</strong>（壁あり）
                 </p>
             `;
             container.appendChild(infoDiv);
