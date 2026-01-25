@@ -14,10 +14,20 @@
     ========================================
     躯体採寸システム
     ========================================
-    バージョン: 1.17.2
+    バージョン: 1.17.4
     最終更新: 2024-12-28
     
     [更新履歴]
+    v1.17.4 (2024-12-28)
+    - 段差時の点の間隔を拡大（重なり防止）
+    - 作図画面: 20px → 32px
+    - 計算結果: 20px → 30px
+    
+    v1.17.3 (2024-12-28)
+    - 点の形状（▼■★）を約1.4倍に拡大
+    - 作図画面、計算結果の両方で拡大
+    - より視認性が向上
+    
     v1.17.2 (2024-12-28)
     - 点の形状を最終調整
       コーナー: 赤▼（下向き三角）そのまま
@@ -595,7 +605,7 @@
             
             <!-- バージョン情報 -->
             <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 13px;">
-                <div style="margin-bottom: 5px;">躯体採寸システム v1.17.2</div>
+                <div style="margin-bottom: 5px;">躯体採寸システム v1.17.4</div>
                 <div>最終更新: 2024-12-28</div>
             </div>
         </div>
@@ -1206,7 +1216,7 @@
                             const state1 = line1[line1Ref.point] || 'wall';
                             const state2 = line2[line2Ref.point] || 'wall';
                             
-                            const offset = 20;
+                            const offset = 32;  // 20 → 32（点が大きくなったため v1.17.4）
                             
                             let dx1, dy1;
                             if (line1Ref.point === 'start') {
@@ -1276,36 +1286,36 @@
             
             ctx.save();
             
-            // 形状に応じて描画（v1.17.2）
+            // 形状に応じて描画（v1.17.3 - サイズ拡大）
             if (state === 'corner') {
                 // コーナー: 赤い▼（下向き三角形）
                 ctx.fillStyle = color;
                 ctx.beginPath();
-                ctx.moveTo(x, y + 10);           // 下の頂点
-                ctx.lineTo(x - 10, y - 8);       // 左上
-                ctx.lineTo(x + 10, y - 8);       // 右上
+                ctx.moveTo(x, y + 14);                // 下の頂点（10→14）
+                ctx.lineTo(x - 14, y - 11);           // 左上（-10/-8 → -14/-11）
+                ctx.lineTo(x + 14, y - 11);           // 右上（+10/-8 → +14/-11）
                 ctx.closePath();
                 ctx.fill();
                 
                 ctx.strokeStyle = 'white';
-                ctx.lineWidth = 3;
+                ctx.lineWidth = 4;                    // 3→4
                 ctx.stroke();
                 
             } else if (state === 'wall') {
-                // 壁: 緑の■（正方形）（v1.17.2）
+                // 壁: 緑の■（正方形）
                 ctx.fillStyle = color;
-                ctx.fillRect(x - 10, y - 10, 20, 20);
+                ctx.fillRect(x - 14, y - 14, 28, 28); // 20x20 → 28x28
                 
                 ctx.strokeStyle = 'white';
-                ctx.lineWidth = 3;
-                ctx.strokeRect(x - 10, y - 10, 20, 20);
+                ctx.lineWidth = 4;                    // 3→4
+                ctx.strokeRect(x - 14, y - 14, 28, 28);
                 
             } else if (state === 'cut') {
-                // 縁切り端点: 黄色の★（星）（v1.17.2）
+                // 縁切り端点: 黄色の★（星）
                 ctx.fillStyle = color;
                 ctx.beginPath();
-                const outerRadius = 12;
-                const innerRadius = 5;
+                const outerRadius = 17;               // 12→17
+                const innerRadius = 7;                // 5→7
                 const spikes = 5;
                 
                 for (let i = 0; i < spikes * 2; i++) {
@@ -1323,15 +1333,15 @@
                 ctx.fill();
                 
                 ctx.strokeStyle = 'white';
-                ctx.lineWidth = 3;
+                ctx.lineWidth = 4;                    // 3→4
                 ctx.stroke();
                 
             } else {
-                // エンド: 青い★（星）（v1.17.2）
+                // エンド: 青い★（星）
                 ctx.fillStyle = color;
                 ctx.beginPath();
-                const outerRadius = 12;
-                const innerRadius = 5;
+                const outerRadius = 17;               // 12→17
+                const innerRadius = 7;                // 5→7
                 const spikes = 5;
                 
                 for (let i = 0; i < spikes * 2; i++) {
@@ -1349,7 +1359,7 @@
                 ctx.fill();
                 
                 ctx.strokeStyle = 'white';
-                ctx.lineWidth = 3;
+                ctx.lineWidth = 4;                    // 3→4
                 ctx.stroke();
             }
             
@@ -2494,16 +2504,64 @@
                     'wall': '#10b981'
                 };
                 
-                ctx.fillStyle = colors[state] || colors['end'];
-                ctx.beginPath();
-                ctx.arc(transformX(x), transformY(y), 6, 0, Math.PI * 2);
-                ctx.fill();
+                const color = colors[state] || colors['end'];
+                const px = transformX(x);
+                const py = transformY(y);
                 
-                ctx.strokeStyle = 'white';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.arc(transformX(x), transformY(y), 6, 0, Math.PI * 2);
-                ctx.stroke();
+                ctx.save();
+                
+                // 形状に応じて描画（v1.17.3 - サイズ拡大）
+                if (state === 'corner') {
+                    // コーナー: 赤い▼（下向き三角形）
+                    ctx.fillStyle = color;
+                    ctx.beginPath();
+                    ctx.moveTo(px, py + 12);          // 下の頂点（8→12）
+                    ctx.lineTo(px - 12, py - 9);      // 左上（-8/-6 → -12/-9）
+                    ctx.lineTo(px + 12, py - 9);      // 右上（+8/-6 → +12/-9）
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    ctx.strokeStyle = 'white';
+                    ctx.lineWidth = 2.5;
+                    ctx.stroke();
+                    
+                } else if (state === 'wall') {
+                    // 壁: 緑の■（正方形）
+                    ctx.fillStyle = color;
+                    ctx.fillRect(px - 12, py - 12, 24, 24);  // 16x16 → 24x24
+                    
+                    ctx.strokeStyle = 'white';
+                    ctx.lineWidth = 2.5;
+                    ctx.strokeRect(px - 12, py - 12, 24, 24);
+                    
+                } else {
+                    // エンド: 青い★（星）
+                    ctx.fillStyle = color;
+                    ctx.beginPath();
+                    const outerRadius = 15;           // 10 → 15
+                    const innerRadius = 6;            // 4 → 6
+                    const spikes = 5;
+                    
+                    for (let i = 0; i < spikes * 2; i++) {
+                        const angle = (i * Math.PI) / spikes - Math.PI / 2;
+                        const radius = i % 2 === 0 ? outerRadius : innerRadius;
+                        const sx = px + Math.cos(angle) * radius;
+                        const sy = py + Math.sin(angle) * radius;
+                        if (i === 0) {
+                            ctx.moveTo(sx, sy);
+                        } else {
+                            ctx.lineTo(sx, sy);
+                        }
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    ctx.strokeStyle = 'white';
+                    ctx.lineWidth = 2.5;
+                    ctx.stroke();
+                }
+                
+                ctx.restore();
             }
             
             detectCorners();
@@ -2630,7 +2688,7 @@
                             const state1 = line1[line1Ref.point] || 'wall';
                             const state2 = line2[line2Ref.point] || 'wall';
                             
-                            const offset = 20;
+                            const offset = 30;  // 20 → 30（点が大きくなったため v1.17.4）
                             
                             const rLine1 = realLines.find(rl => rl.line.id === line1.id);
                             const rLine2 = realLines.find(rl => rl.line.id === line2.id);
@@ -2694,23 +2752,77 @@
             ctx.fillText('点の種類', legendX, legendY);
             
             const legendItems = [
-                { color: '#ef4444', label: 'コーナー' },
-                { color: '#3b82f6', label: 'エンド' },
-                { color: '#10b981', label: '壁' }
+                { color: '#ef4444', label: 'コーナー', shape: 'corner' },
+                { color: '#3b82f6', label: 'エンド', shape: 'end' },
+                { color: '#10b981', label: '壁', shape: 'wall' }
             ];
             
             legendItems.forEach((item, index) => {
                 const itemY = legendY + 22 + index * 18;
+                const iconX = legendX + 6;
                 
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-                ctx.beginPath();
-                ctx.arc(legendX + 6, itemY + 1, 5, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.save();
                 
-                ctx.fillStyle = item.color;
-                ctx.beginPath();
-                ctx.arc(legendX + 5, itemY, 5, 0, Math.PI * 2);
-                ctx.fill();
+                // 形状に応じた凡例アイコンを描画（v1.17.2）
+                if (item.shape === 'corner') {
+                    // コーナー: 赤い▼
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                    ctx.beginPath();
+                    ctx.moveTo(iconX, itemY + 6);
+                    ctx.lineTo(iconX - 5, itemY - 4);
+                    ctx.lineTo(iconX + 5, itemY - 4);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    ctx.fillStyle = item.color;
+                    ctx.beginPath();
+                    ctx.moveTo(iconX - 1, itemY + 5);
+                    ctx.lineTo(iconX - 6, itemY - 5);
+                    ctx.lineTo(iconX + 4, itemY - 5);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                } else if (item.shape === 'wall') {
+                    // 壁: 緑の■
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                    ctx.fillRect(iconX - 4, itemY - 4, 9, 9);
+                    
+                    ctx.fillStyle = item.color;
+                    ctx.fillRect(iconX - 5, itemY - 5, 9, 9);
+                    
+                } else {
+                    // エンド: 青い★
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                    ctx.beginPath();
+                    const outerRadius = 6;
+                    const innerRadius = 2.5;
+                    const spikes = 5;
+                    for (let i = 0; i < spikes * 2; i++) {
+                        const angle = (i * Math.PI) / spikes - Math.PI / 2;
+                        const radius = i % 2 === 0 ? outerRadius : innerRadius;
+                        const sx = iconX + 1 + Math.cos(angle) * radius;
+                        const sy = itemY + 1 + Math.sin(angle) * radius;
+                        if (i === 0) ctx.moveTo(sx, sy);
+                        else ctx.lineTo(sx, sy);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    ctx.fillStyle = item.color;
+                    ctx.beginPath();
+                    for (let i = 0; i < spikes * 2; i++) {
+                        const angle = (i * Math.PI) / spikes - Math.PI / 2;
+                        const radius = i % 2 === 0 ? outerRadius : innerRadius;
+                        const sx = iconX + Math.cos(angle) * radius;
+                        const sy = itemY + Math.sin(angle) * radius;
+                        if (i === 0) ctx.moveTo(sx, sy);
+                        else ctx.lineTo(sx, sy);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                
+                ctx.restore();
                 
                 ctx.font = '11px sans-serif';
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
@@ -2746,9 +2858,9 @@
                     </button>
                     <h3 style="margin: 15px 0 10px 0; color: #1976d2; font-size: 16px;">🎨 点の意味</h3>
                     <p style="margin: 0; color: #555; font-size: 14px;">
-                        <span style="color: #e74c3c;">●</span> 赤：コーナー（躯体幅÷2を引く）<br>
-                        <span style="color: #3498db;">●</span> 青：エンド（端部、壁なし）<br>
-                        <span style="color: #2ecc71;">●</span> 緑：壁（壁あり）<br>
+                        <span style="color: #e74c3c;">▼</span> 赤：コーナー（躯体幅÷2を引く）<br>
+                        <span style="color: #3498db;">★</span> 青：エンド（端部、壁なし）<br>
+                        <span style="color: #2ecc71;">■</span> 緑：壁（壁あり）<br>
                         <strong>作図終了後、点をタップで切り替え</strong>
                     </p>
                 </div>
