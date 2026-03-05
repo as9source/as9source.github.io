@@ -14,10 +14,18 @@
     ========================================
     躯体採寸システム
     ========================================
-    バージョン: 1.20.2
+    バージョン: 1.21.0
     最終更新: 2024-12-28
     
     [更新履歴]
+    v1.21.0 (2024-12-28) - Dropbox統合
+    - Dropboxとの連携機能を追加
+    - 階層フォルダ構造での自動保存（年/月）
+    - ファイル一覧表示機能
+    - データの完全復元機能
+    - 画像（PNG）とデータ（JSON）を同時保存
+    - 認証状態の永続化
+    
     v1.20.2 (2024-12-28) - 共有機能の完全修正
     - shareResult関数を完全に書き直し
     - toBlobをPromiseベースに変更
@@ -259,6 +267,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- html2canvas ライブラリ（ページ全体キャプチャ用） -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- Dropbox SDK (v1.21.0) -->
+    <script src="https://unpkg.com/dropbox/dist/Dropbox-sdk.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -694,7 +705,7 @@
             
             <!-- バージョン情報 -->
             <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 13px;">
-                <div style="margin-bottom: 5px;">躯体採寸システム v1.20.2</div>
+                <div style="margin-bottom: 5px;">躯体採寸システム v1.21.0</div>
                 <div>最終更新: 2024-12-28</div>
             </div>
         </div>
@@ -2505,6 +2516,15 @@
                         </button>
                         <button onclick="shareResult()" style="flex: 1; min-width: 140px; padding: 12px 20px; background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
                             📤 共有
+                        </button>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+                        <button onclick="saveToDropbox()" style="flex: 1; min-width: 180px; padding: 12px 20px; background: linear-gradient(135deg, #0061FF 0%, #0051D5 100%); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            💾 Dropboxに保存
+                        </button>
+                        <button onclick="loadFromDropbox()" style="flex: 1; min-width: 180px; padding: 12px 20px; background: linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            📂 Dropboxから開く
                         </button>
                     </div>
                 ` + html;
@@ -4386,3 +4406,358 @@
     </script>
 </body>
 </html>
+// Dropbox統合機能（v1.21.0）
+
+const DROPBOX_CONFIG = {
+    clientId: 'uoglq7u3AjYUC59',
+    redirectUri: window.location.origin + window.location.pathname
+};
+
+let dropboxClient = null;
+
+// Dropbox認証状態を確認
+function initDropbox() {
+    const accessToken = localStorage.getItem('dropbox_access_token');
+    if (accessToken) {
+        dropboxClient = new Dropbox.Dropbox({ accessToken: accessToken });
+        return true;
+    }
+    
+    // URLからアクセストークンを取得（認証後のリダイレクト）
+    const hash = window.location.hash;
+    if (hash) {
+        const params = new URLSearchParams(hash.substring(1));
+        const token = params.get('access_token');
+        if (token) {
+            localStorage.setItem('dropbox_access_token', token);
+            dropboxClient = new Dropbox.Dropbox({ accessToken: token });
+            // URLをクリーンアップ
+            window.location.hash = '';
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+// Dropbox認証を開始
+function authenticateDropbox() {
+    const dbx = new Dropbox.Dropbox({ clientId: DROPBOX_CONFIG.clientId });
+    const authUrl = dbx.auth.getAuthenticationUrl(DROPBOX_CONFIG.redirectUri);
+    window.location.href = authUrl;
+}
+
+// Dropboxに保存
+async function saveToDropbox() {
+    // 認証チェック
+    if (!dropboxClient) {
+        if (!initDropbox()) {
+            if (confirm('Dropboxにログインする必要があります。ログインページに移動しますか？')) {
+                authenticateDropbox();
+            }
+            return;
+        }
+    }
+    
+    // ローディング表示
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = 'dropbox-loading';
+    loadingDiv.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center;';
+    loadingDiv.innerHTML = '<div style="background: white; padding: 40px; border-radius: 12px; text-align: center;"><div style="font-size: 60px; margin-bottom: 20px;">☁️</div><div style="font-size: 20px; font-weight: bold; color: #333;">Dropboxに保存中...</div></div>';
+    document.body.appendChild(loadingDiv);
+    
+    try {
+        // 現在の日付を取得
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1;
+        const yearName = `${year}年`;
+        const monthName = `${month}月`;
+        
+        // フォルダパス
+        const folderPath = `/躯体採寸システム/${yearName}/${monthName}`;
+        
+        // フォルダを作成（存在しない場合）
+        try {
+            await dropboxClient.filesCreateFolderV2({ path: '/躯体採寸システム' });
+        } catch (e) {
+            // フォルダが既に存在する場合はエラーを無視
+        }
+        
+        try {
+            await dropboxClient.filesCreateFolderV2({ path: `/躯体採寸システム/${yearName}` });
+        } catch (e) {}
+        
+        try {
+            await dropboxClient.filesCreateFolderV2({ path: folderPath });
+        } catch (e) {}
+        
+        // ファイル名を生成
+        const siteName = document.getElementById('site-name')?.value || '現場';
+        const sashColor = document.getElementById('sash-color')?.value || '';
+        const dateStr = now.toISOString().split('T')[0];
+        const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '-');
+        const baseFilename = `${dateStr}_${timeStr}_${siteName}${sashColor ? '_' + sashColor : ''}`;
+        
+        // 画像を生成
+        const imageBlob = await generateImageForDropbox();
+        
+        // データをJSON化
+        const data = {
+            version: '1.21.0',
+            savedAt: now.toISOString(),
+            siteName: siteName,
+            sashColor: sashColor,
+            lines: lines,
+            dimensions: dimensions,
+            commonHeight: commonHeight,
+            corners: corners
+        };
+        const jsonStr = JSON.stringify(data, null, 2);
+        
+        // 画像をアップロード
+        await dropboxClient.filesUpload({
+            path: `${folderPath}/${baseFilename}.png`,
+            contents: imageBlob,
+            mode: 'overwrite'
+        });
+        
+        // JSONをアップロード
+        await dropboxClient.filesUpload({
+            path: `${folderPath}/${baseFilename}.json`,
+            contents: jsonStr,
+            mode: 'overwrite'
+        });
+        
+        document.body.removeChild(loadingDiv);
+        alert(`✅ Dropboxに保存しました！\n\n${folderPath}/\n${baseFilename}.png\n${baseFilename}.json`);
+        
+    } catch (error) {
+        document.body.removeChild(loadingDiv);
+        console.error('Dropbox保存エラー:', error);
+        
+        // 認証エラーの場合
+        if (error.status === 401) {
+            localStorage.removeItem('dropbox_access_token');
+            dropboxClient = null;
+            if (confirm('Dropboxの認証が期限切れです。再ログインしますか？')) {
+                authenticateDropbox();
+            }
+        } else {
+            alert('Dropboxへの保存に失敗しました: ' + error.message);
+        }
+    }
+}
+
+// Dropboxから読み込み
+async function loadFromDropbox() {
+    // 認証チェック
+    if (!dropboxClient) {
+        if (!initDropbox()) {
+            if (confirm('Dropboxにログインする必要があります。ログインページに移動しますか？')) {
+                authenticateDropbox();
+            }
+            return;
+        }
+    }
+    
+    // ローディング表示
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = 'dropbox-loading';
+    loadingDiv.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center;';
+    loadingDiv.innerHTML = '<div style="background: white; padding: 40px; border-radius: 12px; text-align: center;"><div style="font-size: 60px; margin-bottom: 20px;">📂</div><div style="font-size: 20px; font-weight: bold; color: #333;">ファイル一覧を取得中...</div></div>';
+    document.body.appendChild(loadingDiv);
+    
+    try {
+        // ファイル一覧を取得
+        const response = await dropboxClient.filesListFolder({
+            path: '/躯体採寸システム',
+            recursive: true
+        });
+        
+        document.body.removeChild(loadingDiv);
+        
+        // JSONファイルのみをフィルタ
+        const jsonFiles = response.result.entries.filter(entry => 
+            entry['.tag'] === 'file' && entry.name.endsWith('.json')
+        );
+        
+        if (jsonFiles.length === 0) {
+            alert('保存されたファイルが見つかりませんでした。');
+            return;
+        }
+        
+        // ファイル選択モーダルを表示
+        showFileSelectionModal(jsonFiles);
+        
+    } catch (error) {
+        document.body.removeChild(loadingDiv);
+        console.error('Dropboxファイル取得エラー:', error);
+        
+        if (error.status === 401) {
+            localStorage.removeItem('dropbox_access_token');
+            dropboxClient = null;
+            if (confirm('Dropboxの認証が期限切れです。再ログインしますか？')) {
+                authenticateDropbox();
+            }
+        } else if (error.error && error.error.error_summary && error.error.error_summary.includes('not_found')) {
+            alert('「躯体採寸システム」フォルダが見つかりません。まず保存してください。');
+        } else {
+            alert('ファイル一覧の取得に失敗しました: ' + error.message);
+        }
+    }
+}
+
+// ファイル選択モーダルを表示
+function showFileSelectionModal(files) {
+    const modal = document.createElement('div');
+    modal.id = 'file-selection-modal';
+    modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;';
+    
+    const modalContent = document.createElement('div');
+    modalContent.style.cssText = 'background: white; border-radius: 12px; width: 100%; max-width: 600px; max-height: 80vh; display: flex; flex-direction: column;';
+    
+    modalContent.innerHTML = `
+        <div style="padding: 20px; border-bottom: 2px solid #e5e7eb;">
+            <h2 style="margin: 0; font-size: 24px; color: #1e40af;">📂 Dropboxから開く</h2>
+        </div>
+        <div id="file-list" style="flex: 1; overflow-y: auto; padding: 20px;">
+            ${files.map((file, index) => {
+                const fileName = file.name.replace('.json', '');
+                const pathParts = file.path_display.split('/');
+                const folderInfo = pathParts.slice(2, -1).join(' / ');
+                
+                return `
+                    <div onclick="loadDropboxFile('${file.path_display}')" style="padding: 15px; margin-bottom: 10px; background: #f0f9ff; border-radius: 8px; cursor: pointer; border: 2px solid transparent; transition: all 0.2s;" onmouseover="this.style.borderColor='#3b82f6'" onmouseout="this.style.borderColor='transparent'">
+                        <div style="font-weight: bold; color: #1e40af; margin-bottom: 5px;">📄 ${fileName}</div>
+                        <div style="font-size: 12px; color: #6b7280;">${folderInfo}</div>
+                        <div style="font-size: 11px; color: #9ca3af; margin-top: 5px;">${file.client_modified}</div>
+                    </div>
+                `;
+            }).join('')}
+        </div>
+        <div style="padding: 20px; border-top: 2px solid #e5e7eb; display: flex; justify-content: flex-end;">
+            <button onclick="closeFileSelectionModal()" style="padding: 12px 24px; background: #6b7280; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer;">
+                キャンセル
+            </button>
+        </div>
+    `;
+    
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+}
+
+// モーダルを閉じる
+function closeFileSelectionModal() {
+    const modal = document.getElementById('file-selection-modal');
+    if (modal) {
+        document.body.removeChild(modal);
+    }
+}
+
+// Dropboxファイルを読み込む
+async function loadDropboxFile(filePath) {
+    closeFileSelectionModal();
+    
+    // ローディング表示
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = 'dropbox-loading';
+    loadingDiv.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center;';
+    loadingDiv.innerHTML = '<div style="background: white; padding: 40px; border-radius: 12px; text-align: center;"><div style="font-size: 60px; margin-bottom: 20px;">📥</div><div style="font-size: 20px; font-weight: bold; color: #333;">データを読み込み中...</div></div>';
+    document.body.appendChild(loadingDiv);
+    
+    try {
+        // ファイルをダウンロード
+        const response = await dropboxClient.filesDownload({ path: filePath });
+        const fileBlob = response.result.fileBlob;
+        
+        // Blobをテキストに変換
+        const text = await fileBlob.text();
+        const data = JSON.parse(text);
+        
+        // データを復元
+        lines = data.lines || [];
+        dimensions = data.dimensions || {};
+        commonHeight = data.commonHeight || null;
+        corners = data.corners || {};
+        
+        // UIを更新
+        if (data.siteName) {
+            document.getElementById('site-name').value = data.siteName;
+        }
+        if (data.sashColor) {
+            document.getElementById('sash-color').value = data.sashColor;
+        }
+        
+        // 図を再描画
+        drawLines();
+        
+        // 入力フィールドを再生成
+        createInputs();
+        
+        // 計算を実行
+        calculate();
+        
+        document.body.removeChild(loadingDiv);
+        alert('✅ データを読み込みました！');
+        
+    } catch (error) {
+        document.body.removeChild(loadingDiv);
+        console.error('Dropboxファイル読み込みエラー:', error);
+        alert('ファイルの読み込みに失敗しました: ' + error.message);
+    }
+}
+
+// 画像生成（Dropbox用）
+async function generateImageForDropbox() {
+    const siteName = document.getElementById('site-name')?.value || '';
+    const sashColor = document.getElementById('sash-color')?.value || '';
+    
+    const resultDiv = document.createElement('div');
+    resultDiv.style.cssText = 'width: 800px; padding: 30px; background: white; font-family: sans-serif;';
+    
+    resultDiv.innerHTML = `
+        <div style="text-align: center; margin-bottom: 20px; border-bottom: 3px solid #2563eb; padding-bottom: 15px;">
+            <h1 style="font-size: 28px; color: #1e40af; margin: 0 0 10px 0;">躯体採寸システム</h1>
+            ${siteName || sashColor ? `<h2 style="font-size: 18px; color: #374151; margin: 0 0 10px 0;">📍 ${siteName}${sashColor ? ` ／ 🎨 ${sashColor}` : ''}</h2>` : ''}
+            <p style="font-size: 14px; color: #6b7280; margin: 0;">${new Date().toLocaleDateString('ja-JP', {year: 'numeric', month: 'long', day: 'numeric'})}</p>
+        </div>
+    `;
+    
+    const resultCanvas = document.getElementById('result-canvas');
+    if (resultCanvas) {
+        const canvasDiv = document.createElement('div');
+        canvasDiv.style.cssText = 'margin-bottom: 20px; padding: 20px; background: #f0f9ff; border-radius: 10px;';
+        canvasDiv.innerHTML = '<h3 style="font-size: 18px; color: #1e40af; margin: 0 0 15px 0;">📐 測定図</h3>';
+        const canvasImg = document.createElement('img');
+        canvasImg.src = resultCanvas.toDataURL('image/png');
+        canvasImg.style.cssText = 'width: 100%; height: auto; display: block;';
+        canvasDiv.appendChild(canvasImg);
+        resultDiv.appendChild(canvasDiv);
+    }
+    
+    const resultsDiv = document.createElement('div');
+    resultsDiv.style.cssText = 'padding: 12px; background: #fef3c7; border-radius: 10px; border: 2px solid #f59e0b;';
+    resultsDiv.innerHTML = '<h3 style="font-size: 18px; color: #92400e; margin: 0 0 15px 0;">📊 計算結果</h3>';
+    resultsDiv.innerHTML += generateResultsHTML();
+    resultDiv.appendChild(resultsDiv);
+    
+    document.body.appendChild(resultDiv);
+    
+    const canvas = await html2canvas(resultDiv, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        logging: false,
+        useCORS: true,
+        allowTaint: true
+    });
+    
+    document.body.removeChild(resultDiv);
+    
+    return await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+}
+
+// 初期化
+window.addEventListener('load', function() {
+    initDropbox();
+});
