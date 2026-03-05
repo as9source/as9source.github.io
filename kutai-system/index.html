@@ -14,10 +14,69 @@
     ========================================
     躯体採寸システム
     ========================================
-    バージョン: 1.18.3
+    バージョン: 1.20.2
     最終更新: 2024-12-28
     
     [更新履歴]
+    v1.20.2 (2024-12-28) - 共有機能の完全修正
+    - shareResult関数を完全に書き直し
+    - toBlobをPromiseベースに変更
+    - ローディング表示を改善（より視認性が高く）
+    - エラーハンドリングをシンプル化
+    - 共有失敗時は自動的にダウンロードに切り替え
+    - GoodNotesでの使用に最適化
+    
+    v1.20.1 (2024-12-28) - 重要な修正
+    - lines配列の順番を保持するように修正
+    - 接続判定が正しく動作するように改善
+    - 縦線が横線の正しい位置から開始される
+    
+    v1.20.0 (2024-12-28) - ユーザー提案を実装
+    - 寸法未入力の線は元の座標をそのまま使用
+    - transformX/Yを適用せず、描画キャンバスの座標を保持
+    - 寸法入力済みの線のみスケーリング
+    - 自由作図の線が正確に表示されるように改善
+    
+    v1.19.1 (2024-12-28)
+    - v1.19.0の構文エラーを修正
+    - displayLinesの二重宣言を解消
+    - tempLinesとdisplayLinesに適切に分離
+    
+    v1.19.0 (2024-12-28) - 重要なアップデート
+    - 計算結果の描画ロジックを完全に書き直し
+    - 3段階のプロセスで座標を計算（構築→接続→スケール）
+    - 接続判定を前の線の表示座標ベースに修正
+    - L字型が正確に表示されるように完全修正
+    
+    v1.18.8 (2024-12-28)
+    - 接続判定のロジックを完全修正
+    - 元の座標で接続判定を行うように変更
+    - 縦線が正しい位置（横線の端）から開始される
+    - L字型が正確に表示される
+    
+    v1.18.7 (2024-12-28)
+    - 自由作図の線のスケール問題を完全修正
+    - 寸法未入力の線もピクセル長さをmmとして扱う
+    - 全ての線が統一されたスケールで表示される
+    - 接続判定も正しく動作するように修正
+    
+    v1.18.6 (2024-12-28)
+    - 自由作図の線の位置ずれを完全修正
+    - 寸法未入力の線は完全に元の座標を保持
+    - 寸法入力済みと未入力の線を完全に分離して処理
+    - 計算結果で自由作図の線が正確に表示される
+    
+    v1.18.5 (2024-12-28)
+    - 共有機能のローディングが消えない問題を修正
+    - html2canvas完了後すぐにローディングを削除
+    - 共有ボタンが正常に動作するように改善
+    
+    v1.18.4 (2024-12-28)
+    - 自由作図の線の位置と長さを正確に保持
+    - 寸法未入力の線は元の座標と長さで表示
+    - 寸法未入力の線は接続判定をスキップ
+    - 計算結果で自由作図の線が正しい位置に表示される
+    
     v1.18.3 (2024-12-28)
     - 自由作図で追加した線が計算結果に表示されない問題を修正
     - 寸法未入力の線も計算結果の図に表示されるように改善
@@ -635,7 +694,7 @@
             
             <!-- バージョン情報 -->
             <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 13px;">
-                <div style="margin-bottom: 5px;">躯体採寸システム v1.18.3</div>
+                <div style="margin-bottom: 5px;">躯体採寸システム v1.20.2</div>
                 <div>最終更新: 2024-12-28</div>
             </div>
         </div>
@@ -2506,6 +2565,7 @@
             
             if (lines.length === 0) return;
             
+            // 元のlines配列の順番を保持して処理（v1.20.1）
             const realLines = [];
             const minLength = 300;
             
@@ -2513,58 +2573,60 @@
                 const line = lines[i];
                 const dim = dimensions[line.id];
                 
-                // 寸法未入力の線も表示する（v1.18.3）
-                let realLength;
                 if (dim && dim.length) {
-                    realLength = dim.length;
-                } else {
-                    // 寸法未入力の場合、実測値（ピクセル長さ）を使用
+                    // 寸法入力済み：スケーリング適用
                     const dx = line.x2 - line.x1;
                     const dy = line.y2 - line.y1;
-                    realLength = Math.sqrt(dx * dx + dy * dy);
-                }
-                
-                const dx = line.x2 - line.x1;
-                const dy = line.y2 - line.y1;
-                const originalLength = Math.sqrt(dx * dx + dy * dy);
-                
-                if (originalLength === 0) continue;
-                
-                const dirX = dx / originalLength;
-                const dirY = dy / originalLength;
-                
-                let displayLength = Math.max(realLength * 0.2, minLength);
-                
-                let startX = line.x1;
-                let startY = line.y1;
-                
-                for (let j = 0; j < realLines.length; j++) {
-                    const prevLine = realLines[j].line;
+                    const originalLength = Math.sqrt(dx * dx + dy * dy);
                     
-                    if (Math.abs(line.x1 - prevLine.x2) < 1 && Math.abs(line.y1 - prevLine.y2) < 1) {
-                        startX = realLines[j].x2;
-                        startY = realLines[j].y2;
-                        break;
+                    if (originalLength === 0) continue;
+                    
+                    const dirX = dx / originalLength;
+                    const dirY = dy / originalLength;
+                    const displayLength = Math.max(dim.length * 0.2, minLength);
+                    
+                    // 前の線との接続判定
+                    let startX = line.x1;
+                    let startY = line.y1;
+                    
+                    if (i > 0 && realLines.length > 0) {
+                        const prevLine = lines[i - 1];
+                        const distToEnd = Math.sqrt(
+                            Math.pow(line.x1 - prevLine.x2, 2) + 
+                            Math.pow(line.y1 - prevLine.y2, 2)
+                        );
+                        
+                        if (distToEnd < 10) {
+                            startX = realLines[realLines.length - 1].x2;
+                            startY = realLines[realLines.length - 1].y2;
+                        }
                     }
                     
-                    if (Math.abs(line.x1 - prevLine.x1) < 1 && Math.abs(line.y1 - prevLine.y1) < 1) {
-                        startX = realLines[j].x1;
-                        startY = realLines[j].y1;
-                        break;
-                    }
+                    realLines.push({
+                        x1: startX,
+                        y1: startY,
+                        x2: startX + dirX * displayLength,
+                        y2: startY + dirY * displayLength,
+                        line: line,
+                        needsTransform: true
+                    });
+                    
+                } else {
+                    // 寸法未入力：元の座標をそのまま使用
+                    realLines.push({
+                        x1: line.x1,
+                        y1: line.y1,
+                        x2: line.x2,
+                        y2: line.y2,
+                        line: line,
+                        needsTransform: false
+                    });
                 }
-                
-                realLines.push({
-                    x1: startX,
-                    y1: startY,
-                    x2: startX + dirX * displayLength,
-                    y2: startY + dirY * displayLength,
-                    line: line
-                });
             }
             
             if (realLines.length === 0) return;
             
+            // バウンディングボックス計算
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
             
             realLines.forEach(rLine => {
@@ -2667,16 +2729,23 @@
             
             detectCorners();
             
-            realLines.forEach(rLine => {
-                const line = rLine.line;
+            realLines.forEach(dLine => {
+                const line = dLine.line;
                 
                 ctx.strokeStyle = '#1a1a1a';
                 ctx.lineWidth = 5;
                 ctx.lineCap = 'round';
                 
                 ctx.beginPath();
-                ctx.moveTo(transformX(rLine.x1), transformY(rLine.y1));
-                ctx.lineTo(transformX(rLine.x2), transformY(rLine.y2));
+                // v1.20.0 - 寸法未入力の線は元の座標を使用
+                if (dLine.needsTransform) {
+                    ctx.moveTo(transformX(dLine.x1), transformY(dLine.y1));
+                    ctx.lineTo(transformX(dLine.x2), transformY(dLine.y2));
+                } else {
+                    // 自由作図の線：元の座標をそのまま使用
+                    ctx.moveTo(dLine.x1, dLine.y1);
+                    ctx.lineTo(dLine.x2, dLine.y2);
+                }
                 ctx.stroke();
                 
                 const dim = dimensions[line.id];
@@ -2697,10 +2766,10 @@
                         }
                     }
                     
-                    const midX = (rLine.x1 + rLine.x2) / 2;
-                    const midY = (rLine.y1 + rLine.y2) / 2;
-                    const dx = rLine.x2 - rLine.x1;
-                    const dy = rLine.y2 - rLine.y1;
+                    const midX = (dLine.x1 + dLine.x2) / 2;
+                    const midY = (dLine.y1 + dLine.y2) / 2;
+                    const dx = dLine.x2 - dLine.x1;
+                    const dy = dLine.y2 - dLine.y1;
                     const lineLength = Math.sqrt(dx * dx + dy * dy);
                     
                     const perpX = -dy / lineLength;
@@ -2758,15 +2827,15 @@
             
             const drawnCorners = new Set();
             const coordMap = new Map();
-            realLines.forEach((rLine, idx) => {
-                const line = rLine.line;
+            realLines.forEach((dLine, idx) => {
+                const line = dLine.line;
                 const startKey = `${line.x1},${line.y1}`;
                 if (!coordMap.has(startKey)) {
-                    coordMap.set(startKey, { x: rLine.x1, y: rLine.y1 });
+                    coordMap.set(startKey, { x: dLine.x1, y: dLine.y1 });
                 }
                 const endKey = `${line.x2},${line.y2}`;
                 if (!coordMap.has(endKey)) {
-                    coordMap.set(endKey, { x: rLine.x2, y: rLine.y2 });
+                    coordMap.set(endKey, { x: dLine.x2, y: dLine.y2 });
                 }
             });
             
@@ -4189,27 +4258,22 @@
                 return;
             }
             
-            // ローディング表示（NEW - v1.18.2）
+            // シンプルなローディング表示（v1.20.2）
             const loadingDiv = document.createElement('div');
             loadingDiv.id = 'share-loading';
-            loadingDiv.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; display: flex; align-items: center; justify-content: center;';
-            loadingDiv.innerHTML = '<div style="background: white; padding: 30px; border-radius: 12px; text-align: center;"><div style="font-size: 48px; margin-bottom: 15px;">⏳</div><div style="font-size: 18px; font-weight: bold; color: #333;">共有準備中...</div></div>';
+            loadingDiv.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center;';
+            loadingDiv.innerHTML = '<div style="background: white; padding: 40px; border-radius: 12px; text-align: center;"><div style="font-size: 60px; margin-bottom: 20px;">⏳</div><div style="font-size: 20px; font-weight: bold; color: #333;">画像生成中...</div><div style="font-size: 14px; color: #666; margin-top: 10px;">しばらくお待ちください</div></div>';
             document.body.appendChild(loadingDiv);
             
+            // 少し待ってからローディング削除の準備
+            const removeLoading = () => {
+                const loading = document.getElementById('share-loading');
+                if (loading && loading.parentNode) {
+                    loading.parentNode.removeChild(loading);
+                }
+            };
+            
             try {
-                // html2canvas読み込み確認（NEW - v1.18.2）
-                if (typeof html2canvas === 'undefined') {
-                    throw new Error('html2canvasライブラリが読み込まれていません。ページを再読み込みしてください。');
-                }
-                
-                // 共有機能のチェック
-                if (!navigator.share && !navigator.canShare) {
-                    document.body.removeChild(loadingDiv);
-                    alert('この端末では共有機能が使えません。画像として保存します。');
-                    await downloadAsPNG();
-                    return;
-                }
-                
                 const siteName = document.getElementById('site-name')?.value || '';
                 const sashColor = document.getElementById('sash-color')?.value || '';
                 
@@ -4230,7 +4294,6 @@
                     const canvasDiv = document.createElement('div');
                     canvasDiv.style.cssText = 'margin-bottom: 20px; padding: 20px; background: #f0f9ff; border-radius: 10px;';
                     canvasDiv.innerHTML = '<h3 style="font-size: 18px; color: #1e40af; margin: 0 0 15px 0;">📐 測定図</h3>';
-                    // canvasを画像に変換して埋め込む（v1.14.2）
                     const canvasImg = document.createElement('img');
                     canvasImg.src = resultCanvas.toDataURL('image/png');
                     canvasImg.style.cssText = 'width: 100%; height: auto; display: block;';
@@ -4238,79 +4301,69 @@
                     resultDiv.appendChild(canvasDiv);
                 }
                 
-                
                 const resultsDiv = document.createElement('div');
                 resultsDiv.style.cssText = 'padding: 12px; background: #fef3c7; border-radius: 10px; border: 2px solid #f59e0b;';
                 resultsDiv.innerHTML = '<h3 style="font-size: 18px; color: #92400e; margin: 0 0 15px 0;">📊 計算結果</h3>';
-                
                 resultsDiv.innerHTML += generateResultsHTML();
                 resultDiv.appendChild(resultsDiv);
                 
                 document.body.appendChild(resultDiv);
                 
+                // html2canvasで画像生成
                 const canvas = await html2canvas(resultDiv, {
                     scale: 2,
                     backgroundColor: '#ffffff',
                     logging: false,
-                    useCORS: true
+                    useCORS: true,
+                    allowTaint: true
                 });
                 
                 document.body.removeChild(resultDiv);
                 
-                canvas.toBlob(async (blob) => {
+                // 画像をBlobに変換
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                
+                if (!blob) {
+                    throw new Error('画像の生成に失敗しました');
+                }
+                
+                const filename = (siteName ? siteName + '_' : '') + getFilename() + '.png';
+                const file = new File([blob], filename, { type: 'image/png' });
+                
+                // ローディングを削除
+                removeLoading();
+                
+                // 共有機能の確認
+                if (navigator.share) {
                     try {
-                        if (!blob) {
-                            throw new Error('画像の生成に失敗しました');
-                        }
-                        
-                        const filename = (siteName ? siteName + '_' : '') + getFilename() + '.png';
-                        const file = new File([blob], filename, { type: 'image/png' });
-                        
-                        const shareData = {
+                        await navigator.share({
                             title: '躯体採寸システム' + (siteName ? ` - ${siteName}` : ''),
                             text: '躯体採寸の計算結果です',
                             files: [file]
-                        };
-                        
-                        // canShareでファイル共有可能かチェック
-                        if (navigator.canShare && !navigator.canShare(shareData)) {
-                            // ファイル共有不可の場合はURLのみ共有
-                            await navigator.share({
-                                title: shareData.title,
-                                text: shareData.text,
-                                url: window.location.href
-                            });
-                        } else {
-                            await navigator.share(shareData);
-                        }
-                        
-                        // 成功時にローディング削除（NEW - v1.18.2）
-                        const loading = document.getElementById('share-loading');
-                        if (loading) document.body.removeChild(loading);
-                        
+                        });
                     } catch (shareError) {
-                        // エラー時にローディング削除（NEW - v1.18.2）
-                        const loading = document.getElementById('share-loading');
-                        if (loading) document.body.removeChild(loading);
-                        
-                        if (shareError.name === 'AbortError') {
-                            // ユーザーがキャンセルした場合
-                            return;
+                        if (shareError.name !== 'AbortError') {
+                            // 共有失敗時は画像をダウンロード
+                            const link = document.createElement('a');
+                            link.download = filename;
+                            link.href = URL.createObjectURL(blob);
+                            link.click();
+                            URL.revokeObjectURL(link.href);
                         }
-                        console.error('共有エラー:', shareError);
-                        alert('共有に失敗しました。画像として保存します。');
-                        await downloadAsPNG();
                     }
-                }, 'image/png');
+                } else {
+                    // 共有機能がない場合は画像をダウンロード
+                    const link = document.createElement('a');
+                    link.download = filename;
+                    link.href = URL.createObjectURL(blob);
+                    link.click();
+                    URL.revokeObjectURL(link.href);
+                }
                 
             } catch (error) {
-                // エラー時にローディング削除（NEW - v1.18.2）
-                const loading = document.getElementById('share-loading');
-                if (loading) document.body.removeChild(loading);
-                
+                removeLoading();
                 console.error('共有エラー:', error);
-                alert('共有の準備に失敗しました: ' + error.message + '\n画像として保存します。');
-                await downloadAsPNG();
+                alert('共有の準備に失敗しました: ' + error.message);
             }
         }
         
