@@ -1,0 +1,1396 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>採寸チェックシート</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3350;
+    --border-focus: #4a6cf7;
+    --accent: #4a6cf7;
+    --text: #e8eaf6;
+    --text-sub: #7b82a8;
+    --text-dim: #4a5080;
+    --ok: #3ecf8e;
+    --warn: #f7a44a;
+    --err: #f75a4a;
+    --radius: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans JP', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 0 0 80px; }
+
+  /* ── Header ── */
+  header {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 13px 16px; display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 20;
+  }
+  header h1 { font-size: 14px; font-weight: 700; letter-spacing: 0.08em; }
+  header span.sub { font-size: 11px; color: var(--text-sub); font-weight: 400; margin-left: 6px; }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .progress-ring { font-size: 12px; color: var(--text-sub); }
+  .count { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--accent); font-weight: 600; }
+  .icon-btn {
+    background: none; border: 1px solid var(--border); border-radius: 7px;
+    color: var(--text-sub); cursor: pointer; padding: 5px 9px; font-size: 16px;
+    transition: background 0.15s, border-color 0.15s; line-height: 1;
+  }
+  .icon-btn:hover { background: var(--surface2); border-color: var(--accent); color: var(--text); }
+
+  /* ── Layout ── */
+  main { max-width: 560px; margin: 0 auto; padding: 16px 16px 0; }
+  .section { margin-bottom: 20px; }
+  .section-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.18em; color: var(--text-dim);
+    padding: 0 4px 8px; border-bottom: 1px solid var(--border); margin-bottom: 12px;
+  }
+
+  /* ── Site info card ── */
+  .info-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px; margin-bottom: 20px;
+    display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end;
+  }
+  .info-group { display: flex; flex-direction: column; gap: 4px; }
+  .info-label { font-size: 10px; color: var(--text-dim); font-weight: 600; letter-spacing: 0.1em; }
+  .info-input {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text); font-family: 'Noto Sans JP', sans-serif; font-size: 14px; font-weight: 500;
+    padding: 8px 10px; outline: none; transition: border-color 0.15s; width: 100%;
+  }
+  .info-input:focus { border-color: var(--border-focus); }
+  .info-input::placeholder { color: var(--text-dim); }
+  .date-input {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 13px;
+    padding: 8px 10px; outline: none; transition: border-color 0.15s;
+    -webkit-appearance: none; appearance: none; width: 140px;
+  }
+  .date-input:focus { border-color: var(--border-focus); }
+  .date-input::-webkit-calendar-picker-indicator { filter: invert(0.6); cursor: pointer; }
+
+  /* ── Field Card ── */
+  .field-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); margin-bottom: 10px; overflow: hidden; transition: border-color 0.2s;
+  }
+  .field-card.has-value { border-color: #2e4a3a; }
+  .field-card.has-error { border-color: var(--err); }
+
+  .field-header { display: flex; align-items: center; padding: 11px 14px 9px; gap: 10px; }
+  .field-badge {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600;
+    padding: 2px 7px; border-radius: 4px; background: var(--surface2); color: var(--accent);
+    border: 1px solid var(--border); flex-shrink: 0;
+  }
+  .field-title { font-size: 13px; font-weight: 500; color: var(--text); flex: 1; }
+  .field-hint { font-size: 10px; color: var(--text-dim); flex-shrink: 0; }
+  .check-icon {
+    width: 18px; height: 18px; border-radius: 50%; background: var(--ok);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; opacity: 0; transition: opacity 0.2s;
+  }
+  .check-icon svg { width: 10px; height: 10px; }
+  .field-card.has-value .check-icon { opacity: 1; }
+
+  .input-row { padding: 0 14px 12px; display: flex; align-items: center; gap: 8px; }
+  .input-wrap { position: relative; flex: 1; }
+
+  .field-input {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); font-family: 'JetBrains Mono', monospace;
+    font-size: 18px; font-weight: 600; padding: 8px 38px 8px 12px;
+    outline: none; transition: border-color 0.15s, background 0.15s;
+    -webkit-appearance: none; appearance: none;
+  }
+  .field-input:focus { border-color: var(--border-focus); background: #1e2238; }
+  .field-input::placeholder { color: var(--text-dim); font-weight: 400; font-size: 14px; }
+  .unit-label {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    font-size: 11px; color: var(--text-sub); pointer-events: none;
+  }
+
+  /* Dropdown */
+  .field-select {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); font-family: 'JetBrains Mono', monospace;
+    font-size: 17px; font-weight: 600; padding: 9px 36px 9px 12px;
+    outline: none; transition: border-color 0.15s; -webkit-appearance: none; appearance: none; cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237b82a8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center;
+  }
+  .field-select:focus { border-color: var(--border-focus); }
+  .field-select option { background: #1a1d27; }
+  .field-select.sub { font-size: 13px; padding: 7px 30px 7px 10px; }
+
+  /* Toggle button */
+  .expand-toggle {
+    font-size: 10px; color: var(--accent); background: none;
+    border: 1px solid var(--border); border-radius: 5px; padding: 5px 9px;
+    cursor: pointer; font-family: 'Noto Sans JP', sans-serif; white-space: nowrap;
+    transition: background 0.15s, border-color 0.15s; flex-shrink: 0;
+  }
+  .expand-toggle:hover { background: var(--surface2); border-color: var(--accent); }
+  .expand-toggle.active { background: #1a2040; border-color: var(--accent); }
+  .expand-toggle:disabled { opacity: 0.3; cursor: not-allowed; border-color: var(--border); color: var(--text-dim); }
+
+  .expand-panel { display: none; padding: 0 14px 12px; flex-direction: column; gap: 6px; }
+  .expand-panel.open { display: flex; }
+  .sub-row { display: flex; align-items: center; gap: 8px; }
+  .sub-pos { font-size: 11px; color: var(--text-sub); width: 20px; flex-shrink: 0; text-align: center; font-weight: 500; }
+  .field-input.sub { font-size: 14px; padding: 6px 32px 6px 10px; }
+
+  .indiv-badge {
+    display: none; font-size: 10px; color: var(--warn);
+    background: rgba(247,164,74,0.1); border: 1px solid rgba(247,164,74,0.3);
+    border-radius: 4px; padding: 2px 7px; flex-shrink: 0;
+  }
+  .indiv-badge.show { display: inline-block; }
+
+  .field-warn { display: none; padding: 4px 14px 10px; font-size: 11px; color: var(--warn); }
+  .field-warn.show { display: block; }
+
+  .notes-input {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px; padding: 10px 12px; outline: none; resize: vertical; min-height: 70px;
+    transition: border-color 0.15s;
+  }
+  .notes-input:focus { border-color: var(--border-focus); }
+
+  /* ── Footer ── */
+  footer {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--surface); border-top: 1px solid var(--border);
+    padding: 10px 16px; display: flex; gap: 8px;
+  }
+  .btn {
+    flex: 1; padding: 11px; border-radius: 7px;
+    font-family: 'Noto Sans JP', sans-serif; font-size: 13px; font-weight: 700;
+    cursor: pointer; border: none; transition: opacity 0.15s, transform 0.1s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-secondary { background: var(--surface2); color: var(--text-sub); border: 1px solid var(--border); flex: 0.6; }
+  .btn-save { background: #1e3a2a; color: var(--ok); border: 1px solid #2e5a3e; flex: 0.7; }
+  .btn-share { background: #1e2a3a; color: #7ab8f7; border: 1px solid #2e4060; flex: 0.7; }
+
+  /* ── Modals base ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+    z-index: 100; align-items: flex-end; justify-content: center;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: var(--surface); border-top: 1px solid var(--border);
+    border-radius: 16px 16px 0 0; width: 100%; max-width: 560px;
+    padding: 20px 20px 36px; animation: slideUp 0.25s ease;
+    max-height: 90vh; overflow-y: auto;
+  }
+  @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .modal-title { font-size: 14px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+  .modal-close { background: none; border: none; color: var(--text-sub); font-size: 20px; cursor: pointer; padding: 0 2px; }
+
+  /* ── Summary modal ── */
+  .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  .summary-cell { background: var(--surface2); border-radius: 6px; padding: 10px 12px; }
+  .s-key { font-size: 10px; color: var(--text-sub); font-family: 'JetBrains Mono', monospace; margin-bottom: 3px; }
+  .s-val { font-size: 15px; font-family: 'JetBrains Mono', monospace; font-weight: 600; line-height: 1.3; }
+  .s-val.missing { color: var(--err); font-size: 12px; font-weight: 400; }
+  .s-label { font-size: 11px; color: var(--text-sub); margin-top: 2px; }
+  .copy-block {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+    padding: 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    color: var(--text-sub); line-height: 1.9; white-space: pre-wrap; margin-bottom: 12px;
+  }
+  .modal-actions { display: flex; gap: 8px; }
+
+  /* ── Records modal ── */
+  .record-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+  .record-item {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px 14px; display: flex; align-items: center; gap: 12px; cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .record-item:hover { border-color: var(--accent); }
+  .record-info { flex: 1; min-width: 0; }
+  .record-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .record-date { font-size: 11px; color: var(--text-sub); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+  .record-del {
+    background: none; border: none; color: var(--text-dim); font-size: 16px;
+    cursor: pointer; padding: 4px 6px; border-radius: 4px; flex-shrink: 0;
+    transition: color 0.15s, background 0.15s;
+  }
+  .record-del:hover { color: var(--err); background: rgba(247,90,74,0.1); }
+  .empty-state { text-align: center; color: var(--text-dim); font-size: 13px; padding: 32px 0; }
+
+  /* ── チェックボックス行 ── */
+  .check-row {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 14px; margin-bottom: 10px;
+    cursor: pointer; transition: border-color 0.15s;
+  }
+  .check-row:hover { border-color: var(--accent); }
+  .check-row input[type="checkbox"] {
+    width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0;
+  }
+  .check-row-label { font-size: 13px; font-weight: 500; color: var(--text); flex: 1; }
+  .check-row-sub { font-size: 11px; color: var(--text-sub); }
+
+  /* ── 計算結果カード ── */
+  .calc-card {
+    background: #111a2e; border: 1px solid #2a3a60;
+    border-radius: var(--radius); padding: 14px; margin-bottom: 20px;
+  }
+  .calc-card-title {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.15em; color: #4a7cf7;
+    margin-bottom: 12px;
+  }
+  .calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .calc-cell { background: #0f1625; border-radius: 6px; padding: 10px 12px; }
+  .calc-key { font-size: 10px; color: var(--text-sub); font-family: 'JetBrains Mono', monospace; margin-bottom: 3px; }
+  .calc-val {
+    font-size: 22px; font-family: 'JetBrains Mono', monospace; font-weight: 700;
+    color: #7ab8f7; line-height: 1;
+  }
+  .calc-val.na { font-size: 13px; color: var(--text-dim); font-weight: 400; }
+  .calc-formula { font-size: 10px; color: var(--text-dim); margin-top: 4px; line-height: 1.4; }
+
+  /* ── 建具種別セレクター ── */
+  .kengu-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 14px 12px; margin-bottom: 20px;
+  }
+  .kengu-type-row {
+    display: flex; gap: 8px; margin-bottom: 0;
+  }
+  .type-btn {
+    flex: 1; padding: 11px 8px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text-sub); font-family: 'Noto Sans JP', sans-serif;
+    font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.15s; text-align: center;
+  }
+  .type-btn:hover { border-color: var(--accent); color: var(--text); }
+  .type-btn.selected { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* ドア詳細チップ群 */
+  .door-detail-panel {
+    display: none; margin-top: 12px; padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .door-detail-panel.show { display: block; }
+  .chip-group { margin-bottom: 10px; }
+  .chip-label {
+    font-size: 10px; color: var(--text-dim); font-weight: 600; letter-spacing: 0.1em;
+    margin-bottom: 6px;
+  }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    padding: 4px 12px; border-radius: 20px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text-sub); font-family: 'Noto Sans JP', sans-serif;
+    font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  }
+  .chip:hover { border-color: var(--accent); color: var(--text); }
+  .chip.selected { background: rgba(74,108,247,0.18); border-color: var(--accent); color: var(--text); font-weight: 700; }
+
+  /* Toast */
+  .toast {
+    position: fixed; top: 70px; left: 50%; transform: translateX(-50%) translateY(-10px);
+    background: #1e3a2a; color: var(--ok); border: 1px solid #2e5a3e;
+    border-radius: 8px; padding: 9px 18px; font-size: 13px; font-weight: 600;
+    opacity: 0; transition: opacity 0.2s, transform 0.2s; z-index: 200; pointer-events: none;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.error { background: #3a1e1e; color: var(--err); border-color: #5a2e2e; }
+</style>
+<!-- PDF生成ライブラリ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+<!-- 印刷プレビュー用隠しコンテナ -->
+<div id="print-sheet" style="
+  position:fixed; left:-9999px; top:0;
+  width:794px; background:#fff; color:#111;
+  font-family:'Noto Sans JP',sans-serif; font-size:13px;
+  padding:28px 32px 20px; box-sizing:border-box;
+"></div>
+
+<header>
+  <h1>採寸チェックシート<span class="sub">現場計測</span></h1>
+  <div class="header-right">
+    <div class="progress-ring">入力 <span class="count" id="progress">0/7</span></div>
+    <button class="icon-btn" onclick="openRecords()" title="保存データ一覧">📂</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- 現場情報 -->
+  <div class="info-card">
+    <div class="info-group" style="grid-column:1/-1">
+      <div class="info-label">現場名</div>
+      <input class="info-input" id="site-name" type="text" placeholder="例：〇〇邸　玄関">
+    </div>
+    <div class="info-group">
+      <div class="info-label">日付</div>
+      <input class="date-input" id="site-date" type="date">
+    </div>
+    <div></div>
+  </div>
+
+  <!-- 既存ドア情報 -->
+  <div class="section">
+    <div class="section-label">既存ドア情報</div>
+
+    <!-- 建具種別 -->
+    <div class="kengu-card">
+      <div class="info-label" style="margin-bottom:8px">建具種別</div>
+      <div class="kengu-type-row">
+        <button class="type-btn" id="type-door" onclick="selectType('door')">🚪 ドア</button>
+        <button class="type-btn" id="type-sliding" onclick="selectType('sliding')">🚶 引戸</button>
+      </div>
+
+      <!-- ドア詳細チップ -->
+      <div class="door-detail-panel" id="door-detail">
+        <div class="chip-group">
+          <div class="chip-label">勝手</div>
+          <div class="chip-row">
+            <button class="chip" data-group="katte" data-val="right" onclick="selectChip(this)">右勝手</button>
+            <button class="chip" data-group="katte" data-val="left" onclick="selectChip(this)">左勝手</button>
+          </div>
+        </div>
+        <div class="chip-group">
+          <div class="chip-label">形式</div>
+          <div class="chip-row">
+            <button class="chip" data-group="katachi" data-val="single" onclick="selectChip(this)">片開き</button>
+            <button class="chip" data-group="katachi" data-val="oyako" onclick="selectChip(this)">親子ドア</button>
+            <button class="chip" data-group="katachi" data-val="sode" onclick="selectChip(this)">片袖fix</button>
+          </div>
+        </div>
+        <div class="chip-group">
+          <div class="chip-label">ランマ</div>
+          <div class="chip-row">
+            <button class="chip" data-group="ranma" data-val="yes" onclick="selectChip(this)">あり</button>
+            <button class="chip" data-group="ranma" data-val="no" onclick="selectChip(this)">なし</button>
+          </div>
+        </div>
+        <div class="chip-group" style="margin-bottom:0">
+          <div class="chip-label">ポスト</div>
+          <div class="chip-row">
+            <button class="chip" data-group="post" data-val="yes" onclick="selectChip(this)">あり</button>
+            <button class="chip" data-group="post" data-val="no" onclick="selectChip(this)">なし</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 引戸詳細チップ -->
+      <div class="door-detail-panel" id="sliding-detail">
+        <div class="chip-group">
+          <div class="chip-label">枚数</div>
+          <div class="chip-row">
+            <button class="chip" data-group="maisuuS" data-val="2" onclick="selectChip(this)">2枚建て</button>
+            <button class="chip" data-group="maisuuS" data-val="4" onclick="selectChip(this)">4枚建て</button>
+          </div>
+        </div>
+        <div class="chip-group" style="margin-bottom:0">
+          <div class="chip-label">ランマ</div>
+          <div class="chip-row">
+            <button class="chip" data-group="ranmaS" data-val="yes" onclick="selectChip(this)">あり</button>
+            <button class="chip" data-group="ranmaS" data-val="no" onclick="selectChip(this)">なし</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 取付方法 -->
+    <div class="field-card" id="card-tsuke" style="overflow:visible">
+      <div class="field-header">
+        <span class="field-badge">取付</span>
+        <span class="field-title">取付方法</span>
+        <div class="check-icon"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div style="padding:0 14px 12px; display:flex; gap:8px;">
+        <button class="type-btn" id="tsuke-hanzoto" onclick="selectTsuke('hanzoto')" style="font-size:13px;padding:9px 8px;">半外付け</button>
+        <button class="type-btn" id="tsuke-uchi" onclick="selectTsuke('uchi')" style="font-size:13px;padding:9px 8px;">内付け</button>
+      </div>
+    </div>
+    <div class="field-card" id="card-dh">
+      <div class="field-header">
+        <span class="field-badge">DH</span><span class="field-title">扉高さ</span>
+        <div class="check-icon"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="input-row">
+        <div class="input-wrap"><input class="field-input" id="dh" type="number" inputmode="decimal" placeholder="0"><span class="unit-label">mm</span></div>
+      </div>
+    </div>
+
+    <!-- DW -->
+    <div class="field-card" id="card-dw">
+      <div class="field-header">
+        <span class="field-badge">DW</span><span class="field-title">扉幅</span>
+        <div class="check-icon"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="input-row">
+        <div class="input-wrap"><input class="field-input" id="dw" type="number" inputmode="decimal" placeholder="0"><span class="unit-label">mm</span></div>
+      </div>
+    </div>
+
+    <!-- 戸厚 -->
+    <div class="field-card" id="card-ats">
+      <div class="field-header">
+        <span class="field-badge">戸厚</span><span class="field-title">扉厚み</span>
+        <div class="check-icon"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="input-row">
+        <div class="input-wrap"><input class="field-input" id="ats" type="number" inputmode="decimal" placeholder="0"><span class="unit-label">mm</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 既存開口 -->
+  <div class="section">
+    <div class="section-label">既存開口</div>
+
+    <!-- はつり納まり（ドア・引戸共通） -->
+    <label class="check-row" for="cb-tsuri" style="border-color:#3a2e60;background:#1a1630;margin-bottom:10px">
+      <input type="checkbox" id="cb-tsuri" onchange="recalc()">
+      <span class="check-row-label">はつり納まり</span>
+      <span class="check-row-sub">高さ KH＋15mm</span>
+    </label>
+
+    <!-- 下枠フラット材（ドアのみ表示） -->
+    <div id="shimowaku-row">
+    <label class="check-row" for="cb-shimowaku">
+      <input type="checkbox" id="cb-shimowaku" onchange="recalc()">
+      <span class="check-row-label">下枠フラット材 必要</span>
+      <span class="check-row-sub">+6mm マイナス</span>
+    </label>
+    </div>
+
+    <div class="field-card" id="card-kh">
+      <div class="field-header">
+        <span class="field-badge">KH</span>
+        <span class="field-title">既存開口高さ</span>
+        <span class="field-hint">3点計測</span>
+        <div class="check-icon"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="input-row">
+        <div class="input-wrap">
+          <input class="field-input" id="kh" type="number" inputmode="decimal" placeholder="0">
+          <span class="unit-label">mm</span>
+        </div>
+        <button class="expand-toggle" id="toggle-kh" onclick="toggleMeasure('kh')">3点▾</button>
+      </div>
+      <div class="expand-panel" id="panel-kh">
+        <div class="sub-row"><span class="sub-pos">左</span><div class="input-wrap"><input class="field-input sub" id="kh_l" type="number" inputmode="decimal" placeholder="0"><span class="unit-label">mm</span></div></div>
+        <div class="sub-row"><span class="sub-pos">中</span><div class="input-wrap"><input class="field-input sub" id="kh_c" type="number" inputmode="decimal" placeholder="0"><span class="unit-label">mm</span></div></div>
+        <div class="sub-row"><span class="sub-pos">右</span><div class="input-wrap"><input class="field-input sub" id="kh_r" type="number" inputmode="decimal" placeholder="0"><span class="unit-label">mm</span></div></div>
+      </div>
+      <div class="field-warn" id="warn-kh">⚠ 3点の値に差があります。最小値を採用してください。</div>
+    </div>
+
+    <div class="field-card" id="card-kw">
+      <div class="field-header">
+        <span class="field-badge">KW</span>
+        <span class="field-title">既存開口幅</span>
+        <span class="field-hint">3点計測</span>
+        <div class="check-icon"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="input-row">
+        <div class="input-wrap">
+          <input class="field-input" id="kw" type="number" inputmode="decimal" placeholder="0">
+          <span class="unit-label">mm</span>
+        </div>
+        <button class="expand-toggle" id="toggle-kw" onclick="toggleMeasure('kw')">3点▾</button>
+      </div>
+      <div class="expand-panel" id="panel-kw">
+        <div class="sub-row"><span class="sub-pos">上</span><div class="input-wrap"><input class="field-input sub" id="kw_t" type="number" inputmode="decimal" placeholder="0"><span class="unit-label">mm</span></div></div>
+        <div class="sub-row"><span class="sub-pos">中</span><div class="input-wrap"><input class="field-input sub" id="kw_c" type="number" inputmode="decimal" placeholder="0"><span class="unit-label">mm</span></div></div>
+        <div class="sub-row"><span class="sub-pos">下</span><div class="input-wrap"><input class="field-input sub" id="kw_b" type="number" inputmode="decimal" placeholder="0"><span class="unit-label">mm</span></div></div>
+      </div>
+      <div class="field-warn" id="warn-kw">⚠ 3点の値に差があります。最小値を採用してください。</div>
+    </div>
+  </div>
+
+  <!-- 額縁 -->
+  <div class="section">
+    <div class="section-label">額縁</div>
+
+    <div class="field-card" id="card-soto">
+      <div class="field-header">
+        <span class="field-badge">外額縁</span>
+        <span class="field-title">外額縁</span>
+        <span class="indiv-badge" id="ind-soto">個別指定中</span>
+        <div class="check-icon"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="input-row">
+        <div class="input-wrap">
+          <select class="field-select" id="soto" onchange="onMainSelect('soto')">
+            <option value="">― 選択してください ―</option>
+            <option value="21">21 mm</option><option value="50">50 mm</option>
+            <option value="80">80 mm</option><option value="80thin">80 mm（薄）</option>
+            <option value="100">100 mm</option><option value="135">135 mm</option>
+            <option value="155">155 mm</option>
+          </select>
+        </div>
+        <button class="expand-toggle" id="toggle-soto" onclick="toggleFrameIndiv('soto')">個別▾</button>
+      </div>
+      <div class="expand-panel" id="panel-soto">
+        <div class="sub-row"><span class="sub-pos">右</span><div class="input-wrap"><select class="field-select sub" id="soto_r" onchange="onSubSelect('soto')"><option value="">―</option><option value="21">21 mm</option><option value="50">50 mm</option><option value="80">80 mm</option><option value="80thin">80（薄）</option><option value="100">100 mm</option><option value="135">135 mm</option><option value="155">155 mm</option></select></div></div>
+        <div class="sub-row"><span class="sub-pos">左</span><div class="input-wrap"><select class="field-select sub" id="soto_l" onchange="onSubSelect('soto')"><option value="">―</option><option value="21">21 mm</option><option value="50">50 mm</option><option value="80">80 mm</option><option value="80thin">80（薄）</option><option value="100">100 mm</option><option value="135">135 mm</option><option value="155">155 mm</option></select></div></div>
+        <div class="sub-row"><span class="sub-pos">上</span><div class="input-wrap"><select class="field-select sub" id="soto_t" onchange="onSubSelect('soto')"><option value="">―</option><option value="21">21 mm</option><option value="50">50 mm</option><option value="80">80 mm</option><option value="80thin">80（薄）</option><option value="100">100 mm</option><option value="135">135 mm</option><option value="155">155 mm</option></select></div></div>
+      </div>
+    </div>
+
+    <div class="field-card" id="card-uchi">
+      <div class="field-header">
+        <span class="field-badge">内額縁</span>
+        <span class="field-title">内額縁</span>
+        <span class="indiv-badge" id="ind-uchi">個別指定中</span>
+        <div class="check-icon"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="input-row">
+        <div class="input-wrap">
+          <select class="field-select" id="uchi" onchange="onMainSelect('uchi')">
+            <option value="">― 選択してください ―</option>
+            <option value="25">25 mm</option><option value="40">40 mm</option><option value="100">100 mm</option>
+          </select>
+        </div>
+        <button class="expand-toggle" id="toggle-uchi" onclick="toggleFrameIndiv('uchi')">個別▾</button>
+      </div>
+      <div class="expand-panel" id="panel-uchi">
+        <div class="sub-row"><span class="sub-pos">右</span><div class="input-wrap"><select class="field-select sub" id="uchi_r" onchange="onSubSelect('uchi')"><option value="">―</option><option value="25">25 mm</option><option value="40">40 mm</option><option value="100">100 mm</option></select></div></div>
+        <div class="sub-row"><span class="sub-pos">左</span><div class="input-wrap"><select class="field-select sub" id="uchi_l" onchange="onSubSelect('uchi')"><option value="">―</option><option value="25">25 mm</option><option value="40">40 mm</option><option value="100">100 mm</option></select></div></div>
+        <div class="sub-row"><span class="sub-pos">上</span><div class="input-wrap"><select class="field-select sub" id="uchi_t" onchange="onSubSelect('uchi')"><option value="">―</option><option value="25">25 mm</option><option value="40">40 mm</option><option value="100">100 mm</option></select></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 新設枠寸法 -->
+  <div class="calc-card" id="calc-card">
+    <div class="calc-card-title">📐 新設枠寸法（自動計算）</div>
+    <div class="calc-grid">
+      <div class="calc-cell">
+        <div class="calc-key">枠高さ</div>
+        <div class="calc-val" id="calc-h">―</div>
+        <div class="calc-formula" id="calc-h-formula"></div>
+      </div>
+      <div class="calc-cell">
+        <div class="calc-key">枠幅</div>
+        <div class="calc-val" id="calc-w">―</div>
+        <div class="calc-formula" id="calc-w-formula"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 有効開口 -->
+  <div class="calc-card" id="kouchi-card" style="border-color:#2a4a30">
+    <div class="calc-card-title" style="color:#3ecf8e">🔲 有効開口（自動計算）</div>
+    <div class="calc-grid" style="grid-template-columns:1fr">
+      <div class="calc-cell">
+        <div class="calc-key">有効開口</div>
+        <div class="calc-val" id="kouchi-w" style="color:#3ecf8e">―</div>
+        <div class="calc-formula" id="kouchi-w-formula"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 備考 -->
+  <div class="section">
+    <div class="section-label">備考</div>
+    <textarea class="notes-input" id="notes" placeholder="現場メモ・特記事項など…"></textarea>
+  </div>
+
+</main>
+
+<footer>
+  <button class="btn btn-secondary" onclick="clearAll()">リセット</button>
+  <button class="btn btn-save" onclick="saveRecord()">💾 保存</button>
+  <button class="btn btn-share" id="share-btn" onclick="shareSheet(this)">📄 PDF共有</button>
+  <button class="btn btn-primary" onclick="showSummary()">確認 ▸</button>
+</footer>
+
+<!-- Summary Modal -->
+<div class="modal-overlay" id="modal-summary" onclick="closeSummary(event)">
+  <div class="modal">
+    <div class="modal-title">
+      📋 採寸まとめ
+      <button class="modal-close" onclick="closeSummaryDirect()">✕</button>
+    </div>
+    <div id="summary-site" style="font-size:12px;color:var(--text-sub);margin-bottom:14px;font-family:'JetBrains Mono',monospace;"></div>
+    <div class="summary-grid" id="summary-grid"></div>
+    <div class="copy-block" id="copy-block"></div>
+    <div class="modal-actions">
+      <button class="btn btn-share" onclick="shareSheet(this)">📄 PDF共有</button>
+      <button class="btn btn-primary" onclick="copyText()">テキストをコピー</button>
+    </div>
+  </div>
+</div>
+
+<!-- Records Modal -->
+<div class="modal-overlay" id="modal-records" onclick="closeRecords(event)">
+  <div class="modal">
+    <div class="modal-title">
+      📂 保存データ一覧
+      <button class="modal-close" onclick="closeRecordsDirect()">✕</button>
+    </div>
+    <div class="record-list" id="record-list"></div>
+    <button class="btn btn-secondary" style="width:100%;margin-top:4px" onclick="closeRecordsDirect()">閉じる</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ======= 取付方法 =======
+let tsukeMethod = ''; // 'hanzoto' | 'uchi'
+
+function selectTsuke(t) {
+  tsukeMethod = t;
+  document.getElementById('tsuke-hanzoto').classList.toggle('selected', t === 'hanzoto');
+  document.getElementById('tsuke-uchi').classList.toggle('selected', t === 'uchi');
+  const card = document.getElementById('card-tsuke');
+  card.classList.toggle('has-value', t !== '');
+  recalc();
+}
+
+// ======= 計算 =======
+function getKHmin() {
+  // 3点入力がある場合は最小値、なければメイン値
+  const pts = ['kh_l','kh_c','kh_r'].map(id => parseFloat(val(id))).filter(n => !isNaN(n));
+  if (pts.length > 0) return Math.min(...pts);
+  const m = parseFloat(val('kh'));
+  return isNaN(m) ? null : m;
+}
+function getKW() {
+  const m = parseFloat(val('kw'));
+  return isNaN(m) ? null : m;
+}
+
+function recalc() {
+  const khMin = getKHmin();
+  const kw    = getKW();
+  const at    = document.getElementById('cb-shimowaku').checked;
+  const tsuri = document.getElementById('cb-tsuri').checked;
+  // 引戸は内付けと同じ計算
+  const effectiveTsuke = (currentType === 'sliding') ? 'uchi' : tsukeMethod;
+
+  // ── 新設枠寸法 ──
+  const hEl  = document.getElementById('calc-h');
+  const wEl  = document.getElementById('calc-w');
+  const hfEl = document.getElementById('calc-h-formula');
+  const wfEl = document.getElementById('calc-w-formula');
+
+  if (khMin === null) {
+    hEl.textContent = '―'; hEl.className = 'calc-val na';
+    hfEl.textContent = 'KH を入力してください';
+  } else if (tsuri) {
+    const effH = khMin + 15;
+    hEl.textContent = effH + ' mm'; hEl.className = 'calc-val';
+    hfEl.textContent = `${khMin} ＋ 15（はつり） = ${effH}`;
+  } else if (!effectiveTsuke) {
+    hEl.textContent = '―'; hEl.className = 'calc-val na';
+    hfEl.textContent = '取付方法を選択してください';
+  } else {
+    const baseH = effectiveTsuke === 'hanzoto' ? 10 : 5;
+    const atH   = at ? 6 : 0;
+    const effH  = khMin - baseH - atH;
+    hEl.textContent = effH + ' mm'; hEl.className = 'calc-val';
+    const parts = [`${khMin} − ${baseH}`];
+    if (atH) parts.push('− 6（フラット材）');
+    hfEl.textContent = parts.join(' ') + ' = ' + effH;
+  }
+
+  if (kw === null) {
+    wEl.textContent = '―'; wEl.className = 'calc-val na';
+    wfEl.textContent = (tsuri || effectiveTsuke) ? 'KW を入力してください' : '';
+  } else if (!tsuri && !effectiveTsuke) {
+    wEl.textContent = '―'; wEl.className = 'calc-val na';
+    wfEl.textContent = '取付方法を選択してください';
+  } else {
+    const baseW = (!tsuri && effectiveTsuke === 'hanzoto') ? 20 : 10;
+    const effW  = kw - baseW;
+    wEl.textContent = effW + ' mm'; wEl.className = 'calc-val';
+    wfEl.textContent = `${kw} − ${baseW} = ${effW}`;
+  }
+
+  // ── 有効開口（幅のみ・ドアのみ表示） ──
+  const kouchiWEl  = document.getElementById('kouchi-w');
+  const kouchiWfEl = document.getElementById('kouchi-w-formula');
+
+  if (kw === null) {
+    kouchiWEl.textContent = '―'; kouchiWEl.className = 'calc-val na';
+    kouchiWfEl.textContent = (tsuri || effectiveTsuke) ? 'KW を入力してください' : '';
+  } else if (!tsuri && !effectiveTsuke) {
+    kouchiWEl.textContent = '―'; kouchiWEl.className = 'calc-val na';
+    kouchiWfEl.textContent = '';
+  } else {
+    const baseW = (!tsuri && effectiveTsuke === 'hanzoto') ? 146 : 136;
+    const kouW  = kw - baseW;
+    kouchiWEl.textContent = kouW + ' mm'; kouchiWEl.className = 'calc-val';
+    kouchiWfEl.textContent = `${kw} − ${baseW} = ${kouW}`;
+  }
+}
+
+
+let currentType = ''; // 'door' | 'sliding'
+const chipState = {}; // { katte, katachi, post }
+
+function selectType(t) {
+  currentType = t;
+  document.getElementById('type-door').classList.toggle('selected', t === 'door');
+  document.getElementById('type-sliding').classList.toggle('selected', t === 'sliding');
+  document.getElementById('door-detail').classList.toggle('show', t === 'door');
+  document.getElementById('sliding-detail').classList.toggle('show', t === 'sliding');
+  // 引戸では下枠フラット材・有効開口を非表示
+  const isDoor = t === 'door';
+  document.getElementById('shimowaku-row').style.display  = isDoor ? '' : 'none';
+  document.getElementById('kouchi-card').style.display    = isDoor ? '' : 'none';
+  // 引戸に切り替えたらフラット材チェックをリセット
+  if (!isDoor) document.getElementById('cb-shimowaku').checked = false;
+  recalc();
+}
+
+function selectChip(el) {
+  const group = el.dataset.group;
+  // Deselect others in group
+  document.querySelectorAll(`.chip[data-group="${group}"]`).forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  chipState[group] = el.dataset.val;
+}
+
+const KATTE_LABEL   = { right:'右勝手', left:'左勝手' };
+const KATACHI_LABEL = { single:'片開き', oyako:'親子ドア', sode:'片袖fix' };
+const RANMA_LABEL   = { yes:'ランマあり', no:'ランマなし' };
+const POST_LABEL    = { yes:'ポストあり', no:'ポストなし' };
+const MAISUU_LABEL  = { '2':'2枚建て', '4':'4枚建て' };
+
+function getKenguText() {
+  if (!currentType) return null;
+  if (currentType === 'sliding') {
+    const parts = ['引戸'];
+    if (chipState.maisuuS) parts.push(MAISUU_LABEL[chipState.maisuuS]);
+    if (chipState.ranmaS)  parts.push(RANMA_LABEL[chipState.ranmaS]);
+    return parts.join(' / ');
+  }
+  const parts = ['ドア'];
+  if (chipState.katte)   parts.push(KATTE_LABEL[chipState.katte]);
+  if (chipState.katachi) parts.push(KATACHI_LABEL[chipState.katachi]);
+  if (chipState.ranma)   parts.push(RANMA_LABEL[chipState.ranma]);
+  if (chipState.post)    parts.push(POST_LABEL[chipState.post]);
+  return parts.join(' / ');
+}
+
+
+const NUM_FIELDS = ['kh','kw','dh','dw','ats'];
+const FRAME_FIELDS = ['soto','uchi'];
+const TOTAL = NUM_FIELDS.length + FRAME_FIELDS.length;
+const LABELS = {
+  kh:   ['KH',   '既存開口高さ'],
+  kw:   ['KW',   '既存開口幅'],
+  dh:   ['DH',   '扉高さ'],
+  dw:   ['DW',   '扉幅'],
+  ats:  ['戸厚', '扉厚み'],
+  soto: ['外額縁','外額縁'],
+  uchi: ['内額縁','内額縁'],
+};
+const LS_KEY = 'saisun_records';
+
+// ======= Init =======
+document.addEventListener('DOMContentLoaded', () => {
+  // Set today's date
+  const today = new Date();
+  const y = today.getFullYear();
+  const m = String(today.getMonth()+1).padStart(2,'0');
+  const d = String(today.getDate()).padStart(2,'0');
+  document.getElementById('site-date').value = `${y}-${m}-${d}`;
+  updateProgress();
+});
+
+// ======= Helpers =======
+function val(id) { const el = document.getElementById(id); return el ? el.value : ''; }
+function setVal(id, v) { const el = document.getElementById(id); if (el) el.value = v; }
+function dv(v) { return v === '80thin' ? '80（薄）' : v; }
+function dvmm(v) { return v ? dv(v) + 'mm' : ''; }
+
+function showToast(msg, isError=false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (isError ? ' error' : '');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ======= Numeric fields =======
+NUM_FIELDS.forEach(key => {
+  const el = document.getElementById(key);
+  if (el) el.addEventListener('input', () => updateNumCard(key));
+});
+
+function updateNumCard(key) {
+  const card = document.getElementById('card-' + key);
+  const filled = val(key) !== '';
+  card.classList.toggle('has-value', filled);
+  if (filled) card.classList.remove('has-error');
+  updateProgress();
+  if (key === 'kh' || key === 'kw') recalc();
+}
+
+[['kh',['kh_l','kh_c','kh_r']], ['kw',['kw_t','kw_c','kw_b']]].forEach(([key, subs]) => {
+  subs.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', () => { checkWarn(key, subs); recalc(); });
+  });
+});
+
+function checkWarn(key, ids) {
+  const vals = ids.map(id => parseFloat(val(id))).filter(n => !isNaN(n));
+  const warn = document.getElementById('warn-' + key);
+  warn.classList.toggle('show', vals.length >= 2 && Math.max(...vals) - Math.min(...vals) > 0);
+}
+
+function toggleMeasure(key) {
+  const panel = document.getElementById('panel-' + key);
+  const btn = document.getElementById('toggle-' + key);
+  const open = panel.classList.toggle('open');
+  btn.classList.toggle('active', open);
+  btn.textContent = open ? '3点▴' : '3点▾';
+}
+
+// ======= Frame (select) fields =======
+function onMainSelect(key) {
+  const v = val(key);
+  ['_r','_l','_t'].forEach(s => setVal(key+s, v));
+  document.getElementById('ind-'+key).classList.remove('show');
+
+  // 外額縁 155mm → 個別選択を封鎖（パネルを閉じてボタンを無効化）
+  if (key === 'soto') {
+    const btn = document.getElementById('toggle-soto');
+    const panel = document.getElementById('panel-soto');
+    if (v === '155') {
+      // 個別パネルを閉じてロック
+      panel.classList.remove('open');
+      btn.classList.remove('active');
+      btn.textContent = '個別▾';
+      btn.disabled = true;
+      btn.title = '155mmは共通設定のみ';
+    } else {
+      btn.disabled = false;
+      btn.title = '';
+    }
+  }
+
+  updateFrameCard(key);
+}
+
+function onSubSelect(key) {
+  const subs = [key+'_r', key+'_l', key+'_t'];
+  const vals = subs.map(id => val(id));
+  const allSame = vals.every(v => v === vals[0]);
+  if (allSame) {
+    setVal(key, vals[0]);
+    document.getElementById('ind-'+key).classList.remove('show');
+  } else {
+    setVal(key, '');
+    document.getElementById('ind-'+key).classList.toggle('show', vals.some(v => v !== ''));
+  }
+  updateFrameCard(key);
+}
+
+function updateFrameCard(key) {
+  const subs = [key+'_r', key+'_l', key+'_t'];
+  const filled = val(key) !== '' || subs.some(id => val(id) !== '');
+  const card = document.getElementById('card-' + key);
+  card.classList.toggle('has-value', filled);
+  if (filled) card.classList.remove('has-error');
+  updateProgress();
+}
+
+function toggleFrameIndiv(key) {
+  // 外額縁155mmのときは個別展開をブロック
+  if (key === 'soto' && val('soto') === '155') return;
+
+  const panel = document.getElementById('panel-' + key);
+  const btn = document.getElementById('toggle-' + key);
+  const open = panel.classList.toggle('open');
+  btn.classList.toggle('active', open);
+  btn.textContent = open ? '個別▴' : '個別▾';
+  if (open) {
+    const v = val(key);
+    if (v) ['_r','_l','_t'].forEach(s => { if (!val(key+s)) setVal(key+s, v); });
+  }
+}
+
+// ======= Progress =======
+function updateProgress() {
+  let count = 0;
+  NUM_FIELDS.forEach(k => { if (val(k) !== '') count++; });
+  FRAME_FIELDS.forEach(k => {
+    const subs = [k+'_r',k+'_l',k+'_t'];
+    if (val(k) !== '' || subs.some(id => val(id) !== '')) count++;
+  });
+  document.getElementById('progress').textContent = count + '/' + TOTAL;
+}
+
+// ======= Frame text =======
+function getFrameText(key) {
+  const subs = [key+'_r', key+'_l', key+'_t'];
+  const sv = subs.map(id => val(id));
+  const mainV = val(key);
+  if (mainV && sv.every(v => v === mainV)) return dvmm(mainV) + '（右・左・上 共通）';
+  if (sv.some(v => v !== '')) return ['右','左','上'].map((p,i) => p+':'+( dvmm(sv[i])||'―')).join(' / ');
+  return null;
+}
+
+// ======= Build text =======
+function buildText() {
+  const siteName = document.getElementById('site-name').value.trim();
+  const siteDate = document.getElementById('site-date').value;
+  const dateStr = siteDate ? siteDate.replace(/-/g,'/') : '';
+
+  const lines = [];
+  lines.push('【採寸データ】');
+  if (siteName) lines.push('現場名：' + siteName);
+  if (dateStr)  lines.push('日付：' + dateStr);
+  const kengu = getKenguText();
+  if (kengu) lines.push('建具種別：' + kengu);
+  const tsukeLabel = tsukeMethod === 'hanzoto' ? '半外付け' : tsukeMethod === 'uchi' ? '内付け' : '';
+  if (tsukeLabel) lines.push('取付方法：' + tsukeLabel);
+  const at    = document.getElementById('cb-shimowaku').checked;
+  const tsuri = document.getElementById('cb-tsuri').checked;
+  if (tsuri) {
+    lines.push('下枠：はつり納まり');
+  } else {
+    if (currentType === 'door') lines.push('下枠フラット材：' + (at ? '必要' : '不要'));
+  }
+  lines.push('');
+  NUM_FIELDS.forEach(k => {
+    const [badge, title] = LABELS[k];
+    lines.push(`${badge}（${title}）: ${val(k) ? val(k)+'mm' : '未入力'}`);
+  });
+  FRAME_FIELDS.forEach(k => {
+    const [badge, title] = LABELS[k];
+    lines.push(`${badge}（${title}）: ${getFrameText(k) || '未選択'}`);
+  });
+  // 新設枠寸法
+  const hVal = document.getElementById('calc-h').textContent;
+  const wVal = document.getElementById('calc-w').textContent;
+  if (hVal !== '―' || wVal !== '―') {
+    lines.push('');
+    lines.push('【新設枠寸法】');
+    lines.push('枠高さ：' + hVal + '  ' + document.getElementById('calc-h-formula').textContent);
+    lines.push('枠幅　：' + wVal + '  ' + document.getElementById('calc-w-formula').textContent);
+  }
+  // 有効開口（幅のみ・ドアのみ）
+  const kouW = document.getElementById('kouchi-w').textContent;
+  if (kouW !== '―') {
+    lines.push('');
+    lines.push('【有効開口】');
+    lines.push('有効開口：' + kouW + '  ' + document.getElementById('kouchi-w-formula').textContent);
+  }
+  const notes = document.getElementById('notes').value.trim();
+  if (notes) lines.push('', '【備考】', notes);
+  return lines.join('\n');
+}
+
+// ======= Collect state =======
+function collectState() {
+  const state = {
+    siteName: document.getElementById('site-name').value.trim(),
+    siteDate: document.getElementById('site-date').value,
+    notes: document.getElementById('notes').value,
+    kenguType: currentType,
+    chipState: { ...chipState },
+    tsukeMethod,
+    shimowaku: document.getElementById('cb-shimowaku').checked,
+    tsuri: document.getElementById('cb-tsuri').checked,
+    fields: {},
+  };
+  const allInputIds = ['kh','kh_l','kh_c','kh_r','kw','kw_t','kw_c','kw_b','dh','dw','ats'];
+  allInputIds.forEach(id => { state.fields[id] = val(id); });
+  const allSelectIds = ['soto','soto_r','soto_l','soto_t','uchi','uchi_r','uchi_l','uchi_t'];
+  allSelectIds.forEach(id => { state.fields[id] = val(id); });
+  return state;
+}
+
+// ======= Restore state =======
+function restoreState(state) {
+  setVal('site-name', state.siteName || '');
+  setVal('site-date', state.siteDate || '');
+  setVal('notes', state.notes || '');
+  Object.entries(state.fields || {}).forEach(([id, v]) => setVal(id, v));
+
+  // Restore kengu type
+  if (state.kenguType) selectType(state.kenguType);
+  // Restore chips
+  Object.entries(state.chipState || {}).forEach(([group, v]) => {
+    const el = document.querySelector(`.chip[data-group="${group}"][data-val="${v}"]`);
+    if (el) { el.classList.add('selected'); chipState[group] = v; }
+  });
+  // Restore tsuke method
+  if (state.tsukeMethod) selectTsuke(state.tsukeMethod);
+  // Restore shimowaku checkbox
+  document.getElementById('cb-shimowaku').checked = !!state.shimowaku;
+  document.getElementById('cb-tsuri').checked = !!state.tsuri;
+  // Restore 155mm lock state
+  const sotoBtn = document.getElementById('toggle-soto');
+  if (val('soto') === '155') { sotoBtn.disabled = true; sotoBtn.title = '155mmは共通設定のみ'; }
+  else { sotoBtn.disabled = false; sotoBtn.title = ''; }
+  recalc();
+
+  // Update UI states
+  NUM_FIELDS.forEach(k => updateNumCard(k));
+  FRAME_FIELDS.forEach(k => updateFrameCard(k));
+
+  // Restore warnings
+  checkWarn('kh', ['kh_l','kh_c','kh_r']);
+  checkWarn('kw', ['kw_t','kw_c','kw_b']);
+
+  // Show indiv badges if needed
+  FRAME_FIELDS.forEach(k => {
+    const sv = [k+'_r',k+'_l',k+'_t'].map(id => val(id));
+    if (sv.some(v => v) && !sv.every(v => v === sv[0])) {
+      document.getElementById('ind-'+k).classList.add('show');
+    }
+  });
+
+  updateProgress();
+}
+
+// ======= Save =======
+function getRecords() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); } catch { return []; }
+}
+function putRecords(arr) { localStorage.setItem(LS_KEY, JSON.stringify(arr)); }
+
+function saveRecord() {
+  const siteName = document.getElementById('site-name').value.trim();
+  if (!siteName) { showToast('現場名を入力してください', true); return; }
+
+  const records = getRecords();
+  const id = Date.now().toString();
+  const state = collectState();
+  state.id = id;
+  state.savedAt = new Date().toISOString();
+
+  // If same site + date exists, ask to overwrite
+  const existing = records.findIndex(r => r.siteName === siteName && r.siteDate === state.siteDate);
+  if (existing >= 0) {
+    if (!confirm(`「${siteName}」（${state.siteDate}）は既に保存されています。上書きしますか？`)) return;
+    records[existing] = { ...state, id: records[existing].id };
+  } else {
+    records.unshift(state);
+  }
+
+  putRecords(records);
+  showToast('💾 保存しました：' + siteName);
+}
+
+// ======= Records modal =======
+function openRecords() {
+  renderRecordList();
+  document.getElementById('modal-records').classList.add('show');
+}
+function closeRecords(e) { if (e.target === document.getElementById('modal-records')) closeRecordsDirect(); }
+function closeRecordsDirect() { document.getElementById('modal-records').classList.remove('show'); }
+
+function renderRecordList() {
+  const records = getRecords();
+  const list = document.getElementById('record-list');
+  if (records.length === 0) {
+    list.innerHTML = '<div class="empty-state">保存データがありません</div>';
+    return;
+  }
+  list.innerHTML = records.map(r => {
+    const d = r.siteDate ? r.siteDate.replace(/-/g,'/') : '日付なし';
+    return `<div class="record-item" onclick="loadRecord('${r.id}')">
+      <div class="record-info">
+        <div class="record-name">${r.siteName || '（現場名なし）'}</div>
+        <div class="record-date">${d}</div>
+      </div>
+      <button class="record-del" onclick="deleteRecord(event,'${r.id}')">🗑</button>
+    </div>`;
+  }).join('');
+}
+
+function loadRecord(id) {
+  const records = getRecords();
+  const rec = records.find(r => r.id === id);
+  if (!rec) return;
+  clearAll(true);
+  restoreState(rec);
+  closeRecordsDirect();
+  showToast('📂 読み込みました：' + (rec.siteName || ''));
+}
+
+function deleteRecord(e, id) {
+  e.stopPropagation();
+  const records = getRecords();
+  const rec = records.find(r => r.id === id);
+  const name = rec ? rec.siteName || '（現場名なし）' : '';
+  if (!confirm(`「${name}」を削除しますか？`)) return;
+  putRecords(records.filter(r => r.id !== id));
+  renderRecordList();
+  showToast('削除しました');
+}
+
+// ======= Summary =======
+function showSummary() {
+  NUM_FIELDS.forEach(k => {
+    if (val(k) === '') document.getElementById('card-'+k).classList.add('has-error');
+  });
+
+  const siteName = document.getElementById('site-name').value.trim();
+  const siteDate = document.getElementById('site-date').value;
+  const dateStr = siteDate ? siteDate.replace(/-/g,'/') : '';
+  const kengu = getKenguText();
+  document.getElementById('summary-site').textContent =
+    [siteName, dateStr, kengu].filter(Boolean).join('　');
+
+  const rows = [];
+  NUM_FIELDS.forEach(key => {
+    const v = val(key);
+    const [badge, title] = LABELS[key];
+    rows.push(`<div class="summary-cell">
+      <div class="s-key">${badge}</div>
+      <div class="s-val ${v?'':'missing'}">${v ? v+'mm' : '未入力'}</div>
+      <div class="s-label">${title}</div>
+    </div>`);
+  });
+  FRAME_FIELDS.forEach(key => {
+    const txt = getFrameText(key);
+    const [badge, title] = LABELS[key];
+    rows.push(`<div class="summary-cell">
+      <div class="s-key">${badge}</div>
+      <div class="s-val ${txt?'':'missing'}" style="font-size:12px">${txt || '未選択'}</div>
+      <div class="s-label">${title}</div>
+    </div>`);
+  });
+  document.getElementById('summary-grid').innerHTML = rows.join('');
+  document.getElementById('copy-block').textContent = buildText();
+  document.getElementById('modal-summary').classList.add('show');
+}
+function closeSummary(e) { if (e.target === document.getElementById('modal-summary')) closeSummaryDirect(); }
+function closeSummaryDirect() { document.getElementById('modal-summary').classList.remove('show'); }
+
+// ======= Copy =======
+function copyText() {
+  const text = buildText();
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => showToast('📋 コピーしました'));
+  }
+}
+
+// ======= シート HTML生成 =======
+function buildSheetHTML(siteName, siteDate, kengu, tsukeLabel, shimowakuTxt, isDoor) {
+  const R = (id) => { const v = val(id); return v ? v + 'mm' : '―'; };
+  const khVal    = R('kh');
+  const khPts    = ['kh_l','kh_c','kh_r'].map(id => R(id)).join(' / ');
+  const khHasPts = ['kh_l','kh_c','kh_r'].some(id => val(id));
+  const kwVal    = R('kw');
+  const kwPts    = ['kw_t','kw_c','kw_b'].map(id => R(id)).join(' / ');
+  const kwHasPts = ['kw_t','kw_c','kw_b'].some(id => val(id));
+  const calcH  = document.getElementById('calc-h').textContent;
+  const calcHf = document.getElementById('calc-h-formula').textContent;
+  const calcW  = document.getElementById('calc-w').textContent;
+  const calcWf = document.getElementById('calc-w-formula').textContent;
+  const kouW   = document.getElementById('kouchi-w').textContent;
+  const kouWf  = document.getElementById('kouchi-w-formula').textContent;
+  const sotoTxt = getFrameText('soto') || '―';
+  const uchiTxt = getFrameText('uchi') || '―';
+  const notes   = document.getElementById('notes').value
+                    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  return `
+<div style="font-family:'Noto Sans JP',sans-serif;font-size:13px;color:#111">
+<div style="border-bottom:2.5px solid #111;padding-bottom:5px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:flex-end">
+  <span style="font-size:18px;font-weight:700;letter-spacing:.05em">採寸チェックシート</span>
+  <span style="font-size:11px;color:#555">${siteDate}</span>
+</div>
+<div style="font-size:15px;font-weight:700;margin-bottom:14px">${siteName}</div>
+
+<div style="margin-bottom:11px">
+  <div style="font-size:9px;font-weight:700;letter-spacing:.15em;color:#666;border-bottom:1px solid #ccc;padding-bottom:3px;margin-bottom:7px">既存ドア情報</div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap">
+    ${kengu !== '―' ? `<span style="font-size:11px;padding:3px 12px;border:1px solid #888;border-radius:20px">${kengu}</span>` : ''}
+    ${tsukeLabel ? `<span style="font-size:11px;padding:3px 12px;border:1px solid #888;border-radius:20px">${tsukeLabel}</span>` : ''}
+    ${shimowakuTxt ? `<span style="font-size:11px;padding:3px 12px;border:1px solid #888;border-radius:20px">${shimowakuTxt}</span>` : ''}
+  </div>
+</div>
+
+<div style="margin-bottom:11px">
+  <div style="font-size:9px;font-weight:700;letter-spacing:.15em;color:#666;border-bottom:1px solid #ccc;padding-bottom:3px;margin-bottom:7px">既存扉寸法</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px">
+    ${['dh:DH 扉高さ','dw:DW 扉幅','ats:戸厚'].map(s=>{const[id,lbl]=s.split(':');return`<div style="border:1px solid #ddd;border-radius:5px;padding:6px 9px"><div style="font-size:9px;color:#888;margin-bottom:2px">${lbl}</div><div style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700">${R(id)}</div></div>`}).join('')}
+  </div>
+</div>
+
+<div style="margin-bottom:11px">
+  <div style="font-size:9px;font-weight:700;letter-spacing:.15em;color:#666;border-bottom:1px solid #ccc;padding-bottom:3px;margin-bottom:7px">既存開口</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+    <div style="border:1px solid #ddd;border-radius:5px;padding:6px 9px">
+      <div style="font-size:9px;color:#888;margin-bottom:2px">KH 既存開口高さ</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700">${khVal}</div>
+      ${khHasPts?`<div style="font-size:10px;color:#888;margin-top:2px">3点：${khPts}</div>`:''}
+    </div>
+    <div style="border:1px solid #ddd;border-radius:5px;padding:6px 9px">
+      <div style="font-size:9px;color:#888;margin-bottom:2px">KW 既存開口幅</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700">${kwVal}</div>
+      ${kwHasPts?`<div style="font-size:10px;color:#888;margin-top:2px">3点：${kwPts}</div>`:''}
+    </div>
+  </div>
+</div>
+
+<div style="margin-bottom:11px">
+  <div style="font-size:9px;font-weight:700;letter-spacing:.15em;color:#666;border-bottom:1px solid #ccc;padding-bottom:3px;margin-bottom:7px">額縁</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+    <div style="border:1px solid #ddd;border-radius:5px;padding:6px 9px"><div style="font-size:9px;color:#888;margin-bottom:2px">外額縁</div><div style="font-size:12px;font-weight:600">${sotoTxt}</div></div>
+    <div style="border:1px solid #ddd;border-radius:5px;padding:6px 9px"><div style="font-size:9px;color:#888;margin-bottom:2px">内額縁</div><div style="font-size:12px;font-weight:600">${uchiTxt}</div></div>
+  </div>
+</div>
+
+<div style="margin-bottom:11px">
+  <div style="font-size:9px;font-weight:700;letter-spacing:.15em;color:#666;border-bottom:1px solid #ccc;padding-bottom:3px;margin-bottom:7px">計算結果</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:5px">
+    <div style="background:#eef2ff;border:1px solid #b8c8f0;border-radius:5px;padding:8px 10px">
+      <div style="font-size:9px;color:#446;margin-bottom:2px">新設枠高さ</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;color:#223">${calcH}</div>
+      <div style="font-size:10px;color:#889;margin-top:3px">${calcHf}</div>
+    </div>
+    <div style="background:#eef2ff;border:1px solid #b8c8f0;border-radius:5px;padding:8px 10px">
+      <div style="font-size:9px;color:#446;margin-bottom:2px">新設枠幅</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;color:#223">${calcW}</div>
+      <div style="font-size:10px;color:#889;margin-top:3px">${calcWf}</div>
+    </div>
+  </div>
+  ${isDoor ? `<div style="background:#edfaf3;border:1px solid #8ecfaa;border-radius:5px;padding:8px 10px">
+    <div style="font-size:9px;color:#156;margin-bottom:2px">有効開口</div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;color:#166534">${kouW}</div>
+    <div style="font-size:10px;color:#889;margin-top:3px">${kouWf}</div>
+  </div>` : ''}
+</div>
+
+<div>
+  <div style="font-size:9px;font-weight:700;letter-spacing:.15em;color:#666;border-bottom:1px solid #ccc;padding-bottom:3px;margin-bottom:7px">備考</div>
+  <div style="border:1px solid #ccc;border-radius:5px;min-height:180px;padding:10px 12px;font-size:13px;line-height:1.9;white-space:pre-wrap;word-break:break-all">${notes}</div>
+</div>
+
+<div style="margin-top:10px;font-size:10px;color:#aaa;text-align:right;border-top:1px solid #eee;padding-top:5px">${siteName} | ${siteDate}</div>
+</div>`;
+}
+
+// ======= PDF共有 =======
+async function shareSheet(btn) {
+  const origText = btn.textContent;
+  btn.textContent = '⏳ 生成中…';
+  btn.disabled = true;
+
+  try {
+    const siteName   = document.getElementById('site-name').value.trim() || '採寸';
+    const siteDate   = document.getElementById('site-date').value.replace(/-/g,'/') || '―';
+    const kengu      = getKenguText() || '―';
+    const tsukeLabel = tsukeMethod === 'hanzoto' ? '半外付け' : tsukeMethod === 'uchi' ? '内付け' : '';
+    const at    = document.getElementById('cb-shimowaku').checked;
+    const tsuri = document.getElementById('cb-tsuri').checked;
+    const isDoor = currentType === 'door';
+    let shimowakuTxt = '';
+    if (tsuri) shimowakuTxt = 'はつり納まり';
+    else if (isDoor) shimowakuTxt = '下枠フラット材：' + (at ? '必要' : '不要');
+
+    // 隠しDIVにHTMLを展開
+    const sheet = document.getElementById('print-sheet');
+    sheet.innerHTML = buildSheetHTML(siteName, siteDate, kengu, tsukeLabel, shimowakuTxt, isDoor);
+    sheet.style.left = '-9999px';
+    sheet.style.display = 'block';
+
+    // フォント読み込み待ち
+    await document.fonts.ready;
+    await new Promise(r => setTimeout(r, 200));
+
+    // html2canvas でキャプチャ
+    const canvas = await html2canvas(sheet, {
+      scale: 2, useCORS: true, backgroundColor: '#ffffff',
+      width: 794, windowWidth: 794
+    });
+    sheet.style.display = 'none';
+
+    // jsPDF でA4 PDF生成
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageW = 210, pageH = 297;
+    const imgW  = pageW;
+    const imgH  = (canvas.height / canvas.width) * imgW;
+    const pagesNeeded = Math.ceil(imgH / pageH);
+
+    for (let i = 0; i < pagesNeeded; i++) {
+      if (i > 0) pdf.addPage();
+      pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG',
+        0, -i * pageH, imgW, imgH);
+    }
+
+    const fileName = `採寸_${siteName}_${siteDate.replace(/\//g,'-')}.pdf`;
+    const pdfBlob  = pdf.output('blob');
+    const pdfFile  = new File([pdfBlob], fileName, { type: 'application/pdf' });
+
+    // Web Share API でファイル共有
+    if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+      await navigator.share({ files: [pdfFile], title: fileName });
+    } else {
+      // フォールバック：ダウンロード
+      const url = URL.createObjectURL(pdfBlob);
+      const a = document.createElement('a');
+      a.href = url; a.download = fileName; a.click();
+      URL.revokeObjectURL(url);
+      showToast('📥 PDFをダウンロードしました');
+    }
+  } catch(e) {
+    if (e.name !== 'AbortError') showToast('⚠ PDF生成に失敗しました', true);
+  } finally {
+    btn.textContent = origText;
+    btn.disabled = false;
+  }
+}
+
+
+
+// ======= Clear =======
+function clearAll(silent=false) {
+  if (!silent && !confirm('入力をすべてリセットしますか？')) return;
+  document.querySelectorAll('.field-input, .notes-input').forEach(el => el.value = '');
+  document.querySelectorAll('.field-select').forEach(el => el.value = '');
+  document.getElementById('site-name').value = '';
+  // Reset tsuke
+  tsukeMethod = '';
+  document.getElementById('tsuke-hanzoto').classList.remove('selected');
+  document.getElementById('tsuke-uchi').classList.remove('selected');
+  document.getElementById('card-tsuke').classList.remove('has-value');
+  // Reset shimowaku / tsuri
+  document.getElementById('cb-shimowaku').checked = false;
+  document.getElementById('cb-tsuri').checked = false;
+  recalc();
+  Object.keys(chipState).forEach(k => delete chipState[k]);
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+  document.getElementById('door-detail').classList.remove('show');
+  document.getElementById('sliding-detail').classList.remove('show');
+  document.querySelectorAll('.field-card').forEach(c => c.classList.remove('has-value','has-error'));
+  document.querySelectorAll('.field-warn').forEach(w => w.classList.remove('show'));
+  document.querySelectorAll('.indiv-badge').forEach(b => b.classList.remove('show'));
+  document.querySelectorAll('.expand-panel').forEach(p => p.classList.remove('open'));
+  document.querySelectorAll('.expand-toggle').forEach(b => { b.classList.remove('active'); if(b.textContent.includes('点')) b.textContent='3点▾'; else b.textContent='個別▾'; });
+  updateProgress();
+}
+</script>
+</body>
+</html>
