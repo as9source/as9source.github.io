@@ -3,6 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="採寸">
+<meta name="theme-color" content="#0f1117">
+<link rel="manifest" href="saisun-manifest.json">
+<link rel="apple-touch-icon" href="saisun-icon.png">
 <title>採寸チェックシート</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
@@ -169,11 +176,12 @@
   footer {
     position: fixed; bottom: 0; left: 0; right: 0;
     background: var(--surface); border-top: 1px solid var(--border);
-    padding: 10px 16px; display: flex; gap: 8px;
+    padding: 8px 10px; display: flex; gap: 6px; flex-wrap: wrap; justify-content: center;
+    z-index: 100;
   }
   .btn {
-    flex: 1; padding: 11px; border-radius: 7px;
-    font-family: 'Noto Sans JP', sans-serif; font-size: 13px; font-weight: 700;
+    flex: 1; min-width: 70px; padding: 10px 6px; border-radius: 7px;
+    font-family: 'Noto Sans JP', sans-serif; font-size: 12px; font-weight: 700;
     cursor: pointer; border: none; transition: opacity 0.15s, transform 0.1s;
   }
   .btn:active { transform: scale(0.97); }
@@ -314,6 +322,8 @@
 <!-- PDF生成ライブラリ -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- Dropbox SDK -->
+<script src="https://unpkg.com/dropbox/dist/Dropbox-sdk.min.js"></script>
 </head>
 <body>
 
@@ -617,6 +627,8 @@
   <button class="btn btn-secondary" onclick="clearAll()">リセット</button>
   <button class="btn btn-save" onclick="saveRecord()">💾 保存</button>
   <button class="btn btn-share" id="share-btn" onclick="shareSheet(this)">📄 PDF共有</button>
+  <button class="btn" style="background:#0061FF;color:#fff;font-weight:700" onclick="saveToDropbox()">☁️ Dropbox保存</button>
+  <button class="btn" style="background:#7C3AED;color:#fff;font-weight:700" onclick="loadFromDropbox()">📂 Dropboxから開く</button>
   <button class="btn btn-primary" onclick="showSummary()">確認 ▸</button>
 </footer>
 
@@ -1364,7 +1376,183 @@ async function shareSheet(btn) {
 
 
 
-// ======= Clear =======
+// ======= Dropbox統合 =======
+const DROPBOX_CONFIG = {
+  clientId: 'uoglq7u3AjYUC59',
+  redirectUri: window.location.origin + window.location.pathname
+};
+let dropboxClient = null;
+
+function initDropbox() {
+  const token = localStorage.getItem('dropbox_access_token');
+  if (token) {
+    dropboxClient = new Dropbox.Dropbox({ accessToken: token });
+    return true;
+  }
+  const hash = window.location.hash;
+  if (hash) {
+    const params = new URLSearchParams(hash.substring(1));
+    const t = params.get('access_token');
+    if (t) {
+      localStorage.setItem('dropbox_access_token', t);
+      dropboxClient = new Dropbox.Dropbox({ accessToken: t });
+      window.location.hash = '';
+      return true;
+    }
+  }
+  return false;
+}
+
+function authenticateDropbox() {
+  const dbx = new Dropbox.Dropbox({ clientId: DROPBOX_CONFIG.clientId });
+  const authUrl = dbx.auth.getAuthenticationUrl(DROPBOX_CONFIG.redirectUri);
+  window.location.href = authUrl;
+}
+
+function dbxLoading(icon, msg) {
+  const div = document.createElement('div');
+  div.id = 'dbx-loading';
+  div.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:10000;display:flex;align-items:center;justify-content:center';
+  div.innerHTML = `<div style="background:#fff;padding:40px;border-radius:12px;text-align:center"><div style="font-size:56px;margin-bottom:16px">${icon}</div><div style="font-size:18px;font-weight:700;color:#333">${msg}</div></div>`;
+  document.body.appendChild(div);
+  return div;
+}
+function dbxRemoveLoading() {
+  const d = document.getElementById('dbx-loading');
+  if (d) document.body.removeChild(d);
+}
+
+async function saveToDropbox() {
+  if (!dropboxClient && !initDropbox()) {
+    if (confirm('Dropboxにログインが必要です。ログインページに移動しますか？')) authenticateDropbox();
+    return;
+  }
+  const loading = dbxLoading('☁️', 'Dropboxに保存中...');
+  try {
+    const now = new Date();
+    const year = now.getFullYear() + '年';
+    const month = (now.getMonth() + 1) + '月';
+    const folder = `/採寸チェックシート/${year}/${month}`;
+    for (const p of ['/採寸チェックシート', `/採寸チェックシート/${year}`, folder]) {
+      try { await dropboxClient.filesCreateFolderV2({ path: p }); } catch(e) {}
+    }
+    const siteName = document.getElementById('site-name').value.trim() || '現場';
+    const dateStr  = now.toISOString().split('T')[0];
+    const timeStr  = now.toTimeString().split(' ')[0].replace(/:/g,'-');
+    const base     = `${dateStr}_${timeStr}_${siteName}`;
+
+    // JSONデータ保存
+    const state = collectState();
+    state.savedAt = now.toISOString();
+    state.version = 'saisun-1.0';
+    const jsonStr = JSON.stringify(state, null, 2);
+    await dropboxClient.filesUpload({ path: `${folder}/${base}.json`, contents: jsonStr, mode: 'overwrite' });
+
+    // シート画像保存
+    const sheet = document.getElementById('print-sheet');
+    const isDoor = currentType === 'door';
+    const tsukeLabel = tsukeMethod === 'hanzoto' ? '半外付け' : tsukeMethod === 'uchi' ? '内付け' : '';
+    const at = document.getElementById('cb-shimowaku').checked;
+    const tsuri = document.getElementById('cb-tsuri').checked;
+    let shimowakuTxt = tsuri ? 'はつり納まり' : isDoor ? '下枠フラット材：'+(at?'必要':'不要') : '';
+    sheet.innerHTML = buildSheetHTML(siteName, now.toLocaleDateString('ja-JP'), getKenguText()||'―', tsukeLabel, shimowakuTxt, isDoor);
+    sheet.style.display = 'block';
+    await document.fonts.ready;
+    await new Promise(r => setTimeout(r, 200));
+    const canvas = await html2canvas(sheet, { scale:2, useCORS:true, backgroundColor:'#ffffff', width:794, windowWidth:794 });
+    sheet.style.display = 'none';
+    const imgBlob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+    await dropboxClient.filesUpload({ path: `${folder}/${base}.png`, contents: imgBlob, mode: 'overwrite' });
+
+    dbxRemoveLoading();
+    showToast('☁️ Dropboxに保存しました');
+  } catch(e) {
+    dbxRemoveLoading();
+    if (e.status === 401) {
+      localStorage.removeItem('dropbox_access_token'); dropboxClient = null;
+      if (confirm('Dropbox認証が期限切れです。再ログインしますか？')) authenticateDropbox();
+    } else {
+      showToast('⚠ Dropbox保存に失敗しました', true);
+    }
+  }
+}
+
+async function loadFromDropbox() {
+  if (!dropboxClient && !initDropbox()) {
+    if (confirm('Dropboxにログインが必要です。ログインページに移動しますか？')) authenticateDropbox();
+    return;
+  }
+  const loading = dbxLoading('📂', 'ファイル一覧を取得中...');
+  try {
+    const res = await dropboxClient.filesListFolder({ path: '/採寸チェックシート', recursive: true });
+    dbxRemoveLoading();
+    const jsonFiles = res.result.entries.filter(e => e['.tag'] === 'file' && e.name.endsWith('.json'));
+    if (!jsonFiles.length) { alert('保存されたファイルが見つかりませんでした。'); return; }
+    showDbxFileModal(jsonFiles);
+  } catch(e) {
+    dbxRemoveLoading();
+    if (e.status === 401) {
+      localStorage.removeItem('dropbox_access_token'); dropboxClient = null;
+      if (confirm('Dropbox認証が期限切れです。再ログインしますか？')) authenticateDropbox();
+    } else if (e.error?.error_summary?.includes('not_found')) {
+      alert('「採寸チェックシート」フォルダがありません。まず保存してください。');
+    } else {
+      showToast('⚠ ファイル一覧の取得に失敗しました', true);
+    }
+  }
+}
+
+function showDbxFileModal(files) {
+  const overlay = document.createElement('div');
+  overlay.id = 'dbx-modal';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML = `
+    <div style="background:#1a1d27;border-radius:14px;width:100%;max-width:560px;max-height:80vh;display:flex;flex-direction:column;border:1px solid #2e3350">
+      <div style="padding:18px 20px;border-bottom:1px solid #2e3350;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:16px;font-weight:700;color:#fff">📂 Dropboxから開く</span>
+        <button onclick="document.body.removeChild(document.getElementById('dbx-modal'))" style="background:none;border:none;color:#888;font-size:20px;cursor:pointer">✕</button>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:16px">
+        ${files.map(f => {
+          const name = f.name.replace('.json','');
+          const parts = f.path_display.split('/');
+          const folder = parts.slice(2,-1).join(' / ');
+          return `<div onclick="loadDbxFile('${f.path_display}')" style="padding:12px 14px;margin-bottom:8px;background:#22263a;border-radius:8px;cursor:pointer;border:1px solid #2e3350" onmouseover="this.style.borderColor='#4a6cf7'" onmouseout="this.style.borderColor='#2e3350'">
+            <div style="font-weight:700;color:#7ab8f7;margin-bottom:4px">📄 ${name}</div>
+            <div style="font-size:11px;color:#666">${folder}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+async function loadDbxFile(path) {
+  const modal = document.getElementById('dbx-modal');
+  if (modal) document.body.removeChild(modal);
+  const loading = dbxLoading('📥', 'データを読み込み中...');
+  try {
+    const res  = await dropboxClient.filesDownload({ path });
+    const text = await res.result.fileBlob.text();
+    const data = JSON.parse(text);
+    clearAll(true);
+    restoreState(data);
+    dbxRemoveLoading();
+    showToast('✅ データを読み込みました');
+  } catch(e) {
+    dbxRemoveLoading();
+    showToast('⚠ 読み込みに失敗しました', true);
+  }
+}
+
+window.addEventListener('load', () => { initDropbox(); });
+
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('saisun-sw.js')
+    .catch(() => {});
+}
+
 function clearAll(silent=false) {
   if (!silent && !confirm('入力をすべてリセットしますか？')) return;
   document.querySelectorAll('.field-input, .notes-input').forEach(el => el.value = '');
