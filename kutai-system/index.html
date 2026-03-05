@@ -14,10 +14,15 @@
     ========================================
     躯体採寸システム
     ========================================
-    バージョン: 1.21.0
+    バージョン: 1.21.1
     最終更新: 2024-12-28
     
     [更新履歴]
+    v1.21.1 (2024-12-28) - 緊急修正
+    - HTMLファイル構造の修正
+    - Dropboxコードが正しくscriptタグ内に配置
+    - 画面にコードが表示される問題を修正
+    
     v1.21.0 (2024-12-28) - Dropbox統合
     - Dropboxとの連携機能を追加
     - 階層フォルダ構造での自動保存（年/月）
@@ -705,7 +710,7 @@
             
             <!-- バージョン情報 -->
             <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 13px;">
-                <div style="margin-bottom: 5px;">躯体採寸システム v1.21.0</div>
+                <div style="margin-bottom: 5px;">躯体採寸システム v1.21.1</div>
                 <div>最終更新: 2024-12-28</div>
             </div>
         </div>
@@ -4404,9 +4409,9 @@
             }
         }
     </script>
-</body>
-</html>
-// Dropbox統合機能（v1.21.0）
+    
+    <script>
+    // Dropbox統合機能（v1.21.0）
 
 const DROPBOX_CONFIG = {
     clientId: 'uoglq7u3AjYUC59',
@@ -4761,3 +4766,7 @@ async function generateImageForDropbox() {
 window.addEventListener('load', function() {
     initDropbox();
 });
+
+    </script>
+</body>
+</html>
