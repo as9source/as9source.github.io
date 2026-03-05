@@ -14,10 +14,21 @@
     ========================================
     躯体採寸システム
     ========================================
-    バージョン: 1.18.1
+    バージョン: 1.18.3
     最終更新: 2024-12-28
     
     [更新履歴]
+    v1.18.3 (2024-12-28)
+    - 自由作図で追加した線が計算結果に表示されない問題を修正
+    - 寸法未入力の線も計算結果の図に表示されるように改善
+    - 自由作図の線も正しく共有されるように修正
+    
+    v1.18.2 (2024-12-28)
+    - 共有機能にローディング表示を追加
+    - html2canvas読み込み確認を追加
+    - エラーメッセージを改善
+    - 共有ボタンを押しても何も起きない問題を修正
+    
     v1.18.1 (2024-12-28)
     - 左Lパターンの段差設定を修正（開始点のコーナーに対応）
     - 開始点にあるコーナーにも段差入力フィールドを表示
@@ -624,7 +635,7 @@
             
             <!-- バージョン情報 -->
             <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 13px;">
-                <div style="margin-bottom: 5px;">躯体採寸システム v1.18.1</div>
+                <div style="margin-bottom: 5px;">躯体採寸システム v1.18.3</div>
                 <div>最終更新: 2024-12-28</div>
             </div>
         </div>
@@ -2502,9 +2513,16 @@
                 const line = lines[i];
                 const dim = dimensions[line.id];
                 
-                if (!dim || !dim.length) continue;
-                
-                let realLength = dim.length;
+                // 寸法未入力の線も表示する（v1.18.3）
+                let realLength;
+                if (dim && dim.length) {
+                    realLength = dim.length;
+                } else {
+                    // 寸法未入力の場合、実測値（ピクセル長さ）を使用
+                    const dx = line.x2 - line.x1;
+                    const dy = line.y2 - line.y1;
+                    realLength = Math.sqrt(dx * dx + dy * dy);
+                }
                 
                 const dx = line.x2 - line.x1;
                 const dy = line.y2 - line.y1;
@@ -4171,14 +4189,27 @@
                 return;
             }
             
-            // 共有機能のチェック
-            if (!navigator.share && !navigator.canShare) {
-                alert('この端末では共有機能が使えません。画像として保存します。');
-                await downloadAsPNG();
-                return;
-            }
+            // ローディング表示（NEW - v1.18.2）
+            const loadingDiv = document.createElement('div');
+            loadingDiv.id = 'share-loading';
+            loadingDiv.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; display: flex; align-items: center; justify-content: center;';
+            loadingDiv.innerHTML = '<div style="background: white; padding: 30px; border-radius: 12px; text-align: center;"><div style="font-size: 48px; margin-bottom: 15px;">⏳</div><div style="font-size: 18px; font-weight: bold; color: #333;">共有準備中...</div></div>';
+            document.body.appendChild(loadingDiv);
             
             try {
+                // html2canvas読み込み確認（NEW - v1.18.2）
+                if (typeof html2canvas === 'undefined') {
+                    throw new Error('html2canvasライブラリが読み込まれていません。ページを再読み込みしてください。');
+                }
+                
+                // 共有機能のチェック
+                if (!navigator.share && !navigator.canShare) {
+                    document.body.removeChild(loadingDiv);
+                    alert('この端末では共有機能が使えません。画像として保存します。');
+                    await downloadAsPNG();
+                    return;
+                }
+                
                 const siteName = document.getElementById('site-name')?.value || '';
                 const sashColor = document.getElementById('sash-color')?.value || '';
                 
@@ -4227,11 +4258,11 @@
                 document.body.removeChild(resultDiv);
                 
                 canvas.toBlob(async (blob) => {
-                    if (!blob) {
-                        throw new Error('画像の生成に失敗しました');
-                    }
-                    
                     try {
+                        if (!blob) {
+                            throw new Error('画像の生成に失敗しました');
+                        }
+                        
                         const filename = (siteName ? siteName + '_' : '') + getFilename() + '.png';
                         const file = new File([blob], filename, { type: 'image/png' });
                         
@@ -4253,7 +4284,15 @@
                             await navigator.share(shareData);
                         }
                         
+                        // 成功時にローディング削除（NEW - v1.18.2）
+                        const loading = document.getElementById('share-loading');
+                        if (loading) document.body.removeChild(loading);
+                        
                     } catch (shareError) {
+                        // エラー時にローディング削除（NEW - v1.18.2）
+                        const loading = document.getElementById('share-loading');
+                        if (loading) document.body.removeChild(loading);
+                        
                         if (shareError.name === 'AbortError') {
                             // ユーザーがキャンセルした場合
                             return;
@@ -4265,6 +4304,10 @@
                 }, 'image/png');
                 
             } catch (error) {
+                // エラー時にローディング削除（NEW - v1.18.2）
+                const loading = document.getElementById('share-loading');
+                if (loading) document.body.removeChild(loading);
+                
                 console.error('共有エラー:', error);
                 alert('共有の準備に失敗しました: ' + error.message + '\n画像として保存します。');
                 await downloadAsPNG();
