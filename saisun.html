@@ -15,7 +15,7 @@
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 
   :root {
-    --bg: #0f1117;
+    --bg: #f0f2f7;
     --surface: #1a1d27;
     --surface2: #22263a;
     --border: #2e3350;
@@ -434,16 +434,6 @@
         <button class="type-btn" id="tsuke-uchi" onclick="selectTsuke('uchi')" style="font-size:13px;padding:9px 8px;">内付け</button>
       </div>
     </div>
-    <div class="field-card" id="card-dh">
-      <div class="field-header">
-        <span class="field-badge">DH</span><span class="field-title">扉高さ</span>
-        <div class="check-icon"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-      </div>
-      <div class="input-row">
-        <div class="input-wrap"><input class="field-input" id="dh" type="number" inputmode="decimal" placeholder="0"><span class="unit-label">mm</span></div>
-      </div>
-    </div>
-
     <!-- DW -->
     <div class="field-card" id="card-dw">
       <div class="field-header">
@@ -463,6 +453,28 @@
       </div>
       <div class="input-row">
         <div class="input-wrap"><input class="field-input" id="ats" type="number" inputmode="decimal" placeholder="0"><span class="unit-label">mm</span></div>
+      </div>
+    </div>
+
+    <!-- 下枠段差 -->
+    <div class="field-card" id="card-shita-danksa">
+      <div class="field-header">
+        <span class="field-badge">段差</span><span class="field-title">下枠段差</span>
+        <div class="check-icon"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="input-row">
+        <div class="input-wrap"><input class="field-input" id="shita-dansa" type="number" inputmode="decimal" placeholder="0"><span class="unit-label">mm</span></div>
+      </div>
+    </div>
+
+    <!-- 下枠外側段差 -->
+    <div class="field-card" id="card-shita-soto-dansa">
+      <div class="field-header">
+        <span class="field-badge">外段差</span><span class="field-title">下枠外側段差</span>
+        <div class="check-icon"><svg viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      </div>
+      <div class="input-row">
+        <div class="input-wrap"><input class="field-input" id="shita-soto-dansa" type="number" inputmode="decimal" placeholder="0"><span class="unit-label">mm</span></div>
       </div>
     </div>
   </div>
@@ -765,21 +777,26 @@ function selectType(t) {
   document.getElementById('type-sliding').classList.toggle('selected', t === 'sliding');
   document.getElementById('door-detail').classList.toggle('show', t === 'door');
   document.getElementById('sliding-detail').classList.toggle('show', t === 'sliding');
-  // 引戸では下枠フラット材・有効開口を非表示
   const isDoor = t === 'door';
-  document.getElementById('shimowaku-row').style.display  = isDoor ? '' : 'none';
-  document.getElementById('kouchi-card').style.display    = isDoor ? '' : 'none';
+  document.getElementById('shimowaku-row').style.display = isDoor ? '' : 'none';
   // 引戸に切り替えたらフラット材チェックをリセット
   if (!isDoor) document.getElementById('cb-shimowaku').checked = false;
+  updateKouchiVisibility();
   recalc();
 }
 
 function selectChip(el) {
   const group = el.dataset.group;
-  // Deselect others in group
   document.querySelectorAll(`.chip[data-group="${group}"]`).forEach(c => c.classList.remove('selected'));
   el.classList.add('selected');
   chipState[group] = el.dataset.val;
+  // 片開きのときのみ有効開口を表示
+  if (group === 'katachi') updateKouchiVisibility();
+}
+
+function updateKouchiVisibility() {
+  const show = currentType === 'door' && chipState.katachi === 'single';
+  document.getElementById('kouchi-card').style.display = show ? '' : 'none';
 }
 
 const KATTE_LABEL   = { right:'右勝手', left:'左勝手' };
@@ -805,15 +822,16 @@ function getKenguText() {
 }
 
 
-const NUM_FIELDS = ['kh','kw','dh','dw','ats'];
+const NUM_FIELDS = ['kh','kw','dw','ats','shita-dansa','shita-soto-dansa'];
 const FRAME_FIELDS = ['soto','uchi'];
 const TOTAL = NUM_FIELDS.length + FRAME_FIELDS.length;
 const LABELS = {
   kh:   ['KH',   '既存開口高さ'],
   kw:   ['KW',   '既存開口幅'],
-  dh:   ['DH',   '扉高さ'],
-  dw:   ['DW',   '扉幅'],
-  ats:  ['戸厚', '扉厚み'],
+  dw:              ['DW',    '扉幅'],
+  ats:             ['戸厚',  '扉厚み'],
+  'shita-dansa':      ['段差',  '下枠段差'],
+  'shita-soto-dansa': ['外段差', '下枠外側段差'],
   soto: ['外額縁','外額縁'],
   uchi: ['内額縁','内額縁'],
 };
@@ -1029,7 +1047,7 @@ function collectState() {
     tsuri: document.getElementById('cb-tsuri').checked,
     fields: {},
   };
-  const allInputIds = ['kh','kh_l','kh_c','kh_r','kw','kw_t','kw_c','kw_b','dh','dw','ats'];
+  const allInputIds = ['kh','kh_l','kh_c','kh_r','kw','kw_t','kw_c','kw_b','dw','ats','shita-dansa','shita-soto-dansa'];
   allInputIds.forEach(id => { state.fields[id] = val(id); });
   const allSelectIds = ['soto','soto_r','soto_l','soto_t','uchi','uchi_r','uchi_l','uchi_t'];
   allSelectIds.forEach(id => { state.fields[id] = val(id); });
@@ -1050,6 +1068,7 @@ function restoreState(state) {
     const el = document.querySelector(`.chip[data-group="${group}"][data-val="${v}"]`);
     if (el) { el.classList.add('selected'); chipState[group] = v; }
   });
+  updateKouchiVisibility();
   // Restore tsuke method
   if (state.tsukeMethod) selectTsuke(state.tsukeMethod);
   // Restore shimowaku checkbox
@@ -1243,8 +1262,8 @@ function buildSheetHTML(siteName, siteDate, kengu, tsukeLabel, shimowakuTxt, isD
 
 <div style="margin-bottom:11px">
   <div style="font-size:9px;font-weight:700;letter-spacing:.15em;color:#666;border-bottom:1px solid #ccc;padding-bottom:3px;margin-bottom:7px">既存扉寸法</div>
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px">
-    ${['dh:DH 扉高さ','dw:DW 扉幅','ats:戸厚'].map(s=>{const[id,lbl]=s.split(':');return`<div style="border:1px solid #ddd;border-radius:5px;padding:6px 9px"><div style="font-size:9px;color:#888;margin-bottom:2px">${lbl}</div><div style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700">${R(id)}</div></div>`}).join('')}
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+    ${['dw:DW 扉幅','ats:戸厚','shita-dansa:下枠段差','shita-soto-dansa:下枠外側段差'].map(s=>{const[id,lbl]=s.split(':');return`<div style="border:1px solid #ddd;border-radius:5px;padding:6px 9px"><div style="font-size:9px;color:#888;margin-bottom:2px">${lbl}</div><div style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700">${R(id)}</div></div>`}).join('')}
   </div>
 </div>
 
