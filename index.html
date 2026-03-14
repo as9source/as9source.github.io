@@ -1,312 +1,546 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="外構工事に便利な計算ツール集 - カーポート、テラス屋根、躯体採寸など">
-    
-    <!-- キャッシュ対策 -->
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    
-    <!-- PWA設定 -->
-    <link rel="apple-touch-icon" href="icon-192.svg">
-    <link rel="icon" type="image/svg+xml" href="icon-192.svg">
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#1e3a8a">
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
-    <title>エクステリア計算ツール</title>
-    <style>
-        /* Version 2.0 - 2024-12-28 */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1a4a7a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="現調シート">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+<title>ウチリモ 現場調査シート</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--bg2:#f7f7f5;--bg3:#f0ede8;--bd:#d8d4cc;
+  --text:#1a1a1a;--text2:#666;
+  --accent:#1a4a7a;--accent2:#e8f0f8;--tag:#3b6db5;
+  --danger:#a32d2d;--danger2:#fcebeb;
+  --min-bg:#dff0e8;--min-bd:#1d9e75;--min-text:#085041;
+  --safe-top: env(safe-area-inset-top);
+  --safe-bottom: env(safe-area-inset-bottom);
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Hiragino Sans','Meiryo',sans-serif;background:var(--bg2);display:flex;flex-direction:column}
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
-            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-            min-height: 100vh;
-            padding: 40px 20px;
-            position: relative;
-            overflow-x: hidden;
-        }
+/* ヘッダー */
+.header{
+  background:var(--accent);color:#fff;
+  padding: calc(10px + var(--safe-top)) 16px 10px;
+  flex-shrink:0;
+}
+.header h1{font-size:15px;font-weight:500;letter-spacing:.03em}
+.header p{font-size:11px;opacity:.65;margin-top:2px}
 
-        /* 背景の装飾 */
-        body::before {
-            content: '';
-            position: absolute;
-            top: 100px;
-            left: 80px;
-            width: 150px;
-            height: 150px;
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            transform: rotate(25deg);
-        }
+/* ツールバー */
+.toolbar{display:flex;align-items:center;gap:6px;padding:8px 12px;background:var(--bg2);border-bottom:0.5px solid var(--bd);flex-shrink:0}
+.save-ind{font-size:11px;color:var(--text2);margin-right:auto}
+.tbtn{display:flex;align-items:center;gap:4px;padding:6px 11px;border:0.5px solid var(--bd);border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;background:var(--bg);color:var(--text);font-family:inherit;white-space:nowrap;-webkit-tap-highlight-color:transparent}
+.tbtn:active{background:var(--accent2)}
+.tbtn.pr{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tbtn.pr:active{opacity:.85}
 
-        body::after {
-            content: '';
-            position: absolute;
-            bottom: 200px;
-            right: 100px;
-            width: 180px;
-            height: 180px;
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-        }
+/* 基本情報 */
+.top-section{padding:12px 16px;background:var(--bg);border-bottom:0.5px solid var(--bd);flex-shrink:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.field{display:flex;flex-direction:column;gap:3px;margin-bottom:8px}
+.field:last-child{margin-bottom:0}
+.field label{font-size:11px;color:var(--text2)}
 
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            position: relative;
-            z-index: 1;
-        }
+/* タブバー */
+.tab-bar-wrap{flex-shrink:0;background:var(--bg2);border-bottom:0.5px solid var(--bd)}
+.tab-bar{display:flex;overflow-x:auto;scrollbar-width:none}
+.tab-bar::-webkit-scrollbar{display:none}
+.tab-btn{flex-shrink:0;display:flex;align-items:center;gap:6px;padding:10px 14px;font-size:12px;font-weight:500;color:var(--text2);border:none;border-bottom:2px solid transparent;background:none;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent}
+.tab-btn.active{color:var(--accent);background:var(--bg);border-bottom-color:var(--accent)}
+.tab-btn .del-btn{display:flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;border:none;cursor:pointer;font-size:11px;color:var(--text2);background:var(--bg3);padding:0}
+.tab-btn.active .del-btn{background:var(--danger2);color:var(--danger)}
+.add-tab-btn{flex-shrink:0;padding:10px 14px;font-size:12px;color:var(--accent);border:none;background:none;cursor:pointer;font-weight:500;white-space:nowrap}
 
-        /* ヘッダーカード */
-        .header-card {
-            background: rgba(30, 64, 175, 0.8);
-            backdrop-filter: blur(10px);
-            border-radius: 30px;
-            padding: 80px 40px;
-            text-align: center;
-            margin-bottom: 40px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-        }
+/* スクロールエリア */
+.scroll-area{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(16px + var(--safe-bottom))}
+.tab-content{display:none}
+.tab-content.active{display:block}
 
-        h1 {
-            font-size: 2.5rem;
-            color: white;
-            margin-bottom: 15px;
-            font-weight: 600;
-            letter-spacing: 2px;
-        }
+/* セクション */
+.section{padding:12px 16px;background:var(--bg);border-bottom:0.5px solid var(--bd);margin-bottom:8px}
+.section:last-child{margin-bottom:0}
+.sec-title{font-size:11px;font-weight:500;color:var(--tag);letter-spacing:.06em;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.sec-title::before{content:'';display:inline-block;width:3px;height:12px;background:var(--tag);border-radius:2px}
 
-        .subtitle {
-            font-size: 1rem;
-            color: rgba(255, 255, 255, 0.8);
-            letter-spacing: 4px;
-            text-transform: uppercase;
-            font-weight: 300;
-        }
+/* 入力要素 */
+input[type=text]{border:0.5px solid var(--bd);border-radius:8px;padding:9px 12px;font-size:15px;width:100%;background:var(--bg);color:var(--text);font-family:inherit;-webkit-appearance:none;appearance:none}
+input[type=text]:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(26,74,122,.12)}
+select{border:0.5px solid var(--bd);border-radius:8px;padding:9px 12px;font-size:14px;width:100%;background:var(--bg);color:var(--text);font-family:inherit;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+select:focus{outline:none;border-color:var(--accent)}
 
-        .description {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 1rem;
-            margin-top: 40px;
-            line-height: 1.8;
-        }
+/* ラジオ */
+.radio-group{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.radio-group label{display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;background:var(--bg2);border:0.5px solid var(--bd);border-radius:20px;padding:6px 12px;color:var(--text);-webkit-tap-highlight-color:transparent}
+.radio-group input[type=radio]{display:none}
+.radio-group label:has(input:checked){background:var(--accent2);border-color:var(--accent)}
+.radio-group label:has(input:checked) span{color:var(--accent);font-weight:500}
 
-        /* ツールカード */
-        .tools-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
+/* 採寸テーブル */
+.kw-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:4px}
+.kw-table th{background:var(--bg3);font-weight:500;padding:8px 6px;text-align:center;border:0.5px solid var(--bd);color:var(--text2);font-size:12px}
+.kw-table td{padding:5px 6px;border:0.5px solid var(--bd);text-align:center}
+.kw-table td.rh{background:var(--bg3);font-size:12px;color:var(--text2);font-weight:500;width:50px;line-height:1.4}
+.kw-inp{display:flex;align-items:center;justify-content:center;gap:3px}
+.kw-inp input{border:0.5px solid var(--bd);border-radius:6px;padding:7px 4px;font-size:14px;width:72px;text-align:right;background:var(--bg);color:var(--text);font-family:inherit;-webkit-appearance:none;transition:all .18s}
+.kw-inp input:focus{outline:none;border-color:var(--accent)}
+.kw-inp input.err{border-color:var(--danger)!important;background:var(--danger2)!important}
+.kw-inp input.is-min{border-color:var(--min-bd)!important;background:var(--min-bg)!important;color:var(--min-text)!important;font-weight:600}
+.kw-unit{font-size:11px;color:var(--text2)}
+.err-msg{display:none;font-size:11px;color:var(--danger);background:var(--danger2);border:0.5px solid #f7c1c1;border-radius:6px;padding:6px 10px;margin-top:5px;line-height:1.5}
+.err-msg.show{display:block}
+.min-note{display:none;font-size:11px;color:var(--min-text);margin-top:4px;align-items:center;gap:5px}
+.min-note.show{display:flex}
+.min-dot{width:9px;height:9px;border-radius:2px;background:var(--min-bg);border:1.5px solid var(--min-bd);flex-shrink:0}
 
-        .tool-card {
-            background: white;
-            border-radius: 25px;
-            padding: 35px;
-            display: flex;
-            align-items: center;
-            gap: 25px;
-            text-decoration: none;
-            color: inherit;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-            transition: all 0.3s ease;
-            position: relative;
-        }
+.sub-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.il{font-size:13px;color:var(--text2);white-space:nowrap}
+.divider{height:0.5px;background:var(--bd);margin:10px 0}
+.note{font-size:11px;color:var(--text2);line-height:1.65;margin-top:4px}
+.fuka-detail{background:var(--bg2);border-radius:10px;padding:10px 12px;margin-top:10px;border:0.5px solid var(--bd)}
 
-        .tool-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.25);
-        }
+/* 空状態 */
+.empty-state{padding:60px 20px;text-align:center;color:var(--text2)}
+.empty-state p{font-size:14px;margin-bottom:16px}
+.primary-btn{display:inline-flex;align-items:center;gap:6px;padding:11px 22px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
 
-        .tool-card.new {
-            border: 3px solid #f59e0b;
-            background: white;
-        }
-
-        .tool-icon-wrapper {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
-        .tool-icon-wrapper i {
-            font-size: 2rem;
-            color: #2563eb;
-        }
-
-        .tool-content {
-            flex: 1;
-        }
-
-        .tool-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: #1f2937;
-            margin-bottom: 8px;
-        }
-
-        .new-badge {
-            display: inline-block;
-            background: #f59e0b;
-            color: white;
-            padding: 3px 10px;
-            border-radius: 6px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            margin-left: 10px;
-            vertical-align: middle;
-        }
-
-        .tool-description {
-            font-size: 0.95rem;
-            color: #6b7280;
-            line-height: 1.6;
-        }
-
-        .tool-button {
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-            color: white;
-            padding: 14px 32px;
-            border-radius: 50px;
-            font-weight: 600;
-            font-size: 1rem;
-            border: none;
-            cursor: pointer;
-            flex-shrink: 0;
-            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
-            transition: all 0.3s ease;
-        }
-
-        .tool-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
-        }
-
-        footer {
-            text-align: center;
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.9rem;
-            margin-top: 60px;
-        }
-
-        @media (max-width: 768px) {
-            body::before,
-            body::after {
-                display: none;
-            }
-
-            h1 {
-                font-size: 2rem;
-            }
-
-            .header-card {
-                padding: 60px 30px;
-            }
-
-            .tool-card {
-                flex-direction: column;
-                text-align: center;
-                padding: 30px;
-            }
-
-            .tool-icon-wrapper {
-                width: 70px;
-                height: 70px;
-            }
-
-            .tool-icon-wrapper i {
-                font-size: 1.8rem;
-            }
-
-            .tool-button {
-                width: 100%;
-            }
-        }
-    </style>
+/* トースト */
+.toast{position:fixed;bottom:calc(20px + var(--safe-bottom));left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:8px 18px;border-radius:20px;font-size:12px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+</style>
 </head>
 <body>
-    <div class="container">
-        <div class="header-card">
-            <h1>エクステリア計算ツール</h1>
-            <p class="subtitle">Exterior Calculator</p>
-            <p class="description">カーポートやテラス屋根など、外構工事に便利な計算ツール集です。</p>
-        </div>
 
-        <div class="tools-grid">
-            <a href="https://as9source.github.io/kutai-system/" class="tool-card new">
-                <div class="tool-icon-wrapper">
-                    <i class="fa-solid fa-ruler-combined"></i>
-                </div>
-                <div class="tool-content">
-                    <h2 class="tool-title">躯体採寸システム<span class="new-badge">NEW</span></h2>
-                    <p class="tool-description">笠木の躯体採寸。自由作図、コーナー計算、段差対応。測定ミス・計算漏れを防ぎます。</p>
-                </div>
-                <button class="tool-button">開く</button>
-            </a>
+<div class="header">
+  <h1>ウチリモ 現場調査シート</h1>
+  <p>引き違い窓（2・4枚建）</p>
+</div>
 
-            <a href="./Carport-Post-Calculation/index.html" class="tool-card">
-                <div class="tool-icon-wrapper">
-                    <i class="fa-solid fa-ruler-horizontal"></i>
-                </div>
-                <div class="tool-content">
-                    <h2 class="tool-title">柱寸法計算</h2>
-                    <p class="tool-description">カーポートの柱ピッチ・寸法を自動計算します。</p>
-                </div>
-                <button class="tool-button">開く</button>
-            </a>
+<div class="toolbar">
+  <span class="save-ind" id="save-ind">未保存</span>
+  <button class="tbtn" onclick="loadData()">📂 読込</button>
+  <button class="tbtn" onclick="saveData()">💾 保存</button>
+  <button class="tbtn pr" onclick="exportPDF()">📄 PDF</button>
+</div>
 
-            <a href="./Carport-Post-Calculation/conc.html" class="tool-card">
-                <div class="tool-icon-wrapper">
-                    <i class="fa-solid fa-cube"></i>
-                </div>
-                <div class="tool-content">
-                    <h2 class="tool-title">生コン量計算</h2>
-                    <p class="tool-description">カーポート柱のコンクリート必要量を自動計算します。</p>
-                </div>
-                <button class="tool-button">開く</button>
-            </a>
+<div class="top-section">
+  <div class="grid2">
+    <div class="field"><label>調査実施日</label><input type="text" id="survey-date" inputmode="numeric" placeholder="2026/03/14"></div>
+    <div class="field"><label>現場名</label><input type="text" id="site-name" placeholder="現場名"></div>
+  </div>
+</div>
 
-            <a href="https://as9source.github.io/angle/" class="tool-card">
-                <div class="tool-icon-wrapper">
-                    <i class="fa-solid fa-house"></i>
-                </div>
-                <div class="tool-content">
-                    <h2 class="tool-title">テラス屋根 干渉チェック</h2>
-                    <p class="tool-description">母屋の屋根とテラス屋根の干渉を計算でチェックします。</p>
-                </div>
-                <button class="tool-button">開く</button>
-            </a>
+<div class="tab-bar-wrap">
+  <div class="tab-bar" id="tab-bar"></div>
+</div>
 
-            <a href="https://as9source.github.io/triangle/" class="tool-card">
-                <div class="tool-icon-wrapper">
-                    <i class="fa-solid fa-drafting-compass"></i>
-                </div>
-                <div class="tool-content">
-                    <h2 class="tool-title">三角形計算機</h2>
-                    <p class="tool-description">直角三角形の斜辺や高さを簡単に計算できます。</p>
-                </div>
-                <button class="tool-button">開く</button>
-            </a>
-        </div>
+<div class="scroll-area" id="scroll-area">
+  <div class="empty-state" id="empty-state">
+    <p>窓がまだ登録されていません</p>
+    <button class="primary-btn" onclick="addWindow()">＋ 最初の窓を追加</button>
+  </div>
+</div>
 
-        <footer>
-            © as9source — Exterior Tools
-        </footer>
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── 状態 ───────────────────────────────
+let wins=[], activeId=null, ctr=0;
+
+// ─── ラベル定義 ─────────────────────────
+const LBL={
+  color:{cb:'カームブラック',gr:'グレージュ',cl:'クリア',na:'ナチュラル',db:'ダークブラウン',mo:'ミディアムオーク',wh:'ホワイト'},
+  series:{f:'複層',t:'単板',v:'真空',ln:'Low-Eニュートラル',lb:'Low-Eブロンズ',lr:'Low-Eルーバー',lh:'遮熱Low-Eルーバー'},
+  gt:{m:'透明',k:'型',s:'すり'},
+  sp:{al:'アルミ',j:'樹脂'},
+  kt:{pe:'プレーンタイプ',el:'エレガントタイプ',wa01:'洋風 WA01',wa01m:'洋風 WA01（無脂格子）',wa02:'洋風 WA02',pa01:'プレーリー PA01',pa02:'プレーリー PA02',yh:'横繁吹寄格子',ar:'荒間格子',yt:'たて繁吹寄格子'},
+  fs:{'25':'25㎜','40':'40㎜','60':'60㎜'},
+  fd:{'3':'三方','4':'四方'}
+};
+const lb=(m,v)=>m[v]||v||'—';
+
+// ─── トースト ────────────────────────────
+let toastT;
+function toast(msg,err=0){
+  const e=document.getElementById('toast');
+  e.textContent=msg;e.style.background=err?'#a32d2d':'#1a1a1a';
+  e.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>e.classList.remove('show'),2600);
+}
+
+// ─── 最小値ハイライト ────────────────────
+function updateMin(inputs,noteEl){
+  inputs.forEach(i=>i.classList.remove('is-min'));
+  const pairs=inputs.map(i=>({el:i,v:parseFloat(i.value)})).filter(p=>!isNaN(p.v));
+  if(pairs.length<2){if(noteEl)noteEl.classList.remove('show');return;}
+  const minV=Math.min(...pairs.map(p=>p.v));
+  pairs.filter(p=>p.v===minV).forEach(p=>p.el.classList.add('is-min'));
+  if(noteEl){noteEl.classList.add('show');noteEl.querySelector('.min-val').textContent=minV+'㎜ が取付基準寸法';}
+}
+
+function checkDiff(inputs,msgEl,noteEl){
+  const vals=inputs.map(i=>parseFloat(i.value)).filter(v=>!isNaN(v));
+  updateMin(inputs,noteEl);
+  if(vals.length<2){inputs.forEach(i=>i.classList.remove('err'));msgEl.classList.remove('show');return;}
+  const diff=Math.max(...vals)-Math.min(...vals);
+  if(diff>=20){inputs.forEach(i=>{if(!isNaN(parseFloat(i.value)))i.classList.add('err');});msgEl.classList.add('show');}
+  else{inputs.forEach(i=>i.classList.remove('err'));msgEl.classList.remove('show');}
+}
+
+function attachCheck(n){
+  const kw=[...document.querySelectorAll(`#kw-row-${n} input`)];
+  const kh=[...document.querySelectorAll(`#kh-row-${n} input`)];
+  const km=document.getElementById('kw-err-'+n),khm=document.getElementById('kh-err-'+n);
+  const kwn=document.getElementById('kw-min-'+n),khn=document.getElementById('kh-min-'+n);
+  kw.forEach(i=>i.addEventListener('input',()=>checkDiff(kw,km,kwn)));
+  kh.forEach(i=>i.addEventListener('input',()=>checkDiff(kh,khm,khn)));
+}
+
+// ─── データ収集 ──────────────────────────
+function getWinData(n){
+  const p=document.getElementById('panel-'+n);if(!p)return null;
+  const r=name=>{const e=p.querySelector(`input[name="${name}"]:checked`);return e?e.value:'';};
+  const t=id=>{const e=document.getElementById(id);return e?e.value.trim():'';};
+  return{
+    id:n,label:(wins.find(w=>w.id===n)||{}).label||'窓'+n,
+    location:t('loc-'+n),shoji:r('shoji'+n),color:r('color'+n),dimA:t('dima-'+n),
+    kw:[...document.querySelectorAll(`#kw-row-${n} input`)].map(i=>i.value.trim()),
+    kh:[...document.querySelectorAll(`#kh-row-${n} input`)].map(i=>i.value.trim()),
+    series:r('series'+n),glassType:r('type1_'+n),spacer:r('sp'+n),gas:r('gas'+n),
+    koshi:r('koshi'+n),koshiType:(document.getElementById('koshi-sel-'+n)||{}).value||'',
+    fukaAri:r('fukaari'+n),fukaSize:r('fukasize'+n),fukaDir:r('fukadir'+n),
+    curtain:r('curtain'+n),hoko:r('hoko'+n),memo:t('memo-'+n)
+  };
+}
+function collectAll(){
+  return{
+    surveyDate:document.getElementById('survey-date').value,
+    siteName:document.getElementById('site-name').value,
+    ctr,winData:wins.map(w=>getWinData(w.id))
+  };
+}
+
+// ─── 保存 / 読み込み ─────────────────────
+function saveData(){
+  try{
+    localStorage.setItem('uchirimo_gencho_v1',JSON.stringify(collectAll()));
+    const d=new Date();document.getElementById('save-ind').textContent='保存済み '+d.getHours()+':'+String(d.getMinutes()).padStart(2,'0');
+    toast('保存しました');
+  }catch(e){toast('保存に失敗しました',1);}
+}
+function loadData(){
+  try{
+    const raw=localStorage.getItem('uchirimo_gencho_v1');
+    if(!raw){toast('保存データがありません',1);return;}
+    restoreAll(JSON.parse(raw));toast('読み込みました');
+  }catch(e){toast('読み込みに失敗しました',1);}
+}
+
+function restoreAll(data){
+  wins=[];activeId=null;ctr=data.ctr||0;
+  document.getElementById('survey-date').value=data.surveyDate||'';
+  document.getElementById('site-name').value=data.siteName||'';
+  const sa=document.getElementById('scroll-area');sa.innerHTML='';
+  if(!data.winData||!data.winData.length){
+    sa.innerHTML='<div class="empty-state" id="empty-state"><p>窓がありません</p><button class="primary-btn" onclick="addWindow()">＋ 窓を追加</button></div>';
+    renderTabs();return;
+  }
+  data.winData.forEach(wd=>{wins.push({id:wd.id,label:wd.label});sa.appendChild(makePanel(wd.id));restoreWin(wd);});
+  renderTabs();if(wins.length)setActive(wins[0].id);
+  document.getElementById('save-ind').textContent='読み込み済み';
+}
+function restoreWin(wd){
+  const n=wd.id,p=document.getElementById('panel-'+n);if(!p)return;
+  const si=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v||'';};
+  si('loc-'+n,wd.location);si('dima-'+n,wd.dimA);si('memo-'+n,wd.memo);
+  const kwR=document.getElementById('kw-row-'+n),khR=document.getElementById('kh-row-'+n);
+  if(kwR&&wd.kw)[...kwR.querySelectorAll('input')].forEach((inp,i)=>inp.value=wd.kw[i]||'');
+  if(khR&&wd.kh)[...khR.querySelectorAll('input')].forEach((inp,i)=>inp.value=wd.kh[i]||'');
+  const srmap={shoji:'shoji',color:'color',series:'series','type1_':'type1_',sp:'sp',gas:'gas',koshi:'koshi',fukaari:'fukaAri',fukasize:'fukaSize',fukadir:'fukaDir',curtain:'curtain',hoko:'hoko'};
+  Object.entries(srmap).forEach(([k,dk])=>{
+    const v=wd[dk];if(!v)return;
+    const e=p.querySelector(`input[name="${k+n}"][value="${v}"]`);if(e){e.checked=true;e.dispatchEvent(new Event('change'));}
+  });
+  const ks=document.getElementById('koshi-sel-'+n);if(ks)ks.value=wd.koshiType||'';
+  toggleKoshi(n);toggleFuka(n);
+  setTimeout(()=>{
+    const kw=[...document.querySelectorAll(`#kw-row-${n} input`)];
+    const kh=[...document.querySelectorAll(`#kh-row-${n} input`)];
+    updateMin(kw,document.getElementById('kw-min-'+n));
+    updateMin(kh,document.getElementById('kh-min-'+n));
+  },50);
+}
+
+// ─── PDF出力 ─────────────────────────────
+function exportPDF(){
+  const data=collectAll();
+  const site=data.siteName||'—',date=data.surveyDate||'—';
+  const cards=data.winData.map(wd=>{
+    const kwVals=wd.kw.map(s=>parseFloat(s)).filter(v=>!isNaN(v));
+    const khVals=wd.kh.map(s=>parseFloat(s)).filter(v=>!isNaN(v));
+    const kwMin=kwVals.length?Math.min(...kwVals):null;
+    const khMin=khVals.length?Math.min(...khVals):null;
+    const kwCells=wd.kw.map(s=>{
+      const n=parseFloat(s),isMin=kwMin!==null&&n===kwMin;
+      return`<span style="${isMin?'background:#dff0e8;color:#085041;font-weight:700;border-radius:3pt;padding:1pt 4pt;':''}">${s||'—'}</span>`;
+    }).join('<span style="color:#bbb"> / </span>');
+    const khCells=wd.kh.map(s=>{
+      const n=parseFloat(s),isMin=khMin!==null&&n===khMin;
+      return`<span style="${isMin?'background:#dff0e8;color:#085041;font-weight:700;border-radius:3pt;padding:1pt 4pt;':''}">${s||'—'}</span>`;
+    }).join('<span style="color:#bbb"> / </span>');
+    const glass=[lb(LBL.series,wd.series),lb(LBL.gt,wd.glassType)].filter(s=>s&&s!=='—').join(' / ')||'—';
+    const spStr=[lb(LBL.sp,wd.spacer),wd.gas==='y'?'ガス有':''].filter(Boolean).join('・')||'—';
+    const koshiStr=wd.koshi==='y'?'有（'+lb(LBL.kt,wd.koshiType)+'）':'無';
+    const fukaStr=wd.fukaAri==='y'?[lb(LBL.fs,wd.fukaSize),lb(LBL.fd,wd.fukaDir),wd.curtain==='y'?'カーテンレール有':'',wd.hoko==='y'?'補強有':''].filter(Boolean).join('・'):'無';
+    return`<div class="wc"><div class="wh">${wd.label}${wd.location?' ／ '+wd.location:''}</div><table>
+<tr><th>障子枚数</th><td>${wd.shoji?wd.shoji+'枚建':'—'}</td><th>商品色</th><td>${lb(LBL.color,wd.color)}</td></tr>
+<tr><th>取付寸法 A</th><td colspan="3">${wd.dimA||'—'} ㎜</td></tr>
+<tr><th>KW 幅<br><sub>上 / 中 / 下</sub></th><td colspan="3">${kwCells} ㎜</td></tr>
+<tr><th>KH 高<br><sub>左 / 中 / 右</sub></th><td colspan="3">${khCells} ㎜</td></tr>
+<tr><th>ガラス</th><td colspan="3">${glass}</td></tr>
+<tr><th>スペーサー</th><td colspan="3">${spStr}</td></tr>
+<tr><th>格子</th><td colspan="3">${koshiStr}</td></tr>
+<tr><th>ふかし枠</th><td colspan="3">${fukaStr}</td></tr>
+${wd.memo?`<tr><th>備考</th><td colspan="3">${wd.memo}</td></tr>`:''}
+</table></div>`;
+  }).join('');
+  const html=`<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>現場調査シート - ${site}</title>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Hiragino Sans','Meiryo',sans-serif;font-size:9pt;color:#111;padding:10mm 12mm;background:#fff}.rh{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1.5pt solid #1a4a7a;padding-bottom:5pt;margin-bottom:8pt}.rt{font-size:12pt;font-weight:700;color:#1a4a7a}.rm{font-size:8pt;color:#444;text-align:right;line-height:1.8}.grid{display:grid;grid-template-columns:1fr 1fr;gap:5pt}.wc{border:0.75pt solid #aaa;border-radius:3pt;overflow:hidden;break-inside:avoid;margin-bottom:5pt}.wh{background:#1a4a7a;color:#fff;font-size:8.5pt;font-weight:700;padding:3.5pt 7pt;-webkit-print-color-adjust:exact;print-color-adjust:exact}table{width:100%;border-collapse:collapse}th{background:#f0ede8;font-size:7.5pt;font-weight:500;color:#444;padding:2.5pt 5pt;text-align:left;border:0.5pt solid #ccc;width:28%;-webkit-print-color-adjust:exact;print-color-adjust:exact;vertical-align:top}td{font-size:8pt;padding:2.5pt 5pt;border:0.5pt solid #ccc;vertical-align:top}sub{font-size:6.5pt;color:#888;font-style:normal}.leg{margin-top:5pt;font-size:7pt;color:#666;display:flex;align-items:center;gap:4pt}.leg-dot{width:10pt;height:10pt;background:#dff0e8;border:1pt solid #1d9e75;border-radius:2pt;-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{size:A4 portrait;margin:0}@media print{body{padding:8mm 10mm}}</style></head><body>
+<div class="rh"><div class="rt">ウチリモ 現場調査シート<span style="font-size:9pt;font-weight:400;color:#555;margin-left:8pt">引き違い窓（2・4枚建）</span></div>
+<div class="rm">現場名：${site}　調査日：${date}　窓数：${data.winData.length}か所</div></div>
+<div class="grid">${cards}</div>
+<div class="leg"><span class="leg-dot"></span><span>緑ハイライト = 各計測箇所の最小値（取付基準寸法）</span></div>
+<script>window.onload=function(){window.print();}<\/script></body></html>`;
+  const w=window.open('','_blank');
+  if(w){w.document.write(html);w.document.close();}
+  else alert('ポップアップをブロック解除してください\n（設定 → Safari → ポップアップをブロック：オフ）');
+}
+
+// ─── タブ管理 ─────────────────────────────
+function addWindow(){
+  const id=++ctr;wins.push({id,label:'窓 '+id});
+  document.getElementById('empty-state')?.remove();
+  document.getElementById('scroll-area').appendChild(makePanel(id));
+  renderTabs();setActive(id);
+}
+function deleteWindow(id,e){
+  e.stopPropagation();
+  if(wins.length===1&&!confirm('最後の窓です。削除しますか？'))return;
+  const idx=wins.findIndex(w=>w.id===id);wins=wins.filter(w=>w.id!==id);
+  document.getElementById('panel-'+id)?.remove();
+  if(activeId===id){
+    const nx=wins[Math.min(idx,wins.length-1)];
+    if(nx)setActive(nx.id);
+    else{activeId=null;document.getElementById('scroll-area').innerHTML='<div class="empty-state" id="empty-state"><p>窓がありません</p><button class="primary-btn" onclick="addWindow()">＋ 窓を追加</button></div>';}
+  }
+  renderTabs();
+}
+function setActive(id){
+  activeId=id;
+  document.querySelectorAll('.tab-content').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+id)?.classList.add('active');
+  document.getElementById('scroll-area').scrollTo(0,0);
+  renderTabs();
+  document.getElementById('tab-bar').querySelector('.tab-btn.active')?.scrollIntoView({block:'nearest',inline:'nearest'});
+}
+function renderTabs(){
+  const bar=document.getElementById('tab-bar');bar.innerHTML='';
+  wins.forEach(w=>{
+    const btn=document.createElement('button');
+    btn.className='tab-btn'+(w.id===activeId?' active':'');
+    btn.innerHTML=`<span>${w.label}</span><button class="del-btn" onclick="deleteWindow(${w.id},event)">✕</button>`;
+    btn.addEventListener('click',()=>setActive(w.id));bar.appendChild(btn);
+  });
+  const add=document.createElement('button');add.className='add-tab-btn';add.textContent='＋ 追加';add.onclick=addWindow;bar.appendChild(add);
+}
+
+// ─── トグル ──────────────────────────────
+function toggleKoshi(n){
+  const v=document.querySelector(`input[name="koshi${n}"]:checked`);
+  const e=document.getElementById('koshi-detail-'+n);if(e)e.style.display=(v&&v.value==='y')?'block':'none';
+}
+function toggleFuka(n){
+  const v=document.querySelector(`input[name="fukaari${n}"]:checked`);
+  const e=document.getElementById('fuka-detail-'+n);if(e)e.style.display=(v&&v.value==='y')?'block':'none';
+}
+
+// ─── パネル生成 ──────────────────────────
+function makePanel(n){
+  const div=document.createElement('div');div.id='panel-'+n;div.className='tab-content';
+  div.innerHTML=`
+<div class="section">
+  <div class="sec-title">設置・基本情報</div>
+  <div class="field"><label>設置場所</label><input type="text" id="loc-${n}" placeholder="例：リビング南"></div>
+  <div class="field"><label>障子枚数</label><div class="radio-group">
+    <label><input type="radio" name="shoji${n}" value="2"><span>2枚建</span></label>
+    <label><input type="radio" name="shoji${n}" value="4"><span>4枚建</span></label>
+  </div></div>
+  <div class="field"><label>商品色</label><div class="radio-group">
+    <label><input type="radio" name="color${n}" value="cb"><span>カームブラック</span></label>
+    <label><input type="radio" name="color${n}" value="gr"><span>グレージュ</span></label>
+    <label><input type="radio" name="color${n}" value="cl"><span>クリア</span></label>
+    <label><input type="radio" name="color${n}" value="na"><span>ナチュラル</span></label>
+    <label><input type="radio" name="color${n}" value="db"><span>ダークブラウン</span></label>
+    <label><input type="radio" name="color${n}" value="mo"><span>ミディアムオーク</span></label>
+    <label><input type="radio" name="color${n}" value="wh"><span>ホワイト</span></label>
+  </div></div>
+  <div class="sub-row"><span class="il">取付必要寸法 A</span>
+    <div style="display:flex;align-items:center;gap:6px">
+      <input type="text" id="dima-${n}" inputmode="numeric" style="width:80px"><span class="kw-unit">㎜</span>
     </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="sec-title">既設開口部 採寸</div>
+  <table class="kw-table">
+    <thead><tr><th></th><th>上</th><th>中</th><th>下</th></tr></thead>
+    <tbody><tr id="kw-row-${n}">
+      <td class="rh">KW<br><span style="font-size:10px;color:var(--text2)">幅</span></td>
+      <td><div class="kw-inp"><input type="text" inputmode="numeric"><span class="kw-unit">㎜</span></div></td>
+      <td><div class="kw-inp"><input type="text" inputmode="numeric"><span class="kw-unit">㎜</span></div></td>
+      <td><div class="kw-inp"><input type="text" inputmode="numeric"><span class="kw-unit">㎜</span></div></td>
+    </tr></tbody>
+  </table>
+  <div id="kw-err-${n}" class="err-msg">⚠ KW（上・中・下）の差が20㎜以上あります。開口部の変形・歪みを確認してください。</div>
+  <div id="kw-min-${n}" class="min-note"><span class="min-dot"></span><span>KW 最小：<strong class="min-val"></strong>（取付基準幅）</span></div>
+
+  <table class="kw-table" style="margin-top:10px">
+    <thead><tr><th></th><th>左</th><th>中</th><th>右</th></tr></thead>
+    <tbody><tr id="kh-row-${n}">
+      <td class="rh">KH<br><span style="font-size:10px;color:var(--text2)">高</span></td>
+      <td><div class="kw-inp"><input type="text" inputmode="numeric"><span class="kw-unit">㎜</span></div></td>
+      <td><div class="kw-inp"><input type="text" inputmode="numeric"><span class="kw-unit">㎜</span></div></td>
+      <td><div class="kw-inp"><input type="text" inputmode="numeric"><span class="kw-unit">㎜</span></div></td>
+    </tr></tbody>
+  </table>
+  <div id="kh-err-${n}" class="err-msg">⚠ KH（左・中・右）の差が20㎜以上あります。開口部の変形・歪みを確認してください。</div>
+  <div id="kh-min-${n}" class="min-note"><span class="min-dot"></span><span>KH 最小：<strong class="min-val"></strong>（取付基準高）</span></div>
+  <p class="note" style="margin-top:8px">※ KW は上・中・下、KH は左・中・右の最小値が取付寸法となります</p>
+</div>
+
+<div class="section">
+  <div class="sec-title">ガラス</div>
+  <div class="field"><label>シリーズ</label><div class="radio-group">
+    <label><input type="radio" name="series${n}" value="f"><span>複層</span></label>
+    <label><input type="radio" name="series${n}" value="t"><span>単板</span></label>
+    <label><input type="radio" name="series${n}" value="v"><span>真空</span></label>
+    <label><input type="radio" name="series${n}" value="ln"><span>Low-Eニュートラル</span></label>
+    <label><input type="radio" name="series${n}" value="lb"><span>Low-Eブロンズ</span></label>
+    <label><input type="radio" name="series${n}" value="lr"><span>Low-Eルーバー</span></label>
+    <label><input type="radio" name="series${n}" value="lh"><span>遮熱Low-Eルーバー</span></label>
+  </div></div>
+  <div class="field"><label>種類</label><div class="radio-group">
+    <label><input type="radio" name="type1_${n}" value="m"><span>透明</span></label>
+    <label><input type="radio" name="type1_${n}" value="k"><span>型</span></label>
+    <label><input type="radio" name="type1_${n}" value="s"><span>すり</span></label>
+  </div></div>
+  <div class="sub-row">
+    <span class="il">スペーサー</span>
+    <div class="radio-group">
+      <label><input type="radio" name="sp${n}" value="al"><span>アルミ</span></label>
+      <label><input type="radio" name="sp${n}" value="j"><span>樹脂</span></label>
+    </div>
+    <span class="il" style="margin-left:10px">ガス</span>
+    <div class="radio-group">
+      <label><input type="radio" name="gas${n}" value="n"><span>無</span></label>
+      <label><input type="radio" name="gas${n}" value="y"><span>有</span></label>
+    </div>
+  </div>
+  <div class="divider"></div>
+  <div class="sub-row" style="margin-bottom:4px"><span class="il">格子</span>
+    <div class="radio-group">
+      <label><input type="radio" name="koshi${n}" value="n" onchange="toggleKoshi(${n})"><span>無</span></label>
+      <label><input type="radio" name="koshi${n}" value="y" onchange="toggleKoshi(${n})"><span>有</span></label>
+    </div>
+  </div>
+  <div id="koshi-detail-${n}" style="display:none;margin-top:6px">
+    <div class="field"><label>格子種類</label>
+      <select id="koshi-sel-${n}">
+        <option value="">— 格子種類を選択してください（基本）—</option>
+        <optgroup label="プレーン / エレガント">
+          <option value="pe">プレーンタイプ</option>
+          <option value="el">エレガントタイプ</option>
+        </optgroup>
+        <optgroup label="洋風">
+          <option value="wa01">洋風タイプ WA01</option>
+          <option value="wa01m">洋風タイプ WA01（無脂格子）</option>
+          <option value="wa02">洋風タイプ WA02</option>
+        </optgroup>
+        <optgroup label="プレーリー">
+          <option value="pa01">プレーリータイプ PA01</option>
+          <option value="pa02">プレーリータイプ PA02</option>
+        </optgroup>
+        <optgroup label="和室用">
+          <option value="yh">横繁吹寄格子</option>
+          <option value="ar">荒間格子</option>
+          <option value="yt">たて繁吹寄格子 ※板設定無し</option>
+        </optgroup>
+      </select>
+      <p class="note" style="margin-top:6px">※「たて繁吹寄格子」は板（ガラス間の仕切り板）の設定がありません。ご注意ください。</p>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="sec-title">ふかし枠</div>
+  <div class="sub-row" style="margin-bottom:0"><span class="il">ふかし枠</span>
+    <div class="radio-group">
+      <label><input type="radio" name="fukaari${n}" value="n" checked onchange="toggleFuka(${n})"><span>なし</span></label>
+      <label><input type="radio" name="fukaari${n}" value="y" onchange="toggleFuka(${n})"><span>あり</span></label>
+    </div>
+  </div>
+  <div id="fuka-detail-${n}" style="display:none">
+    <div class="fuka-detail">
+      <div class="sub-row">
+        <span class="il">種類</span>
+        <div class="radio-group">
+          <label><input type="radio" name="fukasize${n}" value="25"><span>25㎜</span></label>
+          <label><input type="radio" name="fukasize${n}" value="40"><span>40㎜</span></label>
+          <label><input type="radio" name="fukasize${n}" value="60"><span>60㎜</span></label>
+        </div>
+        <div class="radio-group" style="margin-left:4px">
+          <label><input type="radio" name="fukadir${n}" value="3"><span>三方</span></label>
+          <label><input type="radio" name="fukadir${n}" value="4"><span>四方</span></label>
+        </div>
+      </div>
+      <div class="sub-row" style="margin-bottom:0">
+        <span class="il">カーテンレール</span>
+        <div class="radio-group">
+          <label><input type="radio" name="curtain${n}" value="n"><span>無</span></label>
+          <label><input type="radio" name="curtain${n}" value="y"><span>有</span></label>
+        </div>
+        <span class="il" style="margin-left:10px">補強</span>
+        <div class="radio-group">
+          <label><input type="radio" name="hoko${n}" value="n"><span>無</span></label>
+          <label><input type="radio" name="hoko${n}" value="y"><span>有</span></label>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="field" style="margin-top:12px"><label>備考・メモ</label><input type="text" id="memo-${n}" placeholder="特記事項など"></div>
+</div>`;
+  setTimeout(()=>attachCheck(n),0);
+  return div;
+}
+
+// ─── 初期化 ──────────────────────────────
+document.getElementById('survey-date').value=(()=>{
+  const d=new Date();
+  return d.getFullYear()+'/'+(d.getMonth()+1).toString().padStart(2,'0')+'/'+d.getDate().toString().padStart(2,'0');
+})();
+
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
+
+addWindow();
+</script>
 </body>
 </html>

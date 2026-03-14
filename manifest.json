@@ -1,52 +1,18 @@
 {
-  "name": "エクステリア計算ツール",
-  "short_name": "計算ツール",
-  "description": "エクステリア工事計算を効率化するツール集 - カーポート柱寸法、生コン量、テラス屋根干渉チェック",
-  "start_url": "./index.html",
-  "scope": "./",
+  "name": "ウチリモ 現場調査シート",
+  "short_name": "現調シート",
+  "description": "引き違い内窓（ウチリモ）の現場調査・採寸入力アプリ",
+  "start_url": "./",
   "display": "standalone",
+  "background_color": "#1a4a7a",
+  "theme_color": "#1a4a7a",
   "orientation": "portrait-primary",
-  "background_color": "#ffffff",
-  "theme_color": "#4a5f7f",
+  "lang": "ja",
   "icons": [
-    {
-      "src": "./icon-192.svg",
-      "sizes": "192x192",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    },
-    {
-      "src": "./icon-512.svg",
-      "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    },
-    {
-      "src": "./icon-192.svg",
-      "sizes": "192x192",
-      "type": "image/svg+xml",
-      "purpose": "maskable"
-    },
-    {
-      "src": "./icon-512.svg",
-      "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "maskable"
-    }
-  ],
-  "categories": ["productivity", "utilities"],
-  "screenshots": [
-    {
-      "src": "./icon-512.svg",
-      "sizes": "512x512",
-      "type": "image/svg+xml",
-      "form_factor": "wide"
-    },
-    {
-      "src": "./icon-192.svg",
-      "sizes": "192x192",
-      "type": "image/svg+xml",
-      "form_factor": "narrow"
-    }
+    { "src": "icons/icon-16.png",  "sizes": "16x16",   "type": "image/png" },
+    { "src": "icons/icon-32.png",  "sizes": "32x32",   "type": "image/png" },
+    { "src": "icons/icon-180.png", "sizes": "180x180", "type": "image/png", "purpose": "apple touch icon" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ]
 }
