@@ -1,0 +1,9 @@
+{
+  "name": "ウチリモ 現場調査シート",
+  "short_name": "現調シート",
+  "description": "引き違い内窓（ウチリモ）の現場調査・採寸入力アプリ",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#1a4a7a",
+  "theme_color": "#1a4a7a"
+}
