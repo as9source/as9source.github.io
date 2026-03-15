@@ -123,13 +123,17 @@ select:focus{outline:none;border-color:var(--accent)}
 .pdf-back{display:flex;align-items:center;gap:4px;padding:7px 12px;background:rgba(255,255,255,.18);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
 .pdf-share{display:flex;align-items:center;gap:4px;padding:7px 14px;background:#fff;border:none;border-radius:8px;color:var(--accent);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
 .pdf-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px}
-.pdf-report{font-family:'Hiragino Sans','Meiryo',sans-serif;font-size:11px;color:#111;max-width:700px;margin:0 auto}
+.pdf-report{font-family:'Hiragino Sans','Meiryo',sans-serif;font-size:11px;color:#111;max-width:900px;margin:0 auto}
 .pdf-report .rh{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #1a4a7a;padding-bottom:6px;margin-bottom:10px;flex-wrap:wrap;gap:4px}
 .pdf-report .rt{font-size:15px;font-weight:700;color:#1a4a7a}
 .pdf-report .rm{font-size:10px;color:#444;text-align:right;line-height:1.8}
-.pdf-report .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;align-items:start}
-@media(max-width:700px){.pdf-report .grid{grid-template-columns:1fr 1fr}}@media(max-width:450px){.pdf-report .grid{grid-template-columns:1fr}}
-.pdf-report .wc{border:1px solid #aaa;border-radius:4px;overflow:hidden;break-inside:avoid;page-break-inside:avoid;-webkit-column-break-inside:avoid;margin-bottom:0}
+.pdf-report .grid{display:grid;grid-template-columns:1fr;gap:8px}
+.pdf-report .wc{border:1px solid #aaa;border-radius:4px;overflow:hidden;break-inside:avoid;page-break-inside:avoid;margin-bottom:0}
+.pdf-report .wc-inner{display:flex;align-items:stretch}
+.pdf-report .wc-data{flex:1;min-width:0}
+.pdf-report .wc-memo{width:200px;flex-shrink:0;border-left:1px solid #ccc;display:flex;flex-direction:column;background:#fafafa}
+.pdf-report .wc-memo-label{font-size:9px;font-weight:500;color:#888;padding:4px 8px 2px;border-bottom:0.5px solid #e0e0e0}
+.pdf-report .wc-memo-body{flex:1;padding:6px 8px;font-size:11px;color:#333;line-height:1.6;white-space:pre-wrap}
 .pdf-report .wh{background:#1a4a7a;color:#fff;font-size:12px;font-weight:700;padding:5px 8px}
 .pdf-report table{width:100%;border-collapse:collapse}
 .pdf-report th{background:#f0ede8;font-size:10px;font-weight:500;color:#444;padding:3px 6px;text-align:left;border:0.5px solid #ccc;width:30%;vertical-align:top}
@@ -137,7 +141,7 @@ select:focus{outline:none;border-color:var(--accent)}
 .pdf-report sub{font-size:9px;color:#888;font-style:normal}
 .pdf-report .leg{margin-top:8px;font-size:10px;color:#666;display:flex;align-items:center;gap:5px}
 .pdf-report .leg-dot{width:12px;height:12px;background:#dff0e8;border:1px solid #1d9e75;border-radius:2px;flex-shrink:0}
-@media print{.pdf-toolbar{display:none!important}.pdf-body{overflow:visible;padding:0}.pdf-report .grid{grid-template-columns:1fr 1fr 1fr;align-items:start}.pdf-report .wc{break-inside:avoid;page-break-inside:avoid}}
+@media print{.pdf-toolbar{display:none!important}.pdf-body{overflow:visible;padding:0}.pdf-report .grid{grid-template-columns:1fr}.pdf-report .wc{break-inside:avoid;page-break-inside:avoid}}
 
 /* バリデーション確認 */
 .val-overlay{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.5);align-items:flex-end;justify-content:center}
@@ -367,7 +371,7 @@ function buildCards(){
     const spStr=[lb(LBL.sp,wd.spacer),wd.gas==='y'?'ガス有':''].filter(Boolean).join('・')||'—';
     const koshiStr=wd.koshi==='y'?'有（'+lb(LBL.kt,wd.koshiType)+'）':'無';
     const fukaStr=wd.fukaAri==='y'?[lb(LBL.fs,wd.fukaSize),lb(LBL.fd,wd.fukaDir),wd.curtain==='y'?'カーテンレール有':'',wd.hoko==='y'?'補強有':''].filter(Boolean).join('・'):'無';
-    return`<div class="wc"><div class="wh">${wd.label}${wd.location?' ／ '+wd.location:''}</div><table>
+    return`<div class="wc"><div class="wh">${wd.label}${wd.location?' ／ '+wd.location:''}</div><div class="wc-inner"><div class="wc-data"><table>
 <tr><th>障子枚数</th><td>${wd.shoji?wd.shoji+'枚建':'—'}</td><th>商品色</th><td>${lb(LBL.color,wd.color)}</td></tr>
 <tr><th>取付寸法 A</th><td colspan="3">${wd.dimA||'—'} ㎜</td></tr>
 <tr><th>KW 幅<br><sub>上 / 中 / 下</sub></th><td colspan="3">${kwCells} ㎜</td></tr>
@@ -376,8 +380,7 @@ function buildCards(){
 <tr><th>スペーサー</th><td colspan="3">${spStr}</td></tr>
 <tr><th>格子</th><td colspan="3">${koshiStr}</td></tr>
 <tr><th>ふかし枠</th><td colspan="3">${fukaStr}</td></tr>
-${wd.memo?`<tr><th>備考</th><td colspan="3">${wd.memo}</td></tr>`:''}
-</table></div>`;
+</table></div><div class="wc-memo"><div class="wc-memo-label">備考・メモ</div><div class="wc-memo-body">${wd.memo||''}</div></div></div></div>`;
   }).join('');
   return{site,date,winCount:data.winData.length,cards};
 }
@@ -459,128 +462,125 @@ async function sharePdf(){
   const site=data.siteName||'—';
   const date=data.surveyDate||'—';
 
-  const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+  // A4縦・1ページ3カード（フル幅の横長カード）
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
   doc.setFont('helvetica');
 
-  // ─── レイアウト定数 ───────────────────────
-  const COLS=3;           // 1行あたりの窓数
-  const pageW=297, pageH=210;
-  const margin=10;
-  const gap=3;
-  const colW=(pageW-margin*2-gap*(COLS-1))/COLS;  // ≈88mm
-  let y=margin;
+  const pageW=210, pageH=297;
+  const mgnL=8, mgnR=8, mgnT=8;
+  const usableW=pageW-mgnL-mgnR;    // 194mm
+  const CARDS_PER_PAGE=4;
+  const hdrH=9;   // ページヘッダー高さ
+  const cardGap=3;
 
-  // ─── 各ページヘッダー描画関数 ────────────
-  function drawPageHeader(){
+  function drawPageHeader(yy){
     doc.setFillColor(26,74,122);
-    doc.rect(margin,y,pageW-margin*2,8,'F');
+    doc.rect(mgnL,yy,usableW,hdrH,'F');
     doc.setTextColor(255,255,255);
     doc.setFontSize(10);doc.setFont('helvetica','bold');
-    doc.text('Uchinado Gencho Sheet',margin+2,y+5.5);
+    doc.text('Uchinado Gencho Sheet',mgnL+2,yy+6);
     doc.setFontSize(6.5);doc.setFont('helvetica','normal');
-    doc.text(`Site: ${site}  Date: ${date}  Windows: ${data.winData.length}`,pageW-margin-2,y+5.5,{align:'right'});
-    y+=11;
+    doc.text('Site: '+site+'  Date: '+date+'  Windows: '+data.winData.length,pageW-mgnR-2,yy+6,{align:'right'});
+    return yy+hdrH+2;
   }
-  drawPageHeader();
 
-  // 各行のY位置を管理（COLSカードを揃えて配置）
-  let rowStartY=y;
-  let rowMaxY=y;
+  // 1カードの高さを計算
+  // 使えるY範囲 = pageH - mgnT - hdrH - 2 - mgnBottom
+  const mgnB=8;
+  const topY0=mgnT+hdrH+2;
+  const totalCardArea=pageH-topY0-mgnB;
+  const cardH=(totalCardArea-(CARDS_PER_PAGE-1)*cardGap)/CARDS_PER_PAGE; // ≈85mm
+
+  // データ幅 / 備考幅
+  const memoW=52;
+  const dataW=usableW-memoW-3;
+
+  let pageTopY=drawPageHeader(mgnT);
+  let pageCardCount=0;
 
   for(let wi=0;wi<data.winData.length;wi++){
     const wd=data.winData[wi];
-    const col=wi%COLS;
 
-    // 行の先頭：前の行の最大Yから再開
-    if(col===0){
-      if(wi>0){
-        y=rowMaxY+gap;
-        rowStartY=y;
-        rowMaxY=y;
-      }
-      // ページ溢れチェック
-      if(wi>0 && y>pageH-30){
-        doc.addPage();
-        y=margin;
-        drawPageHeader();
-        rowStartY=y;
-        rowMaxY=y;
-      }
+    // ページ切り替え
+    if(pageCardCount>=CARDS_PER_PAGE){
+      doc.addPage();
+      pageTopY=drawPageHeader(mgnT);
+      pageCardCount=0;
     }
 
-    const x=margin+col*(colW+gap);
-    y=rowStartY;
-
-    // 窓ヘッダー
-    doc.setFillColor(26,74,122);
-    doc.rect(x,y,colW,6,'F');
-    doc.setTextColor(255,255,255);
-    doc.setFontSize(8);doc.setFont('helvetica','bold');
-    const wLabel=`${wd.label}${wd.location?' / '+wd.location:''}`;
-    doc.text(wLabel,x+2,y+4.2);
+    const cardY=pageTopY+pageCardCount*(cardH+cardGap);
 
     // 採寸データ
     const kwVals=wd.kw.map(s=>parseFloat(s)).filter(v=>!isNaN(v));
     const khVals=wd.kh.map(s=>parseFloat(s)).filter(v=>!isNaN(v));
     const kwMin=kwVals.length?Math.min(...kwVals):null;
     const khMin=khVals.length?Math.min(...khVals):null;
-    const kwStr=wd.kw.map(s=>{
-      const n=parseFloat(s);
-      return(kwMin!==null&&n===kwMin)?`[${s||'-'}]`:(s||'-');
-    }).join(' / ');
-    const khStr=wd.kh.map(s=>{
-      const n=parseFloat(s);
-      return(khMin!==null&&n===khMin)?`[${s||'-'}]`:(s||'-');
-    }).join(' / ');
+    const kwStr=wd.kw.map(s=>{const n=parseFloat(s);return(kwMin!==null&&n===kwMin)?'['+s+']':(s||'-');}).join(' / ');
+    const khStr=wd.kh.map(s=>{const n=parseFloat(s);return(khMin!==null&&n===khMin)?'['+s+']':(s||'-');}).join(' / ');
+    const fukaStr=wd.fukaAri==='y'?[lb(LBL.fs,wd.fukaSize),lb(LBL.fd,wd.fukaDir),wd.curtain==='y'?'カーテンレール有':'',wd.hoko==='y'?'補強有':''].filter(Boolean).join(' '):'無';
 
-    // テーブル行定義（横長を活かした2列レイアウト）
-    const lw=24, vw=(colW-lw*2)/2;
-    const labelStyle={styles:{fillColor:[240,237,232],fontStyle:'bold',cellWidth:lw,textColor:[80,70,60]}};
-    const rows=[
-      [{content:'Shoji',...labelStyle},{content:wd.shoji?wd.shoji+'mai':'-'},{content:'Color',...labelStyle},{content:lb(LBL.color,wd.color)||'-'}],
-      [{content:'Dim A',...labelStyle},{content:wd.dimA?wd.dimA+'mm':'-'},{content:'Spacer',...labelStyle},{content:lb(LBL.sp,wd.spacer)||'-'}],
-      [{content:'KW',...labelStyle},{content:kwStr+'mm',styles:{textColor:[8,80,65]}},{content:'Gas',...labelStyle},{content:wd.gas==='y'?'Yes':'No'}],
-      [{content:'KH',...labelStyle},{content:khStr+'mm',styles:{textColor:[8,80,65]}},{content:'Koshi',...labelStyle},{content:wd.koshi==='y'?lb(LBL.kt,wd.koshiType)||'Yes':'No'}],
-      [{content:'Glass',...labelStyle},{content:lb(LBL.series,wd.series)||'-'},{content:'Type',...labelStyle},{content:lb(LBL.gt,wd.glassType)||'-'}],
-      [{content:'Fuka',...labelStyle},{content:wd.fukaAri==='y'?[lb(LBL.fs,wd.fukaSize),lb(LBL.fd,wd.fukaDir),wd.curtain==='y'?'Curtain':'',wd.hoko==='y'?'Reinf':''].filter(Boolean).join(' '):'No',colSpan:3}],
-      [{content:'Memo',...labelStyle},{content:wd.memo||'',colSpan:3,styles:{minCellHeight:14}}],
-    ];
+    // カード外枠
+    doc.setDrawColor(26,74,122);doc.setLineWidth(0.5);
+    doc.rect(mgnL,cardY,usableW,cardH);
+
+    // 窓ヘッダー
+    doc.setFillColor(26,74,122);
+    doc.rect(mgnL,cardY,usableW,6,'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(8.5);doc.setFont('helvetica','bold');
+    doc.text(wd.label+(wd.location?' / '+wd.location:''),mgnL+2,cardY+4.3);
+
+    // データテーブル（左側）
+    const lw=14, v1w=28, v2w=28, v3w=dataW-lw*3-v1w-v2w;
+    const ls={styles:{fillColor:[240,237,232],fontStyle:'bold',cellWidth:lw,fontSize:6.5,textColor:[50,40,30]}};
 
     doc.autoTable({
-      startY:y+6,
-      margin:{left:x,right:pageW-x-colW},
-      tableWidth:colW,
-      body:rows,
-      styles:{fontSize:6.5,cellPadding:1.5,overflow:'linebreak',font:'helvetica',lineColor:[200,200,200],lineWidth:0.2},
-      columnStyles:{
-        0:{cellWidth:lw},
-        1:{cellWidth:vw},
-        2:{cellWidth:lw},
-        3:{cellWidth:vw},
-      },
+      startY:cardY+6,
+      margin:{left:mgnL,right:pageW-mgnL-dataW},
+      tableWidth:dataW,
+      body:[
+        [{content:'障子',...ls},{content:wd.shoji?wd.shoji+'枚建':'-',styles:{cellWidth:v1w}},{content:'商品色',...ls},{content:lb(LBL.color,wd.color)||'-',styles:{cellWidth:v2w}},{content:'寸法A',...ls},{content:wd.dimA?wd.dimA+'mm':'-'}],
+        [{content:'KW幅',...ls},{content:kwStr+'mm',styles:{cellWidth:v1w,textColor:[8,80,65],fontStyle:'bold'},colSpan:2},{content:'スペーサー',...ls},{content:lb(LBL.sp,wd.spacer)||'-',styles:{cellWidth:v2w}},{content:'ガス',...ls},{content:wd.gas==='y'?'有':'無'}],
+        [{content:'KH高',...ls},{content:khStr+'mm',styles:{cellWidth:v1w,textColor:[8,80,65],fontStyle:'bold'},colSpan:2},{content:'格子',...ls},{content:wd.koshi==='y'?lb(LBL.kt,wd.koshiType)||'有':'無',styles:{cellWidth:v2w}},{content:'ふかし',...ls},{content:fukaStr}],
+        [{content:'ガラス',...ls},{content:lb(LBL.series,wd.series)||'-',styles:{cellWidth:v1w}},{content:'種類',...ls},{content:lb(LBL.gt,wd.glassType)||'-',styles:{cellWidth:v2w},colSpan:3}],
+      ],
+      styles:{fontSize:7,cellPadding:1.8,overflow:'linebreak',font:'helvetica',lineColor:[190,190,190],lineWidth:0.2},
+      columnStyles:{0:{cellWidth:lw}},
       theme:'grid',
     });
 
-    const endY=doc.lastAutoTable.finalY;
-    if(endY>rowMaxY) rowMaxY=endY;
+    // 備考欄（右側）
+    const memoX=mgnL+dataW+3;
+    const memoBoxH=cardH-6;
+    doc.setDrawColor(190,190,190);doc.setLineWidth(0.2);
+    doc.setFillColor(252,252,252);
+    doc.rect(memoX,cardY+6,memoW,memoBoxH,'FD');
+    doc.setFontSize(7);doc.setTextColor(140,140,140);doc.setFont('helvetica','bold');
+    doc.text('備考',memoX+2,cardY+11);
+    doc.setDrawColor(190,190,190);doc.setLineWidth(0.1);
+    doc.line(memoX+1,cardY+13,memoX+memoW-1,cardY+13);
+    if(wd.memo){
+      doc.setFontSize(7.5);doc.setTextColor(20,20,20);doc.setFont('helvetica','normal');
+      doc.text(wd.memo,memoX+2,cardY+17,{maxWidth:memoW-4,lineHeightFactor:1.4});
+    }
+
+    pageCardCount++;
   }
 
   // 凡例
-  y=rowMaxY+3;
-  doc.setFontSize(6);doc.setTextColor(130,130,130);
-  doc.text('[ ] = min value (installation reference)',margin,y);
+  doc.setFontSize(6);doc.setTextColor(150,150,150);doc.setFont('helvetica','normal');
+  const lastCardY=pageTopY+(pageCardCount-1)*(cardH+cardGap)+cardH;
+  if(lastCardY+6<pageH-4) doc.text('[ ] = 最小値（取付基準寸法）',mgnL,lastCardY+5);
 
-  // PDFをBlobとして取得し共有
+  // PDF共有
   const pdfBlob=doc.output('blob');
-  const fileName=`内窓現場調査_${site||'無題'}.pdf`;
+  const fileName='内窓現場調査_'+(site||'無題')+'.pdf';
   const pdfFile=new File([pdfBlob],fileName,{type:'application/pdf'});
 
   if(navigator.share&&navigator.canShare&&navigator.canShare({files:[pdfFile]})){
-    try{
-      await navigator.share({files:[pdfFile],title:`内窓 現場調査シート - ${site}`});
-    }catch(e){if(e.name!=='AbortError') toast('共有に失敗しました',1);}
+    try{ await navigator.share({files:[pdfFile],title:'内窓 現場調査シート - '+site}); }
+    catch(e){ if(e.name!=='AbortError') toast('共有に失敗しました',1); }
   } else {
-    // フォールバック：ダウンロード
     const url=URL.createObjectURL(pdfBlob);
     const a=document.createElement('a');
     a.href=url;a.download=fileName;a.click();
