@@ -127,8 +127,8 @@ select:focus{outline:none;border-color:var(--accent)}
 .pdf-report .rh{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #1a4a7a;padding-bottom:6px;margin-bottom:10px;flex-wrap:wrap;gap:4px}
 .pdf-report .rt{font-size:15px;font-weight:700;color:#1a4a7a}
 .pdf-report .rm{font-size:10px;color:#444;text-align:right;line-height:1.8}
-.pdf-report .grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;align-items:start}
-@media(max-width:500px){.pdf-report .grid{grid-template-columns:1fr}}@media print{.pdf-report .grid{grid-template-columns:1fr 1fr;align-items:start}.pdf-report .wc{break-inside:avoid;page-break-inside:avoid;-webkit-column-break-inside:avoid}}
+.pdf-report .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;align-items:start}
+@media(max-width:700px){.pdf-report .grid{grid-template-columns:1fr 1fr}}@media(max-width:450px){.pdf-report .grid{grid-template-columns:1fr}}
 .pdf-report .wc{border:1px solid #aaa;border-radius:4px;overflow:hidden;break-inside:avoid;page-break-inside:avoid;-webkit-column-break-inside:avoid;margin-bottom:0}
 .pdf-report .wh{background:#1a4a7a;color:#fff;font-size:12px;font-weight:700;padding:5px 8px}
 .pdf-report table{width:100%;border-collapse:collapse}
@@ -137,7 +137,7 @@ select:focus{outline:none;border-color:var(--accent)}
 .pdf-report sub{font-size:9px;color:#888;font-style:normal}
 .pdf-report .leg{margin-top:8px;font-size:10px;color:#666;display:flex;align-items:center;gap:5px}
 .pdf-report .leg-dot{width:12px;height:12px;background:#dff0e8;border:1px solid #1d9e75;border-radius:2px;flex-shrink:0}
-@media print{.pdf-toolbar{display:none!important}.pdf-body{overflow:visible;padding:0}.pdf-report .grid{grid-template-columns:1fr 1fr}}
+@media print{.pdf-toolbar{display:none!important}.pdf-body{overflow:visible;padding:0}.pdf-report .grid{grid-template-columns:1fr 1fr 1fr;align-items:start}.pdf-report .wc{break-inside:avoid;page-break-inside:avoid}}
 
 /* バリデーション確認 */
 .val-overlay{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.5);align-items:flex-end;justify-content:center}
@@ -450,6 +450,10 @@ function closePdfPreview(){
 }
 
 async function sharePdf(){
+  if(!window.jspdf||!window.jspdf.jsPDF){
+    toast('jsPDFライブラリが読み込まれていません。ページを再読み込みしてください',1);
+    return;
+  }
   const {jsPDF}=window.jspdf;
   const data=collectAll();
   const site=data.siteName||'—';
@@ -531,18 +535,16 @@ async function sharePdf(){
 
     // テーブル行定義（横長を活かした2列レイアウト）
     const lw=24, vw=(colW-lw*2)/2;
+    const labelStyle={styles:{fillColor:[240,237,232],fontStyle:'bold',cellWidth:lw,textColor:[80,70,60]}};
     const rows=[
-      ['Shoji', wd.shoji?wd.shoji+'mai':'-', 'Color', lb(LBL.color,wd.color)||'-'],
-      ['Dim A',  wd.dimA?wd.dimA+'mm':'-', 'Spacer', lb(LBL.sp,wd.spacer)||'-'],
-      ['KW',    kwStr+'mm', 'Gas', wd.gas==='y'?'Yes':'No'],
-      ['KH',    khStr+'mm', 'Koshi', wd.koshi==='y'?lb(LBL.kt,wd.koshiType)||'Yes':'No'],
-      ['Glass', lb(LBL.series,wd.series)||'-', 'Type', lb(LBL.gt,wd.glassType)||'-'],
-      ['Fuka',  wd.fukaAri==='y'?[lb(LBL.fs,wd.fukaSize),lb(LBL.fd,wd.fukaDir),wd.curtain==='y'?'Curtain':'',wd.hoko==='y'?'Reinf':''].filter(Boolean).join(' '):'No', '', ''],
+      [{content:'Shoji',...labelStyle},{content:wd.shoji?wd.shoji+'mai':'-'},{content:'Color',...labelStyle},{content:lb(LBL.color,wd.color)||'-'}],
+      [{content:'Dim A',...labelStyle},{content:wd.dimA?wd.dimA+'mm':'-'},{content:'Spacer',...labelStyle},{content:lb(LBL.sp,wd.spacer)||'-'}],
+      [{content:'KW',...labelStyle},{content:kwStr+'mm',styles:{textColor:[8,80,65]}},{content:'Gas',...labelStyle},{content:wd.gas==='y'?'Yes':'No'}],
+      [{content:'KH',...labelStyle},{content:khStr+'mm',styles:{textColor:[8,80,65]}},{content:'Koshi',...labelStyle},{content:wd.koshi==='y'?lb(LBL.kt,wd.koshiType)||'Yes':'No'}],
+      [{content:'Glass',...labelStyle},{content:lb(LBL.series,wd.series)||'-'},{content:'Type',...labelStyle},{content:lb(LBL.gt,wd.glassType)||'-'}],
+      [{content:'Fuka',...labelStyle},{content:wd.fukaAri==='y'?[lb(LBL.fs,wd.fukaSize),lb(LBL.fd,wd.fukaDir),wd.curtain==='y'?'Curtain':'',wd.hoko==='y'?'Reinf':''].filter(Boolean).join(' '):'No',colSpan:3}],
+      [{content:'Memo',...labelStyle},{content:wd.memo||'',colSpan:3,styles:{minCellHeight:14}}],
     ];
-
-    // 備考は必ず最後の行として追加（空でも枠を確保）
-    rows.push(['Memo', wd.memo||'', '', '']);
-    const memoRowIdx=rows.length-1;
 
     doc.autoTable({
       startY:y+6,
@@ -551,23 +553,12 @@ async function sharePdf(){
       body:rows,
       styles:{fontSize:6.5,cellPadding:1.5,overflow:'linebreak',font:'helvetica',lineColor:[200,200,200],lineWidth:0.2},
       columnStyles:{
-        0:{fillColor:[240,237,232],fontStyle:'bold',cellWidth:lw,textColor:[80,70,60]},
+        0:{cellWidth:lw},
         1:{cellWidth:vw},
-        2:{fillColor:[240,237,232],fontStyle:'bold',cellWidth:lw,textColor:[80,70,60]},
+        2:{cellWidth:lw},
         3:{cellWidth:vw},
       },
       theme:'grid',
-      didParseCell:(d)=>{
-        // KW/KH最小値を緑色に
-        if(d.row.index===2&&d.column.index===1) d.cell.styles.textColor=[8,80,65];
-        if(d.row.index===3&&d.column.index===1) d.cell.styles.textColor=[8,80,65];
-        // 備考欄は高さを確保してcolspanっぽく広げる
-        if(d.row.index===memoRowIdx){
-          d.cell.styles.minCellHeight=14;
-          if(d.column.index===1){d.cell.colSpan=3;}
-          if(d.column.index>1){d.cell.text=[];d.cell.styles.cellWidth=0;}
-        }
-      },
     });
 
     const endY=doc.lastAutoTable.finalY;
@@ -577,7 +568,6 @@ async function sharePdf(){
   // 凡例
   y=rowMaxY+3;
   doc.setFontSize(6);doc.setTextColor(130,130,130);
-  doc.text('[ ] = min value (installation reference)',margin,y);
   doc.text('[ ] = min value (installation reference)',margin,y);
 
   // PDFをBlobとして取得し共有
