@@ -466,63 +466,74 @@ async function sharePdf(){
   const {jsPDF}=window.jspdf;
   const data=collectAll();
   const site=data.siteName||'無題';
-  const date=data.surveyDate||'—';
 
-  // まずプレビューを表示して中身を生成
+  // まずプレビューを表示
   showPdfPreview();
-
   toast('PDF生成中...');
+  await new Promise(r=>setTimeout(r,400));
 
-  // レンダリング完了を少し待つ
-  await new Promise(r=>setTimeout(r,300));
-
-  const reportEl=document.getElementById('pdf-report');
   const pageW=210, pageH=297;
   const mgnL=8, mgnR=8, mgnT=8, mgnB=8;
+  const usableW=pageW-mgnL-mgnR;
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+
+  // ページヘッダーを画像として取得
+  const reportEl=document.getElementById('pdf-report');
+  const headerEl=reportEl.querySelector('.rh');
+  
+  // カード要素を全部取得
+  const cardEls=[...reportEl.querySelectorAll('.wc')];
+  if(cardEls.length===0){
+    toast('カードが見つかりません',1);
+    return;
+  }
 
   try{
-    // html2canvasでHTMLを画像化
-    const canvas=await html2canvas(reportEl,{
-      scale:3,
-      useCORS:true,
-      backgroundColor:'#ffffff',
-      logging:false,
-    });
+    // ヘッダーをキャプチャ
+    const hdrCanvas=await html2canvas(headerEl,{scale:3,useCORS:true,backgroundColor:'#ffffff',logging:false});
+    const hdrImgW=usableW;
+    const hdrImgH=hdrCanvas.height/hdrCanvas.width*hdrImgW;
 
-    const imgData=canvas.toDataURL('image/jpeg',0.92);
-    const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    let curY=mgnT;
+    let isFirstPage=true;
 
-    const usableW=pageW-mgnL-mgnR;
-    const imgW=canvas.width;
-    const imgH=canvas.height;
+    function addPageHeader(){
+      doc.addImage(hdrCanvas.toDataURL('image/jpeg',0.95),'JPEG',mgnL,curY,hdrImgW,hdrImgH);
+      curY+=hdrImgH+2;
+    }
 
-    // 画像をA4に合わせて分割して貼り付け
-    const scale=usableW/imgW;
-    const scaledH=imgH*scale;
-    const usableH=pageH-mgnT-mgnB;
+    addPageHeader();
 
-    let remainH=scaledH;
-    let srcY=0;
-    let isFirst=true;
+    // 各カードを個別キャプチャしてページに配置
+    for(let i=0;i<cardEls.length;i++){
+      const cardEl=cardEls[i];
 
-    while(remainH>0){
-      if(!isFirst) doc.addPage();
-      isFirst=false;
+      const cardCanvas=await html2canvas(cardEl,{
+        scale:3,
+        useCORS:true,
+        backgroundColor:'#ffffff',
+        logging:false,
+      });
 
-      const sliceH=Math.min(usableH, remainH);
-      const srcSliceH=sliceH/scale;
+      const cardImgH=cardCanvas.height/cardCanvas.width*usableW;
 
-      // 該当部分だけキャンバスに切り出し
-      const sliceCanvas=document.createElement('canvas');
-      sliceCanvas.width=imgW;
-      sliceCanvas.height=Math.ceil(srcSliceH);
-      const ctx=sliceCanvas.getContext('2d');
-      ctx.drawImage(canvas,0,srcY,imgW,Math.ceil(srcSliceH),0,0,imgW,Math.ceil(srcSliceH));
+      // ページに収まらない場合は改ページ
+      if(curY+cardImgH>pageH-mgnB){
+        doc.addPage();
+        curY=mgnT;
+        addPageHeader();
+      }
 
-      doc.addImage(sliceCanvas.toDataURL('image/jpeg',0.92),'JPEG',mgnL,mgnT,usableW,sliceH);
+      doc.addImage(cardCanvas.toDataURL('image/jpeg',0.95),'JPEG',mgnL,curY,usableW,cardImgH);
+      curY+=cardImgH+3;
+    }
 
-      srcY+=Math.ceil(srcSliceH);
-      remainH-=sliceH;
+    // 凡例
+    const legEl=reportEl.querySelector('.leg');
+    if(legEl&&curY+6<pageH-mgnB){
+      const legCanvas=await html2canvas(legEl,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false});
+      const legH=legCanvas.height/legCanvas.width*usableW;
+      doc.addImage(legCanvas.toDataURL('image/jpeg',0.9),'JPEG',mgnL,curY,usableW,legH);
     }
 
     const pdfBlob=doc.output('blob');
