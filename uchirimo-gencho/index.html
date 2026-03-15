@@ -163,6 +163,7 @@ select:focus{outline:none;border-color:var(--accent)}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
 
@@ -454,148 +455,96 @@ function closePdfPreview(){
 
 async function sharePdf(){
   if(!window.jspdf||!window.jspdf.jsPDF){
-    toast('jsPDFライブラリが読み込まれていません。ページを再読み込みしてください',1);
+    toast('ライブラリ読み込み中です。少し待ってから再度お試しください',1);
     return;
   }
+  if(!window.html2canvas){
+    toast('html2canvasが読み込まれていません',1);
+    return;
+  }
+
   const {jsPDF}=window.jspdf;
   const data=collectAll();
-  const site=data.siteName||'—';
+  const site=data.siteName||'無題';
   const date=data.surveyDate||'—';
 
-  // A4縦・フル幅横長カード（カード高さはテーブルに合わせてぴったり）
-  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
-  doc.setFont('helvetica');
+  // まずプレビューを表示して中身を生成
+  showPdfPreview();
 
+  toast('PDF生成中...');
+
+  // レンダリング完了を少し待つ
+  await new Promise(r=>setTimeout(r,300));
+
+  const reportEl=document.getElementById('pdf-report');
   const pageW=210, pageH=297;
   const mgnL=8, mgnR=8, mgnT=8, mgnB=8;
-  const usableW=pageW-mgnL-mgnR;
-  const hdrH=9;
-  const cardGap=3;
-  const memoW=52;
-  const dataW=usableW-memoW-3;
-  const memoX=mgnL+dataW+3;
 
-  // ラベル（ASCII only で文字化け防止）
-  const colorMap={cb:'Calm Black',gr:'Greige',cl:'Clear',na:'Natural',db:'Dark Brown',mo:'Mid.Oak',wh:'White'};
-  const seriesMap={f:'2-pane',t:'Single',v:'Vacuum',ln:'LowE-N',lb:'LowE-B',lr:'LowE-R',lh:'LowE-HR'};
-  const gtMap={m:'Clear',k:'Pattern',s:'Frosted'};
-  const spMap={al:'Al',j:'Resin'};
-  const fsMap={'25':'25mm','40':'40mm','60':'60mm'};
-  const fdMap={'3':'3-side','4':'4-side'};
-  function lbA(map,v){return map[v]||v||'-';}
-
-  function drawPageHeader(yy){
-    doc.setFillColor(26,74,122);
-    doc.rect(mgnL,yy,usableW,hdrH,'F');
-    doc.setTextColor(255,255,255);
-    doc.setFontSize(10);doc.setFont('helvetica','bold');
-    doc.text('Uchinado Gencho Sheet',mgnL+2,yy+6);
-    doc.setFontSize(6.5);doc.setFont('helvetica','normal');
-    doc.text('Site: '+site+'  Date: '+date+'  Windows: '+data.winData.length,pageW-mgnR-2,yy+6,{align:'right'});
-    return yy+hdrH+2;
-  }
-
-  let curY=drawPageHeader(mgnT);
-
-  for(let wi=0;wi<data.winData.length;wi++){
-    const wd=data.winData[wi];
-
-    // 採寸データ
-    const kwVals=wd.kw.map(s=>parseFloat(s)).filter(v=>!isNaN(v));
-    const khVals=wd.kh.map(s=>parseFloat(s)).filter(v=>!isNaN(v));
-    const kwMin=kwVals.length?Math.min(...kwVals):null;
-    const khMin=khVals.length?Math.min(...khVals):null;
-    const kwStr=wd.kw.map(s=>{const n=parseFloat(s);return(kwMin!==null&&n===kwMin)?'['+s+']':(s||'-');}).join(' / ');
-    const khStr=wd.kh.map(s=>{const n=parseFloat(s);return(khMin!==null&&n===khMin)?'['+s+']':(s||'-');}).join(' / ');
-    const fukaStr=wd.fukaAri==='y'?[lbA(fsMap,wd.fukaSize),lbA(fdMap,wd.fukaDir),wd.curtain==='y'?'Curtain rail':'',wd.hoko==='y'?'Reinf.':''].filter(Boolean).join(' '):'None';
-    const colorStr=lbA(colorMap,wd.color);
-    const serStr=lbA(seriesMap,wd.series);
-    const gtStr=lbA(gtMap,wd.glassType);
-    const spStr2=lbA(spMap,wd.spacer)+(wd.gas==='y'?' Gas':'');
-    const koshiStr2=wd.koshi==='y'?(wd.koshiType||'Yes'):'None';
-    const wLabel='Window '+wi+1+(wd.location?' / '+wd.location:'');
-
-    // テーブル行
-    const lw=13,v1w=26,v2w=26;
-    const ls={styles:{fillColor:[240,237,232],fontStyle:'bold',cellWidth:lw,fontSize:6,textColor:[50,40,30]}};
-    const rows=[
-      [{content:'Shoji',...ls},{content:wd.shoji?wd.shoji+'-panel':'-',styles:{cellWidth:v1w}},{content:'Color',...ls},{content:colorStr,styles:{cellWidth:v2w}},{content:'Dim A',...ls},{content:wd.dimA?wd.dimA+'mm':'-'}],
-      [{content:'KW',...ls},{content:kwStr+'mm',styles:{cellWidth:v1w,textColor:[8,80,65],fontStyle:'bold'},colSpan:2},{content:'Spacer',...ls},{content:spStr2,styles:{cellWidth:v2w}},{content:'Koshi',...ls},{content:koshiStr2}],
-      [{content:'KH',...ls},{content:khStr+'mm',styles:{cellWidth:v1w,textColor:[8,80,65],fontStyle:'bold'},colSpan:2},{content:'Glass',...ls},{content:serStr,styles:{cellWidth:v2w}},{content:'Type',...ls},{content:gtStr}],
-      [{content:'Fuka',...ls},{content:fukaStr,colSpan:5}],
-    ];
-
-    // テーブル高さ見積もり（行数×行高）
-    const rowH=6.5; // セルpadding+フォント
-    const tableEstH=rows.length*rowH+2;
-    const memoMinH=20; // 備考欄最低高さ
-    const cardBodyH=Math.max(tableEstH, memoMinH);
-    const cardH=6+cardBodyH+2; // ヘッダー6 + ボディ + 下余白
-
-    // ページ溢れチェック
-    if(curY+cardH>pageH-mgnB){
-      doc.addPage();
-      curY=drawPageHeader(mgnT);
-    }
-
-    const cardY=curY;
-
-    // カード外枠
-    doc.setDrawColor(26,74,122);doc.setLineWidth(0.5);
-    doc.rect(mgnL,cardY,usableW,cardH);
-
-    // 窓ヘッダー
-    doc.setFillColor(26,74,122);
-    doc.rect(mgnL,cardY,usableW,6,'F');
-    doc.setTextColor(255,255,255);
-    doc.setFontSize(8.5);doc.setFont('helvetica','bold');
-    doc.text(wLabel,mgnL+2,cardY+4.3);
-
-    // データテーブル
-    doc.autoTable({
-      startY:cardY+6,
-      margin:{left:mgnL,right:pageW-mgnL-dataW},
-      tableWidth:dataW,
-      body:rows,
-      styles:{fontSize:7,cellPadding:1.6,overflow:'linebreak',font:'helvetica',lineColor:[190,190,190],lineWidth:0.2},
-      columnStyles:{0:{cellWidth:lw}},
-      theme:'grid',
+  try{
+    // html2canvasでHTMLを画像化
+    const canvas=await html2canvas(reportEl,{
+      scale:3,
+      useCORS:true,
+      backgroundColor:'#ffffff',
+      logging:false,
     });
 
-    // 備考欄（右側・カードぴったり）
-    doc.setDrawColor(190,190,190);doc.setLineWidth(0.2);
-    doc.setFillColor(252,252,252);
-    doc.rect(memoX,cardY+6,memoW,cardBodyH,'FD');
-    doc.setFontSize(6.5);doc.setTextColor(140,140,140);doc.setFont('helvetica','bold');
-    doc.text('Memo',memoX+2,cardY+11);
-    doc.setLineWidth(0.1);
-    doc.line(memoX+1,cardY+13,memoX+memoW-1,cardY+13);
-    if(wd.memo){
-      doc.setFontSize(7.5);doc.setTextColor(20,20,20);doc.setFont('helvetica','normal');
-      doc.text(wd.memo,memoX+2,cardY+17,{maxWidth:memoW-4,lineHeightFactor:1.4});
+    const imgData=canvas.toDataURL('image/jpeg',0.92);
+    const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+
+    const usableW=pageW-mgnL-mgnR;
+    const imgW=canvas.width;
+    const imgH=canvas.height;
+
+    // 画像をA4に合わせて分割して貼り付け
+    const scale=usableW/imgW;
+    const scaledH=imgH*scale;
+    const usableH=pageH-mgnT-mgnB;
+
+    let remainH=scaledH;
+    let srcY=0;
+    let isFirst=true;
+
+    while(remainH>0){
+      if(!isFirst) doc.addPage();
+      isFirst=false;
+
+      const sliceH=Math.min(usableH, remainH);
+      const srcSliceH=sliceH/scale;
+
+      // 該当部分だけキャンバスに切り出し
+      const sliceCanvas=document.createElement('canvas');
+      sliceCanvas.width=imgW;
+      sliceCanvas.height=Math.ceil(srcSliceH);
+      const ctx=sliceCanvas.getContext('2d');
+      ctx.drawImage(canvas,0,srcY,imgW,Math.ceil(srcSliceH),0,0,imgW,Math.ceil(srcSliceH));
+
+      doc.addImage(sliceCanvas.toDataURL('image/jpeg',0.92),'JPEG',mgnL,mgnT,usableW,sliceH);
+
+      srcY+=Math.ceil(srcSliceH);
+      remainH-=sliceH;
     }
 
-    curY=cardY+cardH+cardGap;
-  }
+    const pdfBlob=doc.output('blob');
+    const fileName='内窓現場調査_'+site+'.pdf';
+    const pdfFile=new File([pdfBlob],fileName,{type:'application/pdf'});
 
-  // 凡例
-  doc.setFontSize(6);doc.setTextColor(150,150,150);doc.setFont('helvetica','normal');
-  if(curY+4<pageH-4) doc.text('[ ] = min value (installation reference)',mgnL,curY+3);
-
-  // PDF共有
-  const pdfBlob=doc.output('blob');
-  const fileName='内窓現場調査_'+(site||'無題')+'.pdf';
-  const pdfFile=new File([pdfBlob],fileName,{type:'application/pdf'});
-
-  if(navigator.share&&navigator.canShare&&navigator.canShare({files:[pdfFile]})){
-    try{ await navigator.share({files:[pdfFile],title:'内窓 現場調査シート - '+site}); }
-    catch(e){ if(e.name!=='AbortError') toast('共有に失敗しました',1); }
-  } else {
-    const url=URL.createObjectURL(pdfBlob);
-    const a=document.createElement('a');
-    a.href=url;a.download=fileName;a.click();
-    setTimeout(()=>URL.revokeObjectURL(url),5000);
-    toast('PDFをダウンロードしました');
+    if(navigator.share&&navigator.canShare&&navigator.canShare({files:[pdfFile]})){
+      try{
+        await navigator.share({files:[pdfFile],title:'内窓 現場調査シート - '+site});
+      }catch(e){
+        if(e.name!=='AbortError') toast('共有に失敗しました',1);
+      }
+    } else {
+      const url=URL.createObjectURL(pdfBlob);
+      const a=document.createElement('a');
+      a.href=url;a.download=fileName;a.click();
+      setTimeout(()=>URL.revokeObjectURL(url),5000);
+      toast('PDFをダウンロードしました');
+    }
+  }catch(e){
+    console.error(e);
+    toast('PDF生成に失敗しました: '+e.message,1);
   }
 }
 
