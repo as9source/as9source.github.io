@@ -455,99 +455,129 @@ async function sharePdf(){
   const site=data.siteName||'—';
   const date=data.surveyDate||'—';
 
-  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
-
-  // フォント設定（日本語はbase64埋め込みが必要なためHelveticaで代用、文字はUTF-8）
+  const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
   doc.setFont('helvetica');
 
-  const pageW=210, margin=12;
-  let y=14;
+  // ─── レイアウト定数 ───────────────────────
+  const COLS=3;           // 1行あたりの窓数
+  const pageW=297, pageH=210;
+  const margin=10;
+  const gap=3;
+  const colW=(pageW-margin*2-gap*(COLS-1))/COLS;  // ≈88mm
+  let y=margin;
 
-  // ─── ヘッダー ───────────────────────────
-  doc.setFillColor(26,74,122);
-  doc.rect(margin,y,pageW-margin*2,10,'F');
-  doc.setTextColor(255,255,255);
-  doc.setFontSize(12);
-  doc.setFont('helvetica','bold');
-  doc.text('Uchinado Gencho Sheet',margin+2,y+7);
-  doc.setFontSize(7);
-  doc.setFont('helvetica','normal');
-  doc.text(`Site: ${site}  Date: ${date}  Windows: ${data.winData.length}`,pageW-margin-2,y+7,{align:'right'});
-  y+=14;
+  // ─── 各ページヘッダー描画関数 ────────────
+  function drawPageHeader(){
+    doc.setFillColor(26,74,122);
+    doc.rect(margin,y,pageW-margin*2,8,'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(10);doc.setFont('helvetica','bold');
+    doc.text('Uchinado Gencho Sheet',margin+2,y+5.5);
+    doc.setFontSize(6.5);doc.setFont('helvetica','normal');
+    doc.text(`Site: ${site}  Date: ${date}  Windows: ${data.winData.length}`,pageW-margin-2,y+5.5,{align:'right'});
+    y+=11;
+  }
+  drawPageHeader();
 
-  // ─── 各窓カード ─────────────────────────
-  const colW=(pageW-margin*2-4)/2;
+  // 各行のY位置を管理（COLSカードを揃えて配置）
+  let rowStartY=y;
+  let rowMaxY=y;
 
   for(let wi=0;wi<data.winData.length;wi++){
     const wd=data.winData[wi];
-    const col=wi%2;
-    if(col===0 && wi>0) y+=4;
-    const x=margin+(col*(colW+4));
-    if(wi%2===0 && wi>0 && y>260){ doc.addPage(); y=14; }
+    const col=wi%COLS;
+
+    // 行の先頭：前の行の最大Yから再開
+    if(col===0){
+      if(wi>0){
+        y=rowMaxY+gap;
+        rowStartY=y;
+        rowMaxY=y;
+      }
+      // ページ溢れチェック
+      if(wi>0 && y>pageH-30){
+        doc.addPage();
+        y=margin;
+        drawPageHeader();
+        rowStartY=y;
+        rowMaxY=y;
+      }
+    }
+
+    const x=margin+col*(colW+gap);
+    y=rowStartY;
 
     // 窓ヘッダー
     doc.setFillColor(26,74,122);
     doc.rect(x,y,colW,6,'F');
     doc.setTextColor(255,255,255);
-    doc.setFontSize(8);
-    doc.setFont('helvetica','bold');
+    doc.setFontSize(8);doc.setFont('helvetica','bold');
     const wLabel=`${wd.label}${wd.location?' / '+wd.location:''}`;
     doc.text(wLabel,x+2,y+4.2);
 
-    // テーブルデータ
+    // 採寸データ
     const kwVals=wd.kw.map(s=>parseFloat(s)).filter(v=>!isNaN(v));
     const khVals=wd.kh.map(s=>parseFloat(s)).filter(v=>!isNaN(v));
     const kwMin=kwVals.length?Math.min(...kwVals):null;
     const khMin=khVals.length?Math.min(...khVals):null;
-    const kwStr=wd.kw.map((s,i)=>{
+    const kwStr=wd.kw.map(s=>{
       const n=parseFloat(s);
       return(kwMin!==null&&n===kwMin)?`[${s||'-'}]`:(s||'-');
     }).join(' / ');
-    const khStr=wd.kh.map((s,i)=>{
+    const khStr=wd.kh.map(s=>{
       const n=parseFloat(s);
       return(khMin!==null&&n===khMin)?`[${s||'-'}]`:(s||'-');
     }).join(' / ');
 
+    // テーブル行定義（横長を活かした2列レイアウト）
+    const lw=24, vw=(colW-lw*2)/2;
     const rows=[
-      ['Shoji',wd.shoji?wd.shoji+'maisho':'-','Color',lb(LBL.color,wd.color)],
-      ['Dim A',wd.dimA?wd.dimA+'mm':'-','',''],
-      ['KW(U/M/L)',kwStr+'mm','',''],
-      ['KH(L/M/R)',khStr+'mm','',''],
-      ['Glass',lb(LBL.series,wd.series)+' '+lb(LBL.gt,wd.glassType),'Spacer',lb(LBL.sp,wd.spacer)],
-      ['Koshi',wd.koshi==='y'?'Yes('+lb(LBL.kt,wd.koshiType)+')':'No','Fuka',wd.fukaAri==='y'?lb(LBL.fs,wd.fukaSize)+' '+lb(LBL.fd,wd.fukaDir):'No'],
+      ['Shoji', wd.shoji?wd.shoji+'mai':'-', 'Color', lb(LBL.color,wd.color)||'-'],
+      ['Dim A',  wd.dimA?wd.dimA+'mm':'-', 'Spacer', lb(LBL.sp,wd.spacer)||'-'],
+      ['KW',    kwStr+'mm', 'Gas', wd.gas==='y'?'Yes':'No'],
+      ['KH',    khStr+'mm', 'Koshi', wd.koshi==='y'?lb(LBL.kt,wd.koshiType)||'Yes':'No'],
+      ['Glass', lb(LBL.series,wd.series)||'-', 'Type', lb(LBL.gt,wd.glassType)||'-'],
+      ['Fuka',  wd.fukaAri==='y'?[lb(LBL.fs,wd.fukaSize),lb(LBL.fd,wd.fukaDir),wd.curtain==='y'?'Curtain':'',wd.hoko==='y'?'Reinf':''].filter(Boolean).join(' '):'No', '', ''],
     ];
-    if(wd.memo) rows.push(['Memo',wd.memo,'','']);
+
+    // 備考は必ず最後の行として追加（空でも枠を確保）
+    rows.push(['Memo', wd.memo||'', '', '']);
+    const memoRowIdx=rows.length-1;
 
     doc.autoTable({
       startY:y+6,
       margin:{left:x,right:pageW-x-colW},
       tableWidth:colW,
       body:rows,
-      styles:{fontSize:6.5,cellPadding:1.2,overflow:'linebreak',font:'helvetica'},
+      styles:{fontSize:6.5,cellPadding:1.5,overflow:'linebreak',font:'helvetica',lineColor:[200,200,200],lineWidth:0.2},
       columnStyles:{
-        0:{fillColor:[240,237,232],fontStyle:'bold',cellWidth:22},
-        1:{cellWidth:colW/2-22},
-        2:{fillColor:[240,237,232],fontStyle:'bold',cellWidth:22},
-        3:{cellWidth:colW/2-22},
+        0:{fillColor:[240,237,232],fontStyle:'bold',cellWidth:lw,textColor:[80,70,60]},
+        1:{cellWidth:vw},
+        2:{fillColor:[240,237,232],fontStyle:'bold',cellWidth:lw,textColor:[80,70,60]},
+        3:{cellWidth:vw},
       },
       theme:'grid',
       didParseCell:(d)=>{
-        // 最小値セルをハイライト
+        // KW/KH最小値を緑色に
         if(d.row.index===2&&d.column.index===1) d.cell.styles.textColor=[8,80,65];
         if(d.row.index===3&&d.column.index===1) d.cell.styles.textColor=[8,80,65];
+        // 備考欄は高さを確保してcolspanっぽく広げる
+        if(d.row.index===memoRowIdx){
+          d.cell.styles.minCellHeight=14;
+          if(d.column.index===1){d.cell.colSpan=3;}
+          if(d.column.index>1){d.cell.text=[];d.cell.styles.cellWidth=0;}
+        }
       },
     });
 
-    const tableEndY=doc.lastAutoTable.finalY;
-    if(col===1||(wi===data.winData.length-1&&col===0)){
-      y=tableEndY+4;
-    }
+    const endY=doc.lastAutoTable.finalY;
+    if(endY>rowMaxY) rowMaxY=endY;
   }
 
   // 凡例
-  y+=2;
-  doc.setFontSize(6.5);
-  doc.setTextColor(100,100,100);
+  y=rowMaxY+3;
+  doc.setFontSize(6);doc.setTextColor(130,130,130);
+  doc.text('[ ] = min value (installation reference)',margin,y);
   doc.text('[ ] = min value (installation reference)',margin,y);
 
   // PDFをBlobとして取得し共有
