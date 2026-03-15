@@ -128,12 +128,12 @@ select:focus{outline:none;border-color:var(--accent)}
 .pdf-report .rt{font-size:15px;font-weight:700;color:#1a4a7a}
 .pdf-report .rm{font-size:10px;color:#444;text-align:right;line-height:1.8}
 .pdf-report .grid{display:grid;grid-template-columns:1fr;gap:8px}
-.pdf-report .wc{border:1px solid #aaa;border-radius:4px;overflow:hidden;break-inside:avoid;page-break-inside:avoid;margin-bottom:0}
-.pdf-report .wc-inner{display:flex;align-items:stretch}
-.pdf-report .wc-data{flex:1;min-width:0}
-.pdf-report .wc-memo{width:200px;flex-shrink:0;border-left:1px solid #ccc;display:flex;flex-direction:column;background:#fafafa}
+.pdf-report .wc{border:1px solid #aaa;border-radius:4px;overflow:hidden;break-inside:avoid;page-break-inside:avoid;margin-bottom:0;height:63mm;box-sizing:border-box}
+.pdf-report .wc-inner{display:flex;align-items:stretch;height:calc(100% - 8mm)}
+.pdf-report .wc-data{flex:1;min-width:0;overflow:hidden}
+.pdf-report .wc-memo{width:200px;flex-shrink:0;border-left:1px solid #ccc;display:flex;flex-direction:column;background:#fafafa;height:100%}
 .pdf-report .wc-memo-label{font-size:9px;font-weight:500;color:#888;padding:4px 8px 2px;border-bottom:0.5px solid #e0e0e0}
-.pdf-report .wc-memo-body{flex:1;padding:6px 8px;font-size:11px;color:#333;line-height:1.6;white-space:pre-wrap}
+.pdf-report .wc-memo-body{flex:1;padding:6px 8px;font-size:11px;color:#333;line-height:1.6;white-space:pre-wrap;overflow:hidden}
 .pdf-report .wh{background:#1a4a7a;color:#fff;font-size:12px;font-weight:700;padding:5px 8px}
 .pdf-report table{width:100%;border-collapse:collapse}
 .pdf-report th{background:#f0ede8;font-size:10px;font-weight:500;color:#444;padding:3px 6px;text-align:left;border:0.5px solid #ccc;width:30%;vertical-align:top}
@@ -467,73 +467,74 @@ async function sharePdf(){
   const data=collectAll();
   const site=data.siteName||'無題';
 
-  // まずプレビューを表示
+  // プレビュー表示
   showPdfPreview();
   toast('PDF生成中...');
   await new Promise(r=>setTimeout(r,400));
 
+  // A4縦 固定レイアウト定数（mm）
   const pageW=210, pageH=297;
   const mgnL=8, mgnR=8, mgnT=8, mgnB=8;
-  const usableW=pageW-mgnL-mgnR;
+  const usableW=pageW-mgnL-mgnR;  // 194mm
+  const hdrH=11;                   // ページヘッダー高さ
+  const cardGap=3;                 // カード間隔
+  const CARDS_PER_PAGE=4;
+  // カード高さ = (297 - 16 - 11 - 9) / 4 = 65.25mm → 65mm
+  const cardH=(pageH-mgnT-mgnB-hdrH-cardGap*(CARDS_PER_PAGE-1))/CARDS_PER_PAGE;
+
   const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
 
-  // ページヘッダーを画像として取得
   const reportEl=document.getElementById('pdf-report');
   const headerEl=reportEl.querySelector('.rh');
-  
-  // カード要素を全部取得
   const cardEls=[...reportEl.querySelectorAll('.wc')];
-  if(cardEls.length===0){
-    toast('カードが見つかりません',1);
-    return;
-  }
+
+  if(cardEls.length===0){toast('カードが見つかりません',1);return;}
 
   try{
-    // ヘッダーをキャプチャ
+    // ヘッダーキャプチャ
     const hdrCanvas=await html2canvas(headerEl,{scale:3,useCORS:true,backgroundColor:'#ffffff',logging:false});
-    const hdrImgW=usableW;
-    const hdrImgH=hdrCanvas.height/hdrCanvas.width*hdrImgW;
 
-    let curY=mgnT;
-    let isFirstPage=true;
-
-    function addPageHeader(){
-      doc.addImage(hdrCanvas.toDataURL('image/jpeg',0.95),'JPEG',mgnL,curY,hdrImgW,hdrImgH);
-      curY+=hdrImgH+2;
+    function addPageHeader(doc, y){
+      doc.addImage(hdrCanvas.toDataURL('image/jpeg',0.95),'JPEG',mgnL,y,usableW,hdrH);
     }
 
-    addPageHeader();
+    let pageCardIdx=0;
+    let isFirstPage=true;
 
-    // 各カードを個別キャプチャしてページに配置
     for(let i=0;i<cardEls.length;i++){
-      const cardEl=cardEls[i];
+      // ページの先頭
+      if(pageCardIdx===0){
+        if(!isFirstPage) doc.addPage();
+        isFirstPage=false;
+        addPageHeader(doc, mgnT);
+      }
 
-      const cardCanvas=await html2canvas(cardEl,{
+      // カードのY位置（固定）
+      const cardY=mgnT+hdrH+pageCardIdx*(cardH+cardGap);
+
+      // カードをキャプチャして固定サイズで配置
+      const cardCanvas=await html2canvas(cardEls[i],{
         scale:3,
         useCORS:true,
         backgroundColor:'#ffffff',
         logging:false,
       });
 
-      const cardImgH=cardCanvas.height/cardCanvas.width*usableW;
+      // 固定高さ cardH で配置（アスペクト比無視して強制fit）
+      doc.addImage(cardCanvas.toDataURL('image/jpeg',0.95),'JPEG',mgnL,cardY,usableW,cardH);
 
-      // ページに収まらない場合は改ページ
-      if(curY+cardImgH>pageH-mgnB){
-        doc.addPage();
-        curY=mgnT;
-        addPageHeader();
-      }
-
-      doc.addImage(cardCanvas.toDataURL('image/jpeg',0.95),'JPEG',mgnL,curY,usableW,cardImgH);
-      curY+=cardImgH+3;
+      pageCardIdx=(pageCardIdx+1)%CARDS_PER_PAGE;
     }
 
     // 凡例
     const legEl=reportEl.querySelector('.leg');
-    if(legEl&&curY+6<pageH-mgnB){
+    if(legEl){
       const legCanvas=await html2canvas(legEl,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false});
       const legH=legCanvas.height/legCanvas.width*usableW;
-      doc.addImage(legCanvas.toDataURL('image/jpeg',0.9),'JPEG',mgnL,curY,usableW,legH);
+      const lastCardY=mgnT+hdrH+(pageCardIdx===0?CARDS_PER_PAGE-1:pageCardIdx-1)*(cardH+cardGap)+cardH;
+      if(lastCardY+legH+2<pageH-mgnB){
+        doc.addImage(legCanvas.toDataURL('image/jpeg',0.9),'JPEG',mgnL,lastCardY+2,usableW,legH);
+      }
     }
 
     const pdfBlob=doc.output('blob');
