@@ -128,16 +128,16 @@ select:focus{outline:none;border-color:var(--accent)}
 .pdf-report .rt{font-size:15px;font-weight:700;color:#1a4a7a}
 .pdf-report .rm{font-size:10px;color:#444;text-align:right;line-height:1.8}
 .pdf-report .grid{display:grid;grid-template-columns:1fr;gap:8px}
-.pdf-report .wc{border:1px solid #aaa;border-radius:4px;overflow:hidden;break-inside:avoid;page-break-inside:avoid;margin-bottom:0;height:63mm;box-sizing:border-box}
-.pdf-report .wc-inner{display:flex;align-items:stretch;height:calc(100% - 8mm)}
+.pdf-report .wc{border:1px solid #aaa;border-radius:4px;overflow:hidden;break-inside:avoid;page-break-inside:avoid;margin-bottom:0;height:85mm;box-sizing:border-box}
+.pdf-report .wc-inner{display:flex;align-items:stretch;height:calc(100% - 26px)}
 .pdf-report .wc-data{flex:1;min-width:0;overflow:hidden}
-.pdf-report .wc-memo{width:200px;flex-shrink:0;border-left:1px solid #ccc;display:flex;flex-direction:column;background:#fafafa;height:100%}
+.pdf-report .wc-memo{width:280px;flex-shrink:0;border-left:1px solid #ccc;display:flex;flex-direction:column;background:#fafafa;height:100%}
 .pdf-report .wc-memo-label{font-size:9px;font-weight:500;color:#888;padding:4px 8px 2px;border-bottom:0.5px solid #e0e0e0}
 .pdf-report .wc-memo-body{flex:1;padding:6px 8px;font-size:11px;color:#333;line-height:1.6;white-space:pre-wrap;overflow:hidden}
 .pdf-report .wh{background:#1a4a7a;color:#fff;font-size:12px;font-weight:700;padding:5px 8px}
 .pdf-report table{width:100%;border-collapse:collapse}
-.pdf-report th{background:#f0ede8;font-size:10px;font-weight:500;color:#444;padding:3px 6px;text-align:left;border:0.5px solid #ccc;width:30%;vertical-align:top}
-.pdf-report td{font-size:11px;padding:3px 6px;border:0.5px solid #ccc;vertical-align:top}
+.pdf-report th{background:#f0ede8;font-size:10px;font-weight:500;color:#444;padding:2px 6px;text-align:left;border:0.5px solid #ccc;width:30%;vertical-align:top}
+.pdf-report td{font-size:11px;padding:2px 6px;border:0.5px solid #ccc;vertical-align:top}
 .pdf-report sub{font-size:9px;color:#888;font-style:normal}
 .pdf-report .leg{margin-top:8px;font-size:10px;color:#666;display:flex;align-items:center;gap:5px}
 .pdf-report .leg-dot{width:12px;height:12px;background:#dff0e8;border:1px solid #1d9e75;border-radius:2px;flex-shrink:0}
@@ -203,7 +203,7 @@ select:focus{outline:none;border-color:var(--accent)}
   <div class="pdf-toolbar">
     <button class="pdf-back" onclick="closePdfPreview()">← 戻る</button>
     <h2>現場調査シート</h2>
-    <button class="pdf-share" onclick="sharePdf()">PDF共有 ↗</button>
+    <button class="pdf-share" onclick="sharePdf()">PDF ダウンロード ↓</button>
   </div>
   <div class="pdf-body">
     <div class="pdf-report" id="pdf-report"></div>
@@ -219,7 +219,7 @@ select:focus{outline:none;border-color:var(--accent)}
     <div class="val-list" id="val-list"></div>
     <div class="val-footer">
       <button class="val-btn-back" onclick="closeValAndReturn()">← 入力に戻る</button>
-      <button class="val-btn-go" onclick="closeValAndShare()">このまま PDF共有 ↗</button>
+      <button class="val-btn-go" onclick="closeValAndShare()">このまま PDF ダウンロード ↓</button>
     </div>
   </div>
 </div>
@@ -287,6 +287,7 @@ function getWinData(n){
     kw:[...document.querySelectorAll(`#kw-row-${n} input`)].map(i=>i.value.trim()),
     kh:[...document.querySelectorAll(`#kh-row-${n} input`)].map(i=>i.value.trim()),
     series:r('series'+n),glassType:r('type1_'+n),spacer:r('sp'+n),gas:r('gas'+n),
+    ch:t('ch-'+n),
     koshi:r('koshi'+n),koshiType:(document.getElementById('koshi-sel-'+n)||{}).value||'',
     fukaAri:r('fukaari'+n),fukaSize:r('fukasize'+n),fukaDir:r('fukadir'+n),
     curtain:r('curtain'+n),hoko:r('hoko'+n),memo:t('memo-'+n)
@@ -332,7 +333,7 @@ function restoreAll(data){
 function restoreWin(wd){
   const n=wd.id,p=document.getElementById('panel-'+n);if(!p)return;
   const si=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v||'';};
-  si('loc-'+n,wd.location);si('dima-'+n,wd.dimA);si('memo-'+n,wd.memo);
+  si('loc-'+n,wd.location);si('dima-'+n,wd.dimA);si('ch-'+n,wd.ch);si('memo-'+n,wd.memo);
   const kwR=document.getElementById('kw-row-'+n),khR=document.getElementById('kh-row-'+n);
   if(kwR&&wd.kw)[...kwR.querySelectorAll('input')].forEach((inp,i)=>inp.value=wd.kw[i]||'');
   if(khR&&wd.kh)[...khR.querySelectorAll('input')].forEach((inp,i)=>inp.value=wd.kh[i]||'');
@@ -360,23 +361,28 @@ function buildCards(){
     const khVals=wd.kh.map(s=>parseFloat(s)).filter(v=>!isNaN(v));
     const kwMin=kwVals.length?Math.min(...kwVals):null;
     const khMin=khVals.length?Math.min(...khVals):null;
-    const kwCells=wd.kw.map(s=>{
+    const kwLabels=['上','中','下'];
+    const kwMinCell=kwMin!==null?`<span style="background:#1a4a7a;color:#fff;font-weight:700;border-radius:3px;padding:1px 6px;margin-right:4px;">${kwMin}㎜</span>`:'';
+    const kwCells=kwMinCell+wd.kw.map((s,i)=>{
       const n=parseFloat(s),isMin=kwMin!==null&&n===kwMin;
-      return`<span style="${isMin?'background:#dff0e8;color:#085041;font-weight:700;border-radius:3px;padding:1px 4px;':''}">${s||'—'}</span>`;
+      return`<span style="color:#999;font-size:9px;">${kwLabels[i]}</span><span style="${isMin?'color:#085041;font-weight:700;':'color:#555;'}">${s||'—'}</span>`;
     }).join('<span style="color:#bbb"> / </span>');
-    const khCells=wd.kh.map(s=>{
+    const khLabels=['左','中','右'];
+    const khMinCell=khMin!==null?`<span style="background:#1a4a7a;color:#fff;font-weight:700;border-radius:3px;padding:1px 6px;margin-right:4px;">${khMin}㎜</span>`:'';
+    const khCells=khMinCell+wd.kh.map((s,i)=>{
       const n=parseFloat(s),isMin=khMin!==null&&n===khMin;
-      return`<span style="${isMin?'background:#dff0e8;color:#085041;font-weight:700;border-radius:3px;padding:1px 4px;':''}">${s||'—'}</span>`;
+      return`<span style="color:#999;font-size:9px;">${khLabels[i]}</span><span style="${isMin?'color:#085041;font-weight:700;':'color:#555;'}">${s||'—'}</span>`;
     }).join('<span style="color:#bbb"> / </span>');
     const glass=[lb(LBL.series,wd.series),lb(LBL.gt,wd.glassType)].filter(s=>s&&s!=='—').join(' / ')||'—';
     const spStr=[lb(LBL.sp,wd.spacer),wd.gas==='y'?'ガス有':''].filter(Boolean).join('・')||'—';
     const koshiStr=wd.koshi==='y'?'有（'+lb(LBL.kt,wd.koshiType)+'）':'無';
     const fukaStr=wd.fukaAri==='y'?[lb(LBL.fs,wd.fukaSize),lb(LBL.fd,wd.fukaDir),wd.curtain==='y'?'カーテンレール有':'',wd.hoko==='y'?'補強有':''].filter(Boolean).join('・'):'無';
     return`<div class="wc"><div class="wh">${wd.label}${wd.location?' ／ '+wd.location:''}</div><div class="wc-inner"><div class="wc-data"><table>
-<tr><th>障子枚数</th><td>${wd.shoji?wd.shoji+'枚建':'—'}</td><th>商品色</th><td>${lb(LBL.color,wd.color)}</td></tr>
+<tr><th style="width:28%">障子枚数</th><td style="width:14%;font-size:10px">${wd.shoji?wd.shoji+'枚建':'—'}</td><th style="width:28%">商品色</th><td style="width:30%;font-size:10px">${lb(LBL.color,wd.color)}</td></tr>
 <tr><th>取付寸法 A</th><td colspan="3">${wd.dimA||'—'} ㎜</td></tr>
-<tr><th>KW 幅<br><sub>上 / 中 / 下</sub></th><td colspan="3">${kwCells} ㎜</td></tr>
-<tr><th>KH 高<br><sub>左 / 中 / 右</sub></th><td colspan="3">${khCells} ㎜</td></tr>
+<tr><th>KW 幅<br><sub>上 / 中 / 下</sub></th><td colspan="3">${kwCells}</td></tr>
+<tr><th>KH 高<br><sub>左 / 中 / 右</sub></th><td colspan="3">${khCells}</td></tr>
+<tr><th>CH</th><td colspan="3">${wd.ch||'—'} ㎜</td></tr>
 <tr><th>ガラス</th><td colspan="3">${glass}</td></tr>
 <tr><th>スペーサー</th><td colspan="3">${spStr}</td></tr>
 <tr><th>格子</th><td colspan="3">${koshiStr}</td></tr>
@@ -478,7 +484,7 @@ async function sharePdf(){
   const usableW=pageW-mgnL-mgnR;  // 194mm
   const hdrH=11;                   // ページヘッダー高さ
   const cardGap=3;                 // カード間隔
-  const CARDS_PER_PAGE=4;
+  const CARDS_PER_PAGE=3;
   // カード高さ = (297 - 16 - 11 - 9) / 4 = 65.25mm → 65mm
   const cardH=(pageH-mgnT-mgnB-hdrH-cardGap*(CARDS_PER_PAGE-1))/CARDS_PER_PAGE;
 
@@ -666,6 +672,11 @@ function makePanel(n){
   <div id="kh-err-${n}" class="err-msg">⚠ KH（左・中・右）の差が20㎜以上あります。開口部の変形・歪みを確認してください。</div>
   <div id="kh-min-${n}" class="min-note"><span class="min-dot"></span><span>KH 最小：<strong class="min-val"></strong>（取付基準高）</span></div>
   <p class="note" style="margin-top:8px">※ KW は上・中・下、KH は左・中・右の最小値が取付寸法となります</p>
+  <div class="sub-row" style="margin-top:10px"><span class="il">CH（クレセント高さ）</span>
+    <div style="display:flex;align-items:center;gap:6px">
+      <input type="text" id="ch-${n}" inputmode="numeric" style="width:80px"><span class="kw-unit">㎜</span>
+    </div>
+  </div>
 </div>
 
 <div class="section">
