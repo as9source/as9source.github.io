@@ -125,7 +125,7 @@ select:focus{outline:none;border-color:var(--accent)}
 .pdf-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px}
 .pdf-report{font-family:'Hiragino Sans','Meiryo',sans-serif;font-size:11px;color:#111;max-width:900px;margin:0 auto}
 .pdf-report .rh{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #1a4a7a;padding-bottom:6px;margin-bottom:10px;flex-wrap:wrap;gap:4px}
-.pdf-report .rt{font-size:15px;font-weight:700;color:#1a4a7a}
+.pdf-report .rt{font-size:15px;font-weight:400;color:#1a4a7a}
 .pdf-report .rm{font-size:10px;color:#444;text-align:right;line-height:1.8}
 .pdf-report .grid{display:grid;grid-template-columns:1fr;gap:8px}
 .pdf-report .wc{border:1px solid #aaa;border-radius:4px;overflow:hidden;break-inside:avoid;page-break-inside:avoid;margin-bottom:0;height:85mm;box-sizing:border-box}
@@ -362,17 +362,13 @@ function buildCards(){
     const kwMin=kwVals.length?Math.min(...kwVals):null;
     const khMin=khVals.length?Math.min(...khVals):null;
     const kwLabels=['上','中','下'];
-    const kwMinCell=kwMin!==null?`<span style="background:#1a4a7a;color:#fff;font-weight:700;border-radius:3px;padding:1px 6px;margin-right:4px;">${kwMin}㎜</span>`:'';
-    const kwCells=kwMinCell+wd.kw.map((s,i)=>{
-      const n=parseFloat(s),isMin=kwMin!==null&&n===kwMin;
-      return`<span style="color:#999;font-size:9px;">${kwLabels[i]}</span><span style="${isMin?'color:#085041;font-weight:700;':'color:#555;'}">${s||'—'}</span>`;
-    }).join('<span style="color:#bbb"> / </span>');
+    const kwMinCell=kwMin!==null?`<span style="background:#1a4a7a;color:#fff;font-weight:700;border-radius:4px;padding:2px 8px;margin-right:8px;font-size:13px;">${kwMin}㎜</span>`:'';
+    const kwSubCells=wd.kw.map((s,i)=>`<span style="color:#aaa;font-size:9px;">${kwLabels[i]}</span><span style="font-size:10px;color:#555;">${s||'—'}</span>`).join('<span style="color:#ddd;font-size:9px;"> / </span>');
+    const kwCells=kwMinCell+`<span style="color:#888;font-size:10px;">(${kwSubCells})</span>`;
     const khLabels=['左','中','右'];
-    const khMinCell=khMin!==null?`<span style="background:#1a4a7a;color:#fff;font-weight:700;border-radius:3px;padding:1px 6px;margin-right:4px;">${khMin}㎜</span>`:'';
-    const khCells=khMinCell+wd.kh.map((s,i)=>{
-      const n=parseFloat(s),isMin=khMin!==null&&n===khMin;
-      return`<span style="color:#999;font-size:9px;">${khLabels[i]}</span><span style="${isMin?'color:#085041;font-weight:700;':'color:#555;'}">${s||'—'}</span>`;
-    }).join('<span style="color:#bbb"> / </span>');
+    const khMinCell=khMin!==null?`<span style="background:#1a4a7a;color:#fff;font-weight:700;border-radius:4px;padding:2px 8px;margin-right:8px;font-size:13px;">${khMin}㎜</span>`:'';
+    const khSubCells=wd.kh.map((s,i)=>`<span style="color:#aaa;font-size:9px;">${khLabels[i]}</span><span style="font-size:10px;color:#555;">${s||'—'}</span>`).join('<span style="color:#ddd;font-size:9px;"> / </span>');
+    const khCells=khMinCell+`<span style="color:#888;font-size:10px;">(${khSubCells})</span>`;
     const glass=[lb(LBL.series,wd.series),lb(LBL.gt,wd.glassType)].filter(s=>s&&s!=='—').join(' / ')||'—';
     const spStr=[lb(LBL.sp,wd.spacer),wd.gas==='y'?'ガス有':''].filter(Boolean).join('・')||'—';
     const koshiStr=wd.koshi==='y'?'有（'+lb(LBL.kt,wd.koshiType)+'）':'無';
