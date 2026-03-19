@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#0f1117">
 <link rel="manifest" href="saisun-manifest.json">
 <link rel="apple-touch-icon" href="saisun-icon.png">
-<title>採寸チェックシート</title>
+<title>ドアリモ採寸システム</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 
@@ -117,7 +117,7 @@
     outline: none; transition: border-color 0.15s, background 0.15s;
     -webkit-appearance: none; appearance: none;
   }
-  .field-input:focus { border-color: var(--border-focus); background: #1e2238; }
+  .field-input:focus { border-color: var(--border-focus); background: #eef4ff; }
   .field-input::placeholder { color: var(--text-dim); font-weight: 400; font-size: 14px; }
   .unit-label {
     position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
@@ -134,7 +134,7 @@
     background-repeat: no-repeat; background-position: right 12px center;
   }
   .field-select:focus { border-color: var(--border-focus); }
-  .field-select option { background: #1a1d27; }
+  .field-select option { background: #ffffff; color: #1a1d27; }
   .field-select.sub { font-size: 13px; padding: 7px 30px 7px 10px; }
 
   /* Toggle button */
@@ -145,7 +145,7 @@
     transition: background 0.15s, border-color 0.15s; flex-shrink: 0;
   }
   .expand-toggle:hover { background: var(--surface2); border-color: var(--accent); }
-  .expand-toggle.active { background: #1a2040; border-color: var(--accent); }
+  .expand-toggle.active { background: #d0e4ff; border-color: var(--accent); color: #1a3a70; }
   .expand-toggle:disabled { opacity: 0.3; cursor: not-allowed; border-color: var(--border); color: var(--text-dim); }
 
   .expand-panel { display: none; padding: 0 14px 12px; flex-direction: column; gap: 6px; }
@@ -251,7 +251,7 @@
     width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0;
   }
   .check-row-label { font-size: 13px; font-weight: 500; color: var(--text); flex: 1; }
-  .check-row-sub { font-size: 11px; color: var(--text-sub); }
+  .check-row-sub { font-size: 11px; color: #1a5abf; font-weight: 600; }
 
   /* ── 計算結果カード ── */
   .calc-card {
@@ -336,7 +336,7 @@
 "></div>
 
 <header>
-  <h1>採寸チェックシート<span class="sub">現場計測</span></h1>
+  <h1>ドアリモ採寸システム<span class="sub">現場計測</span></h1>
   <div class="header-right">
     <div class="progress-ring">入力 <span class="count" id="progress">0/7</span></div>
     <button class="icon-btn" onclick="openRecords()" title="保存データ一覧">📂</button>
@@ -484,7 +484,7 @@
     <div class="section-label">既存開口</div>
 
     <!-- はつり納まり（ドア・引戸共通） -->
-    <label class="check-row" for="cb-tsuri" style="border-color:#3a2e60;background:#1a1630;margin-bottom:10px">
+    <label class="check-row" for="cb-tsuri" style="margin-bottom:10px">
       <input type="checkbox" id="cb-tsuri" onchange="recalc()">
       <span class="check-row-label">はつり納まり</span>
       <span class="check-row-sub">高さ KH＋15mm</span>
@@ -781,6 +781,8 @@ function selectType(t) {
   document.getElementById('shimowaku-row').style.display = isDoor ? '' : 'none';
   // 引戸に切り替えたらフラット材チェックをリセット
   if (!isDoor) document.getElementById('cb-shimowaku').checked = false;
+  document.getElementById('card-dw').style.display = isDoor ? '' : 'none';
+  document.getElementById('card-ats').style.display = isDoor ? '' : 'none';
   updateKouchiVisibility();
   recalc();
 }
