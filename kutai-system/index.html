@@ -14,10 +14,21 @@
     ========================================
     躯体採寸システム
     ========================================
-    バージョン: 1.21.1
+    バージョン: 1.21.3
     最終更新: 2024-12-28
     
     [更新履歴]
+    v1.21.3 (2024-12-28) - 緊急修正
+    - 変数名の重複エラーを修正
+    - canvasWidth/canvasHeight の競合を解消
+    
+    v1.21.2 (2024-12-28) - レスポンシブ対応
+    - キャンバスサイズを画面サイズに自動調整
+    - スマホ、タブレット、PCで最適なサイズに
+    - フォントサイズも画面に応じて調整
+    - マージンを画面サイズに応じて最適化
+    - 結果が画面に完全に収まるように改善
+    
     v1.21.1 (2024-12-28) - 緊急修正
     - HTMLファイル構造の修正
     - Dropboxコードが正しくscriptタグ内に配置
@@ -710,7 +721,7 @@
             
             <!-- バージョン情報 -->
             <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 13px;">
-                <div style="margin-bottom: 5px;">躯体採寸システム v1.21.1</div>
+                <div style="margin-bottom: 5px;">躯体採寸システム v1.21.3</div>
                 <div>最終更新: 2024-12-28</div>
             </div>
         </div>
@@ -2508,8 +2519,8 @@
                 });
                 
                 html = `
-                    <div style="margin-bottom: 20px;">
-                        <canvas id="result-canvas" width="500" height="400" style="width: 100%; border-radius: 10px;"></canvas>
+                    <div id="result-canvas-container" style="margin-bottom: 20px;">
+                        <canvas id="result-canvas" style="width: 100%; border-radius: 10px;"></canvas>
                     </div>
                     
                     <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
@@ -2582,6 +2593,30 @@
         function drawResultDiagram() {
             const resultCanvas = document.getElementById('result-canvas');
             if (!resultCanvas) return;
+            
+            // キャンバスサイズを画面に合わせて設定（v1.21.2）
+            const container = document.getElementById('result-canvas-container');
+            const containerWidth = container ? container.clientWidth : 500;
+            
+            // 画面サイズに応じて適切なキャンバスサイズを設定
+            let resultCanvasWidth, resultCanvasHeight;
+            
+            if (containerWidth < 400) {
+                // スマホ（縦）
+                resultCanvasWidth = containerWidth;
+                resultCanvasHeight = containerWidth * 1.2;  // 縦長
+            } else if (containerWidth < 768) {
+                // スマホ（横）、タブレット
+                resultCanvasWidth = containerWidth;
+                resultCanvasHeight = containerWidth * 0.8;
+            } else {
+                // PC
+                resultCanvasWidth = Math.min(containerWidth, 800);
+                resultCanvasHeight = resultCanvasWidth * 0.75;
+            }
+            
+            resultCanvas.width = resultCanvasWidth;
+            resultCanvas.height = resultCanvasHeight;
             
             const ctx = resultCanvas.getContext('2d');
             
@@ -2664,18 +2699,19 @@
             const shapeWidth = Math.max(maxX - minX, 1);
             const shapeHeight = Math.max(maxY - minY, 1);
             
-            const margin = 60;
-            const canvasWidth = resultCanvas.width - margin * 2;
-            const canvasHeight = resultCanvas.height - margin * 2;
+            // マージンを画面サイズに応じて調整（v1.21.2）
+            const margin = resultCanvas.width < 400 ? 30 : 60;
+            const drawableWidth = resultCanvas.width - margin * 2;
+            const drawableHeight = resultCanvas.height - margin * 2;
             
-            const scaleX = canvasWidth / shapeWidth;
-            const scaleY = canvasHeight / shapeHeight;
+            const scaleX = drawableWidth / shapeWidth;
+            const scaleY = drawableHeight / shapeHeight;
             const scale = Math.min(scaleX, scaleY);
             
             const scaledWidth = shapeWidth * scale;
             const scaledHeight = shapeHeight * scale;
-            const offsetX = margin + (canvasWidth - scaledWidth) / 2 - minX * scale;
-            const offsetY = margin + (canvasHeight - scaledHeight) / 2 - minY * scale;
+            const offsetX = margin + (drawableWidth - scaledWidth) / 2 - minX * scale;
+            const offsetY = margin + (drawableHeight - scaledHeight) / 2 - minY * scale;
             
             function transformX(x) {
                 return x * scale + offsetX;
@@ -2684,6 +2720,11 @@
             function transformY(y) {
                 return y * scale + offsetY;
             }
+            
+            // 画面サイズに応じたフォントサイズ（v1.21.2）
+            const baseFontSize = resultCanvas.width < 400 ? 12 : 16;
+            const smallFontSize = resultCanvas.width < 400 ? 8 : 10;
+            const tinyFontSize = resultCanvas.width < 400 ? 9 : 11;
             
             function drawResultPoint(x, y, state) {
                 const colors = {
@@ -2816,13 +2857,13 @@
                     ctx.stroke();
                     ctx.setLineDash([]);  // 破線リセット
                     
-                    ctx.font = 'bold 16px sans-serif';
+                    ctx.font = `bold ${baseFontSize}px sans-serif`;
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     
                     const resultText = `${Math.floor(result)}`;
                     const resultMetrics = ctx.measureText(resultText);
-                    const padding = 8;  // 6 → 8（より目立つように v1.17.5）
+                    const padding = resultCanvas.width < 400 ? 6 : 8;
                     
                     ctx.fillStyle = 'rgba(254, 243, 199, 0.95)';  // 0.85 → 0.95（より不透明に v1.17.5）
                     ctx.fillRect(textX - resultMetrics.width/2 - padding, textY - 10, resultMetrics.width + padding*2, 20);
@@ -2835,7 +2876,7 @@
                     ctx.fillText(resultText, textX, textY);
                     
                     if (dim.width) {
-                        ctx.font = '10px sans-serif';
+                        ctx.font = `${smallFontSize}px sans-serif`;
                         const widthText = `幅:${dim.width}`;
                         const widthMetrics = ctx.measureText(widthText);
                         const widthY = textY + 16;
@@ -2942,7 +2983,7 @@
                                         const tX = transformX(midX);
                                         const tY = transformY(midY);
                                         
-                                        ctx.font = 'bold 11px sans-serif';
+                                        ctx.font = `bold ${tinyFontSize}px sans-serif`;
                                         ctx.textAlign = 'center';
                                         ctx.textBaseline = 'middle';
                                         
@@ -2980,7 +3021,7 @@
             const legendX = 15;  // 左下に移動（v1.17.5）
             const legendY = resultCanvas.height - 70;
             
-            ctx.font = 'bold 12px sans-serif';
+            ctx.font = `bold ${tinyFontSize + 1}px sans-serif`;
             ctx.textAlign = 'left';
             
             ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
@@ -3065,7 +3106,7 @@
                 
                 ctx.restore();
                 
-                ctx.font = '11px sans-serif';
+                ctx.font = `${tinyFontSize}px sans-serif`;
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
                 ctx.fillText(item.label, legendX + 16, itemY + 5);
                 ctx.fillText(item.label, legendX + 14, itemY + 3);
