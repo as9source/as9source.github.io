@@ -495,7 +495,7 @@ async function sharePdf(){
 
   try{
     // ヘッダーキャプチャ
-    const hdrCanvas=await html2canvas(headerEl,{scale:3,useCORS:true,backgroundColor:'#ffffff',logging:false});
+    const hdrCanvas=await html2canvas(headerEl,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false});
 
     function addPageHeader(doc, y){
       doc.addImage(hdrCanvas.toDataURL('image/jpeg',0.95),'JPEG',mgnL,y,usableW,hdrH);
