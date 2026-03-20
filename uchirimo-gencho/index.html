@@ -177,6 +177,7 @@ select:focus{outline:none;border-color:var(--accent)}
   <button class="tbtn" onclick="loadData()">📂 読込</button>
   <button class="tbtn" onclick="saveData()">💾 保存</button>
   <button class="tbtn pr" onclick="exportPDF()">📄 PDF</button>
+  <button class="tbtn" onclick="forceReload()" title="キャッシュをクリアして最新版を読み込む">🔄</button>
 </div>
 
 <div class="top-section">
@@ -781,6 +782,19 @@ function makePanel(n){
 }
 
 // ─── 初期化 ──────────────────────────────
+function forceReload(){
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.getRegistrations().then(regs=>{
+      regs.forEach(r=>r.unregister());
+    });
+  }
+  caches.keys().then(keys=>{
+    keys.forEach(k=>caches.delete(k));
+  }).then(()=>{
+    location.href=location.href.split('?')[0]+'?v='+Date.now();
+  });
+}
+
 document.getElementById('survey-date').value=(()=>{
   const d=new Date();
   return d.getFullYear()+'/'+(d.getMonth()+1).toString().padStart(2,'0')+'/'+d.getDate().toString().padStart(2,'0');
