@@ -514,9 +514,9 @@
         <button class="expand-toggle" id="toggle-kh" onclick="toggleMeasure('kh')">3点▾</button>
       </div>
       <div class="expand-panel" id="panel-kh">
-        <div class="sub-row"><span class="sub-pos">左</span><div class="input-wrap"><input class="field-input sub" id="kh_l" type="number" inputmode="decimal" placeholder="0"><span class="unit-label">mm</span></div></div>
-        <div class="sub-row"><span class="sub-pos">中</span><div class="input-wrap"><input class="field-input sub" id="kh_c" type="number" inputmode="decimal" placeholder="0"><span class="unit-label">mm</span></div></div>
-        <div class="sub-row"><span class="sub-pos">右</span><div class="input-wrap"><input class="field-input sub" id="kh_r" type="number" inputmode="decimal" placeholder="0"><span class="unit-label">mm</span></div></div>
+        <div class="sub-row"><span class="sub-pos">左</span><div class="input-wrap"><input class="field-input sub" id="kh_l" type="number" inputmode="decimal" placeholder="0" oninput="syncKHmin()"><span class="unit-label">mm</span></div></div>
+        <div class="sub-row"><span class="sub-pos">中</span><div class="input-wrap"><input class="field-input sub" id="kh_c" type="number" inputmode="decimal" placeholder="0" oninput="syncKHmin()"><span class="unit-label">mm</span></div></div>
+        <div class="sub-row"><span class="sub-pos">右</span><div class="input-wrap"><input class="field-input sub" id="kh_r" type="number" inputmode="decimal" placeholder="0" oninput="syncKHmin()"><span class="unit-label">mm</span></div></div>
       </div>
       <div class="field-warn" id="warn-kh">⚠ 3点の値に差があります。最小値を採用してください。</div>
     </div>
@@ -536,9 +536,9 @@
         <button class="expand-toggle" id="toggle-kw" onclick="toggleMeasure('kw')">3点▾</button>
       </div>
       <div class="expand-panel" id="panel-kw">
-        <div class="sub-row"><span class="sub-pos">上</span><div class="input-wrap"><input class="field-input sub" id="kw_t" type="number" inputmode="decimal" placeholder="0"><span class="unit-label">mm</span></div></div>
-        <div class="sub-row"><span class="sub-pos">中</span><div class="input-wrap"><input class="field-input sub" id="kw_c" type="number" inputmode="decimal" placeholder="0"><span class="unit-label">mm</span></div></div>
-        <div class="sub-row"><span class="sub-pos">下</span><div class="input-wrap"><input class="field-input sub" id="kw_b" type="number" inputmode="decimal" placeholder="0"><span class="unit-label">mm</span></div></div>
+        <div class="sub-row"><span class="sub-pos">上</span><div class="input-wrap"><input class="field-input sub" id="kw_t" type="number" inputmode="decimal" placeholder="0" oninput="syncKWmin()"><span class="unit-label">mm</span></div></div>
+        <div class="sub-row"><span class="sub-pos">中</span><div class="input-wrap"><input class="field-input sub" id="kw_c" type="number" inputmode="decimal" placeholder="0" oninput="syncKWmin()"><span class="unit-label">mm</span></div></div>
+        <div class="sub-row"><span class="sub-pos">下</span><div class="input-wrap"><input class="field-input sub" id="kw_b" type="number" inputmode="decimal" placeholder="0" oninput="syncKWmin()"><span class="unit-label">mm</span></div></div>
       </div>
       <div class="field-warn" id="warn-kw">⚠ 3点の値に差があります。最小値を採用してください。</div>
     </div>
@@ -781,6 +781,8 @@ function selectType(t) {
   document.getElementById('shimowaku-row').style.display = isDoor ? '' : 'none';
   // 引戸に切り替えたらフラット材チェックをリセット
   if (!isDoor) document.getElementById('cb-shimowaku').checked = false;
+  document.getElementById('card-dw').style.display = isDoor ? '' : 'none';
+  document.getElementById('card-ats').style.display = isDoor ? '' : 'none';
   document.getElementById('card-dw').style.display = isDoor ? '' : 'none';
   document.getElementById('card-ats').style.display = isDoor ? '' : 'none';
   updateKouchiVisibility();
