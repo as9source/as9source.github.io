@@ -14,46 +14,10 @@
     ========================================
     躯体採寸システム
     ========================================
-    バージョン: 1.22.1
+    バージョン: 1.21.5
     最終更新: 2024-12-28
     
     [更新履歴]
-    v1.22.1 (2024-12-28) - 点表示の完全削除
-    - すべての点（▼★■）の描画を削除
-    - 凡例（点の種類）を削除
-    - 二重線のみで構造を表現
-    - PDFの指示通りの表現に修正
-    
-    v1.22.0 (2024-12-28) - 図面表現の改善
-    v1.22.1 (2024-12-28) - 図面表現の修正
-    - ハッチング表示の修正（クリップ領域の正しい設定）
-    - 段差斜線の視認性向上（太く、赤色に変更）
-    - 条件判定の修正（hasStep → depth）
-    - L字+壁選択で正しくハッチング表示
-    - 段差斜線が正しく表示
-    
-    v1.22.0 (2024-12-28) - 図面表現の改善
-    - 単線から二重線表示に変更（躯体の厚みを表現）
-    - エンド（端部）：二重線の端を塞ぐ
-    - 壁（T字接続）：T字の二重線接続
-    - コーナー（L字接続）：L字の二重線接続
-    - 段差：斜線で高低差を視覚的に表現
-    - L字+壁選択：ハッチングで柱/壁を表現
-    - 直感的に分かりやすい図面表示
-    
-    v1.21.5 (2024-12-28) - 寸法配置の改善
-    - 余白を賢く使う寸法配置ロジックに変更
-    - 垂直線：左右の余白を比較して広い方に配置
-    - 水平線：上下の余白を比較して広い方に配置
-    - 画面スペースを最大限活用
-    - より見やすく、テキストが途切れない
-    
-    v1.21.4 (2024-12-28) - 寸法テキスト位置修正
-    - 寸法テキストが画面外に出る問題を修正
-    - 画面端に近い場合は反対側に配置
-    - 左右上下の境界チェックを追加
-    - テキストが途切れずに完全に表示される
-    
     v1.21.3 (2024-12-28) - 緊急修正
     - 変数名の重複エラーを修正
     - canvasWidth/canvasHeight の競合を解消
@@ -757,7 +721,7 @@
             
             <!-- バージョン情報 -->
             <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 13px;">
-                <div style="margin-bottom: 5px;">躯体採寸システム v1.22.1</div>
+                <div style="margin-bottom: 5px;">躯体採寸システム v1.21.5</div>
                 <div>最終更新: 2024-12-28</div>
             </div>
         </div>
@@ -2762,92 +2726,93 @@
             const smallFontSize = resultCanvas.width < 400 ? 8 : 10;
             const tinyFontSize = resultCanvas.width < 400 ? 9 : 11;
             
-            // drawResultPoint関数を削除（v1.22.1 - 二重線表現に移行）
+            function drawResultPoint(x, y, state) {
+                const colors = {
+                    'corner': '#ef4444',
+                    'end': '#3b82f6',
+                    'wall': '#10b981'
+                };
+                
+                const color = colors[state] || colors['end'];
+                const px = transformX(x);
+                const py = transformY(y);
+                
+                ctx.save();
+                
+                // 形状に応じて描画（v1.17.3 - サイズ拡大）
+                if (state === 'corner') {
+                    // コーナー: 赤い▼（下向き三角形）
+                    ctx.fillStyle = color;
+                    ctx.beginPath();
+                    ctx.moveTo(px, py + 12);          // 下の頂点（8→12）
+                    ctx.lineTo(px - 12, py - 9);      // 左上（-8/-6 → -12/-9）
+                    ctx.lineTo(px + 12, py - 9);      // 右上（+8/-6 → +12/-9）
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    ctx.strokeStyle = 'white';
+                    ctx.lineWidth = 2.5;
+                    ctx.stroke();
+                    
+                } else if (state === 'wall') {
+                    // 壁: 緑の■（正方形）
+                    ctx.fillStyle = color;
+                    ctx.fillRect(px - 12, py - 12, 24, 24);  // 16x16 → 24x24
+                    
+                    ctx.strokeStyle = 'white';
+                    ctx.lineWidth = 2.5;
+                    ctx.strokeRect(px - 12, py - 12, 24, 24);
+                    
+                } else {
+                    // エンド: 青い★（星）
+                    ctx.fillStyle = color;
+                    ctx.beginPath();
+                    const outerRadius = 15;           // 10 → 15
+                    const innerRadius = 6;            // 4 → 6
+                    const spikes = 5;
+                    
+                    for (let i = 0; i < spikes * 2; i++) {
+                        const angle = (i * Math.PI) / spikes - Math.PI / 2;
+                        const radius = i % 2 === 0 ? outerRadius : innerRadius;
+                        const sx = px + Math.cos(angle) * radius;
+                        const sy = py + Math.sin(angle) * radius;
+                        if (i === 0) {
+                            ctx.moveTo(sx, sy);
+                        } else {
+                            ctx.lineTo(sx, sy);
+                        }
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    ctx.strokeStyle = 'white';
+                    ctx.lineWidth = 2.5;
+                    ctx.stroke();
+                }
+                
+                ctx.restore();
+            }
             
             detectCorners();
-            
-            // 二重線描画用の壁の厚み（v1.22.0）
-            const wallThickness = 8;  // ピクセル単位での表示厚み
-            
-            // 二重線を描画する関数
-            function drawDoubleLine(x1, y1, x2, y2, needsTransform) {
-                const sx1 = needsTransform ? transformX(x1) : x1;
-                const sy1 = needsTransform ? transformY(y1) : y1;
-                const sx2 = needsTransform ? transformX(x2) : x2;
-                const sy2 = needsTransform ? transformY(y2) : y2;
-                
-                const dx = sx2 - sx1;
-                const dy = sy2 - sy1;
-                const len = Math.sqrt(dx * dx + dy * dy);
-                
-                if (len === 0) return { line1: null, line2: null };
-                
-                // 垂直方向のベクトル
-                const perpX = -dy / len * wallThickness / 2;
-                const perpY = dx / len * wallThickness / 2;
-                
-                // 2本の平行線
-                const line1 = {
-                    x1: sx1 + perpX,
-                    y1: sy1 + perpY,
-                    x2: sx2 + perpX,
-                    y2: sy2 + perpY
-                };
-                
-                const line2 = {
-                    x1: sx1 - perpX,
-                    y1: sy1 - perpY,
-                    x2: sx2 - perpX,
-                    y2: sy2 - perpY
-                };
-                
-                ctx.strokeStyle = '#1a1a1a';
-                ctx.lineWidth = 2;
-                ctx.lineCap = 'butt';
-                
-                // 線1を描画
-                ctx.beginPath();
-                ctx.moveTo(line1.x1, line1.y1);
-                ctx.lineTo(line1.x2, line1.y2);
-                ctx.stroke();
-                
-                // 線2を描画
-                ctx.beginPath();
-                ctx.moveTo(line2.x1, line2.y1);
-                ctx.lineTo(line2.x2, line2.y2);
-                ctx.stroke();
-                
-                return { line1, line2, perpX, perpY };
-            }
             
             realLines.forEach(dLine => {
                 const line = dLine.line;
                 
-                // 二重線を描画（v1.22.0）
-                const doubleLineInfo = drawDoubleLine(dLine.x1, dLine.y1, dLine.x2, dLine.y2, dLine.needsTransform);
+                ctx.strokeStyle = '#1a1a1a';
+                ctx.lineWidth = 5;
+                ctx.lineCap = 'round';
                 
-                // 端部の処理
-                const drawEndCap = (x, y, needsTransform, perpX, perpY) => {
-                    const sx = needsTransform ? transformX(x) : x;
-                    const sy = needsTransform ? transformY(y) : y;
-                    
-                    ctx.strokeStyle = '#1a1a1a';
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.moveTo(sx + perpX, sy + perpY);
-                    ctx.lineTo(sx - perpX, sy - perpY);
-                    ctx.stroke();
-                };
-                
-                // スタート地点がエンドの場合
-                if (line.start === 'end' && doubleLineInfo.perpX) {
-                    drawEndCap(dLine.x1, dLine.y1, dLine.needsTransform, doubleLineInfo.perpX, doubleLineInfo.perpY);
+                ctx.beginPath();
+                // v1.20.0 - 寸法未入力の線は元の座標を使用
+                if (dLine.needsTransform) {
+                    ctx.moveTo(transformX(dLine.x1), transformY(dLine.y1));
+                    ctx.lineTo(transformX(dLine.x2), transformY(dLine.y2));
+                } else {
+                    // 自由作図の線：元の座標をそのまま使用
+                    ctx.moveTo(dLine.x1, dLine.y1);
+                    ctx.lineTo(dLine.x2, dLine.y2);
                 }
-                
-                // エンド地点がエンドの場合
-                if (line.end === 'end' && doubleLineInfo.perpX) {
-                    drawEndCap(dLine.x2, dLine.y2, dLine.needsTransform, doubleLineInfo.perpX, doubleLineInfo.perpY);
-                }
+                ctx.stroke();
                 
                 const dim = dimensions[line.id];
                 if (dim && dim.length) {
@@ -2876,45 +2841,40 @@
                     const perpX = -dy / lineLength;
                     const perpY = dx / lineLength;
                     
-                    const offset = 80;
-                    
-                    // 余白を計算して広い方に配置（v1.21.5）
-                    const lineMidX_transformed = transformX(midX);
-                    const lineMidY_transformed = transformY(midY);
-                    
-                    // 線が垂直か水平かを判定
-                    const isVertical = Math.abs(dy) > Math.abs(dx);
-                    
-                    let textX, textY;
-                    
-                    if (isVertical) {
-                        // 垂直線：左右の余白を比較
-                        const leftSpace = lineMidX_transformed;
-                        const rightSpace = resultCanvas.width - lineMidX_transformed;
-                        
-                        if (leftSpace > rightSpace) {
-                            // 左側の余白が広い → 左側に配置
-                            textX = transformX(midX - Math.abs(perpX) * offset);
-                        } else {
-                            // 右側の余白が広い → 右側に配置
-                            textX = transformX(midX + Math.abs(perpX) * offset);
-                        }
-                        textY = transformY(midY + perpY * offset);
-                    } else {
-                        // 水平線：上下の余白を比較
-                        const topSpace = lineMidY_transformed;
-                        const bottomSpace = resultCanvas.height - lineMidY_transformed;
-                        
-                        textX = transformX(midX + perpX * offset);
-                        
-                        if (topSpace > bottomSpace) {
-                            // 上側の余白が広い → 上側に配置
-                            textY = transformY(midY - Math.abs(perpY) * offset);
-                        } else {
-                            // 下側の余白が広い → 下側に配置
-                            textY = transformY(midY + Math.abs(perpY) * offset);
-                        }
-                    }
+                    const offset = 80;  // 50 → 80（引き出し線で大きく離す v1.18.0）
+                                            // 余白を計算して広い方に配置（v1.21.5）
+                                    const lineMidX_transformed = transformX(midX);
+                                    const lineMidY_transformed = transformY(midY);
+
+                                            // 線が垂直か水平かを判定
+                                            const isVertical = Math.abs(dy) > Math.abs(dx);
+
+                                let textX, textY;
+
+                                            if (isVertical) {
+                                                // 垂直線：左右の余白を比較
+                                                                            const leftSpace = lineMidX_transformed;
+                                    const rightSpace = resultCanvas.width - lineMidX_transformed;
+
+                                                        if (leftSpace > rightSpace) {
+                                    textX = transformX(midX - Math.abs(perpX) * offset);
+                                } else {
+                                                                                            textX = transformX(midX + Math.abs(perpX) * offset);
+                                }
+                                    textY = transformY(midY + perpY * offset);
+                                            } else {
+                                // 水平線：上下の余白を比較
+                                                                            const topSpace = lineMidY_transformed;
+                                                                            const bottomSpace = resultCanvas.height - lineMidY_transformed;
+
+                                    textX = transformX(midX + perpX * offset);
+
+                                if (topSpace > bottomSpace) {
+                                                                  textY = transformY(midY - Math.abs(perpY) * offset);
+                                    } else {
+                                            textY = transformY(midY + Math.abs(perpY) * offset);
+                }
+        }
                     
                     // 引き出し線を描画（NEW - v1.18.0）
                     const lineMidX = transformX(midX);
@@ -2997,8 +2957,7 @@
                     
                     if (!realCoord) continue;
                     
-                    // L字やT字接続の場合（v1.22.0 修正）
-                    if (corner.lines && corner.lines.length >= 2) {
+                    if (corner.hasStep && corner.lines.length >= 2) {
                         const line1Ref = corner.lines[0];
                         const line2Ref = corner.lines[1];
                         const line1 = lines.find(l => l.id === line1Ref.lineId);
@@ -3008,7 +2967,7 @@
                             const state1 = line1[line1Ref.point] || 'wall';
                             const state2 = line2[line2Ref.point] || 'wall';
                             
-                            const offset = 45;
+                            const offset = 45;  // 30 → 45（より離して見やすく v1.17.5）  // 20 → 30（点が大きくなったため v1.17.4）
                             
                             const rLine1 = realLines.find(rl => rl.line.id === line1.id);
                             const rLine2 = realLines.find(rl => rl.line.id === line2.id);
@@ -3045,52 +3004,15 @@
                                     const point2X = realCoord.x + dirX2 * offset;
                                     const point2Y = realCoord.y + dirY2 * offset;
                                     
-                                    // 点の描画を削除（v1.22.1）
+                                    drawResultPoint(point1X, point1Y, state1);
+                                    drawResultPoint(point2X, point2Y, state2);
                                     
-                                    // 段差の視覚的表現（v1.22.0）
+                                    // 段差寸法を表示（v1.18.1 修正: stepSize → depth）
                                     if (corner.depth) {
-                                        // 段差を斜線で表現
                                         const midX = (point1X + point2X) / 2;
                                         const midY = (point1Y + point2Y) / 2;
-                                        const tMidX = transformX(midX);
-                                        const tMidY = transformY(midY);
-                                        
-                                        // 斜線を描画
-                                        ctx.strokeStyle = '#6b7280';
-                                        ctx.lineWidth = 2;
-                                        ctx.setLineDash([5, 3]);
-                                        
-                                        const tPoint1X = transformX(point1X);
-                                        const tPoint1Y = transformY(point1Y);
-                                        const tPoint2X = transformX(point2X);
-                                        const tPoint2Y = transformY(point2Y);
-                                        
-                                        // 段差を示す斜線（3本）- より目立つように（v1.22.0修正）
-                                        ctx.strokeStyle = '#dc2626';  // 赤系
-                                        ctx.lineWidth = 2.5;
-                                        ctx.setLineDash([]);  // 実線
-                                        
-                                        const stepLines = 4;
-                                        for (let i = 0; i < stepLines; i++) {
-                                            const ratio = (i + 1) / (stepLines + 1);
-                                            const x = tPoint1X + (tPoint2X - tPoint1X) * ratio;
-                                            const y = tPoint1Y + (tPoint2Y - tPoint1Y) * ratio;
-                                            
-                                            // 垂直方向に長めの線
-                                            const perpDx = -(tPoint2Y - tPoint1Y) * 0.25;
-                                            const perpDy = (tPoint2X - tPoint1X) * 0.25;
-                                            
-                                            ctx.beginPath();
-                                            ctx.moveTo(x - perpDx, y - perpDy);
-                                            ctx.lineTo(x + perpDx, y + perpDy);
-                                            ctx.stroke();
-                                        }
-                                        
-                                        // 段差寸法テキスト
-                                        const midX_text = (point1X + point2X) / 2;
-                                        const midY_text = (point1Y + point2Y) / 2;
-                                        const tX = transformX(midX_text);
-                                        const tY = transformY(midY_text);
+                                        const tX = transformX(midX);
+                                        const tY = transformY(midY);
                                         
                                         ctx.font = `bold ${tinyFontSize}px sans-serif`;
                                         ctx.textAlign = 'center';
@@ -3113,62 +3035,118 @@
                                         ctx.fillStyle = 'white';
                                         ctx.fillText(stepText, tX, tY);
                                     }
-                                    
-                                    // L字で両方が「壁」の場合、ハッチングを描画（v1.22.0修正）
-                                    // 段差がある場合はハッチングなし
-                                    if (state1 === 'wall' && state2 === 'wall' && !corner.depth) {
-                                        const tCornerX = transformX(realCoord.x);
-                                        const tCornerY = transformY(realCoord.y);
-                                        const tPoint1X = transformX(point1X);
-                                        const tPoint1Y = transformY(point1Y);
-                                        const tPoint2X = transformX(point2X);
-                                        const tPoint2Y = transformY(point2Y);
-                                        
-                                        ctx.save();
-                                        
-                                        // クリップ領域を設定（三角形）
-                                        ctx.beginPath();
-                                        ctx.moveTo(tCornerX, tCornerY);
-                                        ctx.lineTo(tPoint1X, tPoint1Y);
-                                        ctx.lineTo(tPoint2X, tPoint2Y);
-                                        ctx.closePath();
-                                        ctx.clip();
-                                        
-                                        // 背景を薄いグレーで塗りつぶす
-                                        ctx.fillStyle = 'rgba(148, 163, 184, 0.2)';
-                                        ctx.fill();
-                                        
-                                        // 斜線パターンを描画
-                                        ctx.strokeStyle = '#475569';
-                                        ctx.lineWidth = 1.5;
-                                        
-                                        // バウンディングボックス
-                                        const minX = Math.min(tCornerX, tPoint1X, tPoint2X);
-                                        const maxX = Math.max(tCornerX, tPoint1X, tPoint2X);
-                                        const minY = Math.min(tCornerY, tPoint1Y, tPoint2Y);
-                                        const maxY = Math.max(tCornerY, tPoint1Y, tPoint2Y);
-                                        
-                                        // 斜線を描画（45度）
-                                        const hatchSpacing = 5;
-                                        const range = Math.max(maxX - minX, maxY - minY) * 2;
-                                        
-                                        for (let i = -range; i < range; i += hatchSpacing) {
-                                            ctx.beginPath();
-                                            ctx.moveTo(minX + i, minY);
-                                            ctx.lineTo(minX + i + range, minY + range);
-                                            ctx.stroke();
-                                        }
-                                        
-                                        ctx.restore();
-                                    }
+                                } else {
+                                    drawResultPoint(realCoord.x, realCoord.y, state1);
                                 }
+                            } else {
+                                drawResultPoint(realCoord.x, realCoord.y, state1);
                             }
                         }
+                    } else {
+                        const state = firstLine[firstLineRef.point] || 'wall';
+                        drawResultPoint(realCoord.x, realCoord.y, state);
                     }
                 }
             }
             
-            // 凡例削除（v1.22.1 - 点を使わない表現に移行）
+            const legendX = 15;  // 左下に移動（v1.17.5）
+            const legendY = resultCanvas.height - 70;
+            
+            ctx.font = `bold ${tinyFontSize + 1}px sans-serif`;
+            ctx.textAlign = 'left';
+            
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.fillText('点の種類', legendX + 1, legendY + 1);
+            ctx.fillText('点の種類', legendX - 1, legendY - 1);
+            ctx.fillText('点の種類', legendX + 1, legendY - 1);
+            ctx.fillText('点の種類', legendX - 1, legendY + 1);
+            
+            ctx.fillStyle = '#1f2937';
+            ctx.fillText('点の種類', legendX, legendY);
+            
+            const legendItems = [
+                { color: '#ef4444', label: 'コーナー', shape: 'corner' },
+                { color: '#3b82f6', label: 'エンド', shape: 'end' },
+                { color: '#10b981', label: '壁', shape: 'wall' }
+            ];
+            
+            legendItems.forEach((item, index) => {
+                const itemY = legendY + 22 + index * 18;
+                const iconX = legendX + 6;
+                
+                ctx.save();
+                
+                // 形状に応じた凡例アイコンを描画（v1.17.2）
+                if (item.shape === 'corner') {
+                    // コーナー: 赤い▼
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                    ctx.beginPath();
+                    ctx.moveTo(iconX, itemY + 6);
+                    ctx.lineTo(iconX - 5, itemY - 4);
+                    ctx.lineTo(iconX + 5, itemY - 4);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    ctx.fillStyle = item.color;
+                    ctx.beginPath();
+                    ctx.moveTo(iconX - 1, itemY + 5);
+                    ctx.lineTo(iconX - 6, itemY - 5);
+                    ctx.lineTo(iconX + 4, itemY - 5);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                } else if (item.shape === 'wall') {
+                    // 壁: 緑の■
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                    ctx.fillRect(iconX - 4, itemY - 4, 9, 9);
+                    
+                    ctx.fillStyle = item.color;
+                    ctx.fillRect(iconX - 5, itemY - 5, 9, 9);
+                    
+                } else {
+                    // エンド: 青い★
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                    ctx.beginPath();
+                    const outerRadius = 6;
+                    const innerRadius = 2.5;
+                    const spikes = 5;
+                    for (let i = 0; i < spikes * 2; i++) {
+                        const angle = (i * Math.PI) / spikes - Math.PI / 2;
+                        const radius = i % 2 === 0 ? outerRadius : innerRadius;
+                        const sx = iconX + 1 + Math.cos(angle) * radius;
+                        const sy = itemY + 1 + Math.sin(angle) * radius;
+                        if (i === 0) ctx.moveTo(sx, sy);
+                        else ctx.lineTo(sx, sy);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    ctx.fillStyle = item.color;
+                    ctx.beginPath();
+                    for (let i = 0; i < spikes * 2; i++) {
+                        const angle = (i * Math.PI) / spikes - Math.PI / 2;
+                        const radius = i % 2 === 0 ? outerRadius : innerRadius;
+                        const sx = iconX + Math.cos(angle) * radius;
+                        const sy = itemY + Math.sin(angle) * radius;
+                        if (i === 0) ctx.moveTo(sx, sy);
+                        else ctx.lineTo(sx, sy);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                
+                ctx.restore();
+                
+                ctx.font = `${tinyFontSize}px sans-serif`;
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                ctx.fillText(item.label, legendX + 16, itemY + 5);
+                ctx.fillText(item.label, legendX + 14, itemY + 3);
+                ctx.fillText(item.label, legendX + 16, itemY + 3);
+                ctx.fillText(item.label, legendX + 14, itemY + 5);
+                
+                ctx.fillStyle = '#374151';
+                ctx.fillText(item.label, legendX + 15, itemY + 4);
+            });
         }
         
         function getPointLabel(state) {
