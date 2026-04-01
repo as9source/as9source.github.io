@@ -385,6 +385,7 @@
             <button class="chip" data-group="katachi" data-val="single" onclick="selectChip(this)">片開き</button>
             <button class="chip" data-group="katachi" data-val="oyako" onclick="selectChip(this)">親子ドア</button>
             <button class="chip" data-group="katachi" data-val="sode" onclick="selectChip(this)">片袖fix</button>
+             <button class="chip" data-group="katachi" data-val="ryosode" onclick="selectChip(this)">両袖fix</button>
           </div>
         </div>
         <div class="chip-group">
@@ -514,9 +515,9 @@
         <button class="expand-toggle" id="toggle-kh" onclick="toggleMeasure('kh')">3点▾</button>
       </div>
       <div class="expand-panel" id="panel-kh">
-        <div class="sub-row"><span class="sub-pos">左</span><div class="input-wrap"><input class="field-input sub" id="kh_l" type="number" inputmode="decimal" placeholder="0" oninput="syncKHmin()"><span class="unit-label">mm</span></div></div>
-        <div class="sub-row"><span class="sub-pos">中</span><div class="input-wrap"><input class="field-input sub" id="kh_c" type="number" inputmode="decimal" placeholder="0" oninput="syncKHmin()"><span class="unit-label">mm</span></div></div>
-        <div class="sub-row"><span class="sub-pos">右</span><div class="input-wrap"><input class="field-input sub" id="kh_r" type="number" inputmode="decimal" placeholder="0" oninput="syncKHmin()"><span class="unit-label">mm</span></div></div>
+        <div class="sub-row"><span class="sub-pos">左</span><div class="input-wrap"><input class="field-input sub" id="kh_l" type="number" inputmode="decimal" placeholder="0" oninput="syncKHmin()" oninput="syncKHmin()"><span class="unit-label">mm</span></div></div>
+        <div class="sub-row"><span class="sub-pos">中</span><div class="input-wrap"><input class="field-input sub" id="kh_c" type="number" inputmode="decimal" placeholder="0" oninput="syncKHmin()" oninput="syncKHmin()"><span class="unit-label">mm</span></div></div>
+        <div class="sub-row"><span class="sub-pos">右</span><div class="input-wrap"><input class="field-input sub" id="kh_r" type="number" inputmode="decimal" placeholder="0" oninput="syncKHmin()" oninput="syncKHmin()"><span class="unit-label">mm</span></div></div>
       </div>
       <div class="field-warn" id="warn-kh">⚠ 3点の値に差があります。最小値を採用してください。</div>
     </div>
@@ -536,9 +537,9 @@
         <button class="expand-toggle" id="toggle-kw" onclick="toggleMeasure('kw')">3点▾</button>
       </div>
       <div class="expand-panel" id="panel-kw">
-        <div class="sub-row"><span class="sub-pos">上</span><div class="input-wrap"><input class="field-input sub" id="kw_t" type="number" inputmode="decimal" placeholder="0" oninput="syncKWmin()"><span class="unit-label">mm</span></div></div>
-        <div class="sub-row"><span class="sub-pos">中</span><div class="input-wrap"><input class="field-input sub" id="kw_c" type="number" inputmode="decimal" placeholder="0" oninput="syncKWmin()"><span class="unit-label">mm</span></div></div>
-        <div class="sub-row"><span class="sub-pos">下</span><div class="input-wrap"><input class="field-input sub" id="kw_b" type="number" inputmode="decimal" placeholder="0" oninput="syncKWmin()"><span class="unit-label">mm</span></div></div>
+        <div class="sub-row"><span class="sub-pos">上</span><div class="input-wrap"><input class="field-input sub" id="kw_t" type="number" inputmode="decimal" placeholder="0" oninput="syncKWmin()" oninput="syncKWmin()"><span class="unit-label">mm</span></div></div>
+        <div class="sub-row"><span class="sub-pos">中</span><div class="input-wrap"><input class="field-input sub" id="kw_c" type="number" inputmode="decimal" placeholder="0" oninput="syncKWmin()" oninput="syncKWmin()"><span class="unit-label">mm</span></div></div>
+        <div class="sub-row"><span class="sub-pos">下</span><div class="input-wrap"><input class="field-input sub" id="kw_b" type="number" inputmode="decimal" placeholder="0" oninput="syncKWmin()" oninput="syncKWmin()"><span class="unit-label">mm</span></div></div>
       </div>
       <div class="field-warn" id="warn-kw">⚠ 3点の値に差があります。最小値を採用してください。</div>
     </div>
@@ -785,6 +786,8 @@ function selectType(t) {
   document.getElementById('card-ats').style.display = isDoor ? '' : 'none';
   document.getElementById('card-dw').style.display = isDoor ? '' : 'none';
   document.getElementById('card-ats').style.display = isDoor ? '' : 'none';
+  document.getElementById('card-dw').style.display = isDoor ? '' : 'none';
+  document.getElementById('card-ats').style.display = isDoor ? '' : 'none';
   updateKouchiVisibility();
   recalc();
 }
@@ -799,9 +802,9 @@ function selectChip(el) {
 }
 
 function updateKouchiVisibility() {
-  const show = currentType === 'door' && chipState.katachi === 'single';
-  document.getElementById('kouchi-card').style.display = show ? '' : 'none';
-}
+    const show = currentType === 'door' && chipState['katachi'] === 'single';
+    document.getElementById('kouchi-card').style.display = show ? '' : 'none';
+  }
 
 const KATTE_LABEL   = { right:'右勝手', left:'左勝手' };
 const KATACHI_LABEL = { single:'片開き', oyako:'親子ドア', sode:'片袖fix' };
