@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>リモNAVi - マドリモ 現場調査ツール</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans','Yu Gothic',sans-serif;font-size:14px;background:#f5f5f5;color:#333;min-height:100vh}
+button{font-family:inherit;cursor:pointer;border:none}
+input,textarea,select{font-family:inherit;font-size:14px}
+:root{--blue:#0084b9;--blue-d:#006a94;--pink:#dc1e54;--orange:#f15a24;--border:#ddd;}
+
+#hdr{background:#fff;border-bottom:1px solid var(--border);height:50px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.hdr-logo{font-size:15px;font-weight:bold;color:var(--blue)}
+.hdr-name{font-size:12px;color:#666}.hdr-name strong{color:#333}
+
+#main{padding-bottom:64px}
+.page{display:none}.page.active{display:block}
+.container{max-width:800px;margin:0 auto;padding:20px 16px}
+.ph{margin-bottom:20px;padding-bottom:10px;border-bottom:2px solid var(--border)}.ph h1{font-size:20px;font-weight:bold}
+.st{font-size:15px;font-weight:bold;color:var(--blue);margin:16px 0 8px;padding-left:8px;border-left:3px solid var(--blue)}
+
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:16px}
+.card{background:#fff;border:2px solid var(--border);border-radius:6px;padding:12px 8px;cursor:pointer;text-align:center;transition:.15s}
+.card:hover:not(.disabled){border-color:var(--blue);background:#f0f8ff}
+.card.selected{border-color:var(--blue)!important;background:#e3f2fd}
+.card.disabled{opacity:.5;cursor:not-allowed;background:#f5f5f5}
+.card-label{font-size:12px;font-weight:bold;line-height:1.4}
+.card-sub{font-size:10px;color:#888;margin-top:3px}
+.card-ng{font-size:10px;color:var(--orange);margin-top:3px}
+.card-icon{font-size:28px;margin-bottom:6px}
+
+.rcg{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.rc{background:#fff;border:2px solid var(--border);border-radius:6px;padding:12px 14px;cursor:pointer;display:flex;gap:10px;align-items:flex-start;transition:.15s}
+.rc:hover:not(.disabled){border-color:var(--blue)}
+.rc.selected{border-color:var(--blue);background:#e3f2fd}
+.rc.disabled{opacity:.5;cursor:not-allowed}
+.rc input{margin-top:2px;flex-shrink:0;accent-color:var(--blue)}
+.rc-lbl{font-size:14px;font-weight:bold}
+.rc-desc{font-size:12px;color:#666;margin-top:3px;line-height:1.5}
+.rc-warn{font-size:11px;color:var(--orange);margin-top:3px}
+
+.fg{margin-bottom:16px}
+.fg label{display:block;font-size:12px;font-weight:bold;color:#555;margin-bottom:5px}
+.req{color:var(--pink);font-size:10px;margin-left:3px}
+input[type=text],input[type=number],textarea,select{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:4px;font-size:14px;transition:.15s}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 2px rgba(0,132,185,.1)}
+.input-u{display:flex;gap:6px;align-items:center}.input-u input{flex:1}
+.unit{font-size:13px;color:#666;white-space:nowrap}
+.fn{font-size:11px;color:#999;margin-top:4px}
+
+.alert{padding:10px 14px;border-radius:4px;font-size:13px;margin-bottom:12px}
+.alert-info{background:#e3f2fd;border:1px solid #90caf9;color:#1565c0}
+.alert-warn{background:#fff8e1;border:1px solid #ffe082;color:#e65100}
+
+.tabs{display:flex;border-bottom:2px solid var(--blue);margin-bottom:14px}
+.tab{padding:9px 18px;font-size:13px;font-weight:bold;cursor:pointer;background:#f5f5f5;border:1px solid #ddd;border-bottom:none;margin-right:3px;border-radius:4px 4px 0 0;color:#666}
+.tab.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+
+.footer{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border);height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;z-index:100;box-shadow:0 -1px 4px rgba(0,0,0,.06)}
+.btn-back{background:#fff;border:1px solid #ccc;color:#555;padding:9px 18px;border-radius:4px;font-size:13px}
+.btn-back:hover{background:#f5f5f5}.btn-back:disabled{opacity:.4;cursor:not-allowed}
+.btn-next{background:var(--pink);color:#fff;padding:9px 24px;border-radius:4px;font-size:14px;font-weight:bold}
+.btn-next:hover:not(:disabled){background:#b01545}.btn-next:disabled{background:#ccc;cursor:not-allowed}
+.btn-save{background:#fff;border:1px solid var(--blue);color:var(--blue);padding:9px 16px;border-radius:4px;font-size:12px}
+.btn-save:hover{background:#e3f2fd}
+.btn-add{display:block;width:100%;background:#fff;border:2px dashed var(--blue);color:var(--blue);padding:14px;border-radius:6px;font-size:14px;font-weight:bold;text-align:center;margin-bottom:16px;cursor:pointer}
+.btn-add:hover{background:#e3f2fd}
+
+.wcards{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+.wcard{background:#fff;border:1px solid var(--border);border-radius:6px;padding:14px;display:flex;align-items:center;gap:12px}
+.wcard-info{flex:1}.wcard-num{font-size:13px;font-weight:bold;color:var(--blue)}
+.wcard-title{font-size:14px;font-weight:bold;margin:2px 0}.wcard-meta{font-size:12px;color:#888}
+.badge{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:bold}
+.badge-ok{background:#e8f5e9;color:#388e3c}.badge-todo{background:#fff3e0;color:#f57c00}
+.wcard-actions{display:flex;gap:6px}
+.btn-edit{border:1px solid var(--blue);color:var(--blue);background:#fff;padding:5px 12px;border-radius:4px;font-size:12px;cursor:pointer}
+.btn-del{border:1px solid var(--orange);color:var(--orange);background:#fff;padding:5px 12px;border-radius:4px;font-size:12px;cursor:pointer}
+
+.top-page{max-width:600px;margin:0 auto;padding:24px 16px}
+.top-survey{background:#fff;border:1px solid #ddd;border-radius:6px;padding:14px;margin-bottom:10px}
+.top-survey-name{display:inline-block;background:var(--blue);color:#fff;padding:5px 12px;border-radius:4px;font-size:14px;font-weight:bold;cursor:pointer;margin-bottom:8px}
+.top-survey-meta{font-size:12px;color:#888;margin-bottom:8px}
+.top-actions{display:flex;gap:8px;flex-wrap:wrap}
+.top-btn{border:1px solid var(--blue);color:var(--blue);background:#fff;padding:6px 14px;border-radius:4px;font-size:12px;cursor:pointer}
+.top-btn:hover{background:#e3f2fd}
+.top-btn-danger{border-color:var(--orange);color:var(--orange)}.top-btn-danger:hover{background:#fff8e1}
+.top-btn-primary{background:var(--pink);color:#fff;border-color:var(--pink)}.top-btn-primary:hover{background:#b01545}
+.top-new{display:block;width:100%;border:2px solid var(--blue);color:var(--blue);background:#fff;padding:16px;border-radius:6px;font-size:15px;font-weight:bold;text-align:center;margin-bottom:16px;cursor:pointer}
+.top-new:hover{background:#e3f2fd}
+
+.result-table{width:100%;border-collapse:collapse;background:#fff;margin-bottom:0}
+.result-table th,.result-table td{padding:9px 12px;border:1px solid #e0e0e0;font-size:13px;text-align:left;vertical-align:top}
+.result-table th{background:#f5f5f5;font-weight:bold;color:#555;width:35%}
+.result-sheet{background:#fff;border:1px solid #ccc;border-radius:6px;overflow:hidden;margin-bottom:16px}
+.result-sheet-hdr{background:var(--blue);color:#fff;padding:10px 14px;font-size:15px;font-weight:bold}
+.result-sheet-hdr.sub{background:var(--blue-d)}
+
+.size-preview{margin-top:10px;padding:10px 12px;border-radius:4px;font-size:12px}
+.size-ok{background:#e8f5e9;border:1px solid #a5d6a7;color:#2e7d32}
+.size-warn{background:#fff8e1;border:1px solid #ffe082;color:#e65100}
+
+@media print{#hdr,.footer,.top-actions,button{display:none!important}body{background:#fff}}
+@media(max-width:600px){.card-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+
+<header id="hdr">
+  <div class="hdr-logo">🪟 マドリモ 現場調査ツール</div>
+  <div class="hdr-name" id="hdr-name" style="display:none">現場調査名 <strong id="hdr-name-text"></strong></div>
+</header>
+
+<div id="main">
+
+<!-- TOP -->
+<div class="page active" id="page-top">
+  <div class="top-page">
+    <button class="top-new" onclick="A.startNew()">＋ 新規現場調査を始める</button>
+    <div id="top-list"></div>
+  </div>
+</div>
+
+<!-- NEW -->
+<div class="page" id="page-new">
+<div class="container">
+  <div class="ph"><h1>現場調査を開始します。</h1></div>
+  <div class="alert alert-info">この現場調査ツールの内容に沿って確認・入力いただくことで、取付可否と測定結果を保存・出力することが可能です。</div>
+  <div class="fg">
+    <label>現場調査名（最大20文字）<span class="req">必須</span></label>
+    <input type="text" id="inp-name" maxlength="20" placeholder="例）山田太郎様邸" oninput="A.checkNew()">
+  </div>
+</div>
+<div class="footer">
+  <button class="btn-back" disabled>◀ 戻る</button>
+  <button class="btn-next" id="btn-new" onclick="A.doNew()" disabled>次へ ▶</button>
+</div>
+</div>
+
+<!-- PRECONDITION -->
+<div class="page" id="page-pre">
+<div class="container">
+  <div class="ph"><h1>現場情報</h1></div>
+
+  <div class="st">躯体構造の確認</div>
+  <div class="alert alert-info">本商品は防火設備ではありませんので、建築基準法などにより防火設備の設置が義務付けられる部分に本商品を設置することはできません。</div>
+  <div class="rcg" id="rg-building">
+    <div class="rc" onclick="A.selBuilding('wood_3',this)"><input type="radio" name="building" value="wood_3"><div class="rc-lbl">木造（3階以下）</div></div>
+    <div class="rc disabled"><input type="radio" name="building" value="wood_4" disabled><div><div class="rc-lbl">木造（4階以上）</div><div class="rc-warn">※対応できません。</div></div></div>
+    <div class="rc" onclick="A.selBuilding('rc_3',this)"><input type="radio" name="building" value="rc_3"><div><div class="rc-lbl">RC造（3階以下）</div><div class="rc-desc">現場ごとに納まり確認が必要なため、YKK AP 営業窓口にお問い合わせください。</div></div></div>
+    <div class="rc disabled"><input type="radio" name="building" value="rc_4" disabled><div><div class="rc-lbl">RC造（4階以上）</div><div class="rc-warn">※マドリモ 断熱窓 戸建用では対応できません。</div></div></div>
+    <div class="rc disabled"><input type="radio" name="building" value="alc" disabled><div><div class="rc-lbl">ALC造</div><div class="rc-warn">※マドリモ 断熱窓 戸建用では対応できません。</div></div></div>
+    <div class="rc disabled"><input type="radio" name="building" value="steel" disabled><div><div class="rc-lbl">鉄骨造</div><div class="rc-warn">※対応できません。</div></div></div>
+  </div>
+
+  <div class="st" style="margin-top:20px">既設窓まわりの確認</div>
+  <div class="alert alert-info">既設窓まわりにシーリングの切れ・外壁の割れ・漏水の跡がないか確認してください。</div>
+  <div class="rcg" id="rg-ei">
+    <div class="rc" onclick="A.selEI('unnecessary',this)"><input type="radio" name="ei" value="unnecessary"><div class="rc-lbl">修復不必要</div></div>
+    <div class="rc" onclick="A.selEI('necessary',this)"><input type="radio" name="ei" value="necessary"><div class="rc-lbl">修復必要</div></div>
+    <div class="rc" onclick="A.selEI('impossible',this)"><input type="radio" name="ei" value="impossible"><div class="rc-lbl">不可</div></div>
+    <div class="rc" onclick="A.selEI('hold',this)"><input type="radio" name="ei" value="hold"><div class="rc-lbl">保留</div></div>
+  </div>
+  <div class="fg" id="ei-comment-wrap" style="display:none">
+    <label>コメント（100文字以下）</label>
+    <textarea id="ei-comment" maxlength="100" rows="3" oninput="A.checkPre()"></textarea>
+    <div class="fn">※ 改行を入力した場合、結果シートでは「 / 」で区切って表示されます。</div>
+  </div>
+</div>
+<div class="footer">
+  <button class="btn-back" onclick="A.go('page-top')">◀ 戻る</button>
+  <button class="btn-next" id="btn-pre" onclick="A.doPre()" disabled>次へ ▶</button>
+</div>
+</div>
+
+<!-- ITEMS -->
+<div class="page" id="page-items">
+<div class="container">
+  <div class="ph"><h1>窓の一覧</h1></div>
+  <div id="items-list"></div>
+  <button class="btn-add" onclick="A.addWindow()">＋ 窓を追加する</button>
+</div>
+<div class="footer">
+  <button class="btn-back" onclick="A.go('page-pre')">◀ 戻る</button>
+  <button class="btn-next" onclick="A.go('page-result')">結果シートへ ▶</button>
+</div>
+</div>
+
+<!-- W1: PLACES -->
+<div class="page" id="page-places">
+<div class="container">
+  <div class="ph"><h1>リフォーム場所</h1></div>
+  <div class="card-grid">
+    <div class="card" id="pl-room" onclick="A.selPlace('room','居室',this)">
+      <div class="card-icon">🏠</div><div class="card-label">居室</div>
+    </div>
+    <div class="card" id="pl-bath-solo" onclick="A.selPlace('bath_solo','浴室（窓単独）',this)">
+      <div class="card-icon">🚿</div><div class="card-label">浴室（窓単独）</div>
+    </div>
+    <div class="card" id="pl-bath-both" onclick="A.selPlace('bath_both','浴室（システムバス同時）',this)">
+      <div class="card-icon">🛁</div><div class="card-label">浴室（システムバス同時）</div>
+    </div>
+  </div>
+  <div class="fg">
+    <label>リフォーム場所メモ（任意・22文字以下）</label>
+    <input type="text" id="place-memo" maxlength="22" placeholder="例：リビング一階">
+  </div>
+</div>
+<div class="footer">
+  <button class="btn-back" onclick="A.go('page-items')">◀ 戻る</button>
+  <button class="btn-save" onclick="A.saveW()">保存</button>
+  <button class="btn-next" id="btn-places" onclick="A.nextW('places')" disabled>次へ ▶</button>
+</div>
+</div>
+
+<!-- W2: MATERIALS -->
+<div class="page" id="page-materials">
+<div class="container">
+  <div class="ph"><h1>窓の材質</h1></div>
+  <div class="alert alert-info">スチール窓・木窓は対応できません。</div>
+  <div class="card-grid">
+    <div class="card" id="mat-alum" onclick="A.selMaterial('alum','アルミ窓 / アルミ樹脂複合窓',this)">
+      <div class="card-icon">🔲</div><div class="card-label">アルミ窓<br>アルミ樹脂複合窓</div>
+    </div>
+    <div class="card" id="mat-resin" onclick="A.selMaterial('resin','樹脂窓',this)">
+      <div class="card-icon">⬜</div><div class="card-label">樹脂窓</div>
+      <div class="card-sub">計測値より-6mm使用</div>
+    </div>
+    <div class="card disabled">
+      <div class="card-icon">🔩</div><div class="card-label">スチール窓</div>
+      <div class="card-ng">※対応できません</div>
+    </div>
+    <div class="card disabled">
+      <div class="card-icon">🪵</div><div class="card-label">木窓</div>
+      <div class="card-ng">※対応できません</div>
+    </div>
+  </div>
+</div>
+<div class="footer">
+  <button class="btn-back" onclick="A.prevW('materials')">◀ 戻る</button>
+  <button class="btn-save" onclick="A.saveW()">保存</button>
+  <button class="btn-next" id="btn-materials" onclick="A.nextW('materials')" disabled>次へ ▶</button>
+</div>
+</div>
+
+<!-- W3: ESTABLISHED ITEMS -->
+<div class="page" id="page-ei">
+<div class="container">
+  <div class="ph"><h1>現在の窓形状</h1></div>
+  <div class="alert alert-info">リフォームの対象となる形状を選択してください。</div>
+  <div class="tabs">
+    <div class="tab active" id="tab-sliding" onclick="A.switchTab('sliding')">引違い窓</div>
+    <div class="tab" id="tab-project" onclick="A.switchTab('project')">プロジェクト窓</div>
+    <div class="tab" id="tab-other" onclick="A.switchTab('other')">段窓・連窓</div>
+  </div>
+  <div id="tab-sliding-content">
+    <div class="card-grid">
+      <div class="card" onclick="A.selEW(1,'引違い窓',this)"><div class="card-icon">🪟</div><div class="card-label">引違い窓</div></div>
+      <div class="card" onclick="A.selEW(2,'二重窓',this)"><div class="card-icon">🪟</div><div class="card-label">二重窓</div></div>
+      <div class="card" onclick="A.selEW(3,'雨戸付き引違い窓',this)"><div class="card-icon">🌧️</div><div class="card-label">雨戸付き<br>引違い窓</div></div>
+      <div class="card" onclick="A.selEW(4,'面格子付き引違い窓',this)"><div class="card-icon">⊞</div><div class="card-label">面格子付き<br>引違い窓</div></div>
+      <div class="card" onclick="A.selEW(5,'シャッター付き引違い窓',this)"><div class="card-icon">🔲</div><div class="card-label">シャッター付き<br>引違い窓</div></div>
+    </div>
+  </div>
+  <div id="tab-project-content" style="display:none">
+    <div class="card-grid">
+      <div class="card" onclick="A.selEW(10,'FIX窓',this)"><div class="card-icon">◼</div><div class="card-label">FIX窓</div></div>
+      <div class="card" onclick="A.selEW(11,'ルーバー窓',this)"><div class="card-icon">🔛</div><div class="card-label">ルーバー窓</div></div>
+      <div class="card" onclick="A.selEW(12,'面格子上げ下げ窓',this)"><div class="card-icon">⊞</div><div class="card-label">面格子<br>上げ下げ窓</div></div>
+      <div class="card" onclick="A.selEW(13,'面格子ルーバー窓',this)"><div class="card-icon">⊞</div><div class="card-label">面格子<br>ルーバー窓</div></div>
+      <div class="card" onclick="A.selEW(14,'上げ下げ窓',this)"><div class="card-icon">⬆</div><div class="card-label">上げ下げ窓</div></div>
+      <div class="card" onclick="A.selEW(15,'たてすべり出し窓',this)"><div class="card-icon">↗</div><div class="card-label">たてすべり<br>出し窓</div></div>
+      <div class="card" onclick="A.selEW(16,'すべり出し窓',this)"><div class="card-icon">↗</div><div class="card-label">すべり出し窓</div></div>
+    </div>
+  </div>
+  <div id="tab-other-content" style="display:none">
+    <div class="alert alert-info">段窓・連窓の場合は各窓ごとに調査を行ってください。</div>
+    <div class="card-grid">
+      <div class="card" onclick="A.selEW(17,'一体連窓',this)"><div class="card-icon">↔</div><div class="card-label">一体連窓</div></div>
+      <div class="card" onclick="A.selEW(18,'一体段窓',this)"><div class="card-icon">↕</div><div class="card-label">一体段窓</div></div>
+      <div class="card" onclick="A.selEW(19,'プロジェクト一体連窓',this)"><div class="card-icon">↗↔</div><div class="card-label">プロジェクト<br>一体連窓</div></div>
+      <div class="card" onclick="A.selEW(20,'プロジェクト一体段窓',this)"><div class="card-icon">↗↕</div><div class="card-label">プロジェクト<br>一体段窓</div></div>
+      <div class="card" onclick="A.selEW(21,'別体連窓',this)"><div class="card-icon">⬛⬛</div><div class="card-label">別体連窓</div></div>
+      <div class="card" onclick="A.selEW(22,'別体段窓',this)"><div class="card-icon">⬛</div><div class="card-label">別体段窓</div></div>
+    </div>
+  </div>
+</div>
+<div class="footer">
+  <button class="btn-back" onclick="A.prevW('ei')">◀ 戻る</button>
+  <button class="btn-save" onclick="A.saveW()">保存</button>
+  <button class="btn-next" id="btn-ei" onclick="A.nextW('ei')" disabled>次へ ▶</button>
+</div>
+</div>
+
+<!-- W4: SIZES -->
+<div class="page" id="page-sizes">
+<div class="container">
+  <div class="ph"><h1>サイズ</h1></div>
+  <div class="alert alert-warn" id="size-resin-note" style="display:none">
+    樹脂窓をお選びの場合、3点計測の最小値からさらに-6mmした値を使用します。
+  </div>
+  <div class="st">幅（mm）— 3点計測：上・中・下</div>
+  <div class="fg"><label>上<span class="req">必須</span></label><div class="input-u"><input type="number" id="w-top" min="1" max="9999" oninput="A.checkSizes()"><span class="unit">mm</span></div></div>
+  <div class="fg"><label>中<span class="req">必須</span></label><div class="input-u"><input type="number" id="w-mid" min="1" max="9999" oninput="A.checkSizes()"><span class="unit">mm</span></div></div>
+  <div class="fg"><label>下<span class="req">必須</span></label><div class="input-u"><input type="number" id="w-bot" min="1" max="9999" oninput="A.checkSizes()"><span class="unit">mm</span></div></div>
+  <div class="st" style="margin-top:16px">高さ（mm）— 3点計測：左・中・右</div>
+  <div class="fg"><label>左<span class="req">必須</span></label><div class="input-u"><input type="number" id="h-left" min="1" max="9999" oninput="A.checkSizes()"><span class="unit">mm</span></div></div>
+  <div class="fg"><label>中<span class="req">必須</span></label><div class="input-u"><input type="number" id="h-mid" min="1" max="9999" oninput="A.checkSizes()"><span class="unit">mm</span></div></div>
+  <div class="fg"><label>右<span class="req">必須</span></label><div class="input-u"><input type="number" id="h-right" min="1" max="9999" oninput="A.checkSizes()"><span class="unit">mm</span></div></div>
+  <div id="size-validation" class="size-preview" style="display:none"></div>
+</div>
+<div class="footer">
+  <button class="btn-back" onclick="A.prevW('sizes')">◀ 戻る</button>
+  <button class="btn-save" onclick="A.saveW()">保存</button>
+  <button class="btn-next" id="btn-sizes" onclick="A.nextW('sizes')" disabled>次へ ▶</button>
+</div>
+</div>
+
+<!-- W5: SERIES -->
+<div class="page" id="page-series">
+<div class="container">
+  <div class="ph"><h1>窓のシリーズ</h1></div>
+  <div class="card-grid">
+    <div class="card" id="ser-1" onclick="A.selSeries(1,'トリプルガラス樹脂窓',this)">
+      <div class="card-icon">🏆</div><div class="card-label">トリプルガラス樹脂窓</div><div class="card-sub">最高断熱</div>
+    </div>
+    <div class="card" id="ser-6" onclick="A.selSeries(6,'樹脂窓 ハイブリッド専用枠',this)">
+      <div class="card-icon">🔷</div><div class="card-label">樹脂窓 ハイブリッド専用枠</div>
+    </div>
+    <div class="card" id="ser-2" onclick="A.selSeries(2,'樹脂窓',this)">
+      <div class="card-icon">⬜</div><div class="card-label">樹脂窓</div>
+    </div>
+    <div class="card" id="ser-5" onclick="A.selSeries(5,'アルミ樹脂複合窓',this)">
+      <div class="card-icon">🔲</div><div class="card-label">アルミ樹脂複合窓</div>
+    </div>
+  </div>
+</div>
+<div class="footer">
+  <button class="btn-back" onclick="A.prevW('series')">◀ 戻る</button>
+  <button class="btn-save" onclick="A.saveW()">保存</button>
+  <button class="btn-next" id="btn-series" onclick="A.nextW('series')" disabled>次へ ▶</button>
+</div>
+</div>
+
+<!-- W6: NEWLY ITEMS -->
+<div class="page" id="page-ni">
+<div class="container">
+  <div class="ph"><h1>窓の種類</h1></div>
+  <div id="ni-container"></div>
+</div>
+<div class="footer">
+  <button class="btn-back" onclick="A.prevW('ni')">◀ 戻る</button>
+  <button class="btn-save" onclick="A.saveW()">保存</button>
+  <button class="btn-next" id="btn-ni" onclick="A.nextW('ni')" disabled>次へ ▶</button>
+</div>
+</div>
+
+<!-- W7: GLASS -->
+<div class="page" id="page-glass">
+<div class="container">
+  <div class="ph"><h1>ガラスの種類</h1></div>
+  <div id="glass-cards" class="card-grid"></div>
+</div>
+<div class="footer">
+  <button class="btn-back" onclick="A.prevW('glass')">◀ 戻る</button>
+  <button class="btn-save" onclick="A.saveW()">保存</button>
+  <button class="btn-next" id="btn-glass" onclick="A.nextW('glass')" disabled>次へ ▶</button>
+</div>
+</div>
+
+<!-- W8: COLORS -->
+<div class="page" id="page-colors">
+<div class="container">
+  <div class="ph"><h1>商品色</h1></div>
+  <div class="fg">
+    <label>外観カラー<span class="req">必須</span></label>
+    <select id="col-outer" onchange="A.updateColors()">
+      <option value="">選択してください</option>
+    </select>
+  </div>
+  <div class="fg">
+    <label>内観カラー<span class="req">必須</span></label>
+    <select id="col-inner" onchange="A.checkColors()">
+      <option value="">選択してください</option>
+    </select>
+  </div>
+  <div id="color-note" class="fn" style="margin-top:8px"></div>
+</div>
+<div class="footer">
+  <button class="btn-back" onclick="A.prevW('colors')">◀ 戻る</button>
+  <button class="btn-save" onclick="A.saveW()">保存</button>
+  <button class="btn-next" id="btn-colors" onclick="A.nextW('colors')" disabled>次へ ▶</button>
+</div>
+</div>
+
+<!-- W9: EDGES（内額縁） -->
+<div class="page" id="page-edges">
+<div class="container">
+  <div class="ph"><h1>内額縁</h1></div>
+  <div id="edges-cards" class="card-grid"></div>
+</div>
+<div class="footer">
+  <button class="btn-back" onclick="A.prevW('edges')">◀ 戻る</button>
+  <button class="btn-save" onclick="A.saveW()">保存</button>
+  <button class="btn-next" id="btn-edges" onclick="A.nextW('edges')" disabled>次へ ▶</button>
+</div>
+</div>
+
+<!-- W10: OPTIONS -->
+<div class="page" id="page-options">
+<div class="container">
+  <div class="ph"><h1>新設窓オプション</h1></div>
+  <div class="st">網戸</div>
+  <div class="fn" id="screen-fix-note" style="display:none;color:var(--orange);margin-bottom:8px">※ FIX窓・プロジェクト窓は網戸の設定ができない場合があります。カタログをご確認ください。</div>
+  <div class="rcg">
+    <div class="rc" onclick="A.selOpt('screen','yes',this)"><input type="radio" name="screen" value="yes"><div class="rc-lbl">あり</div></div>
+    <div class="rc" onclick="A.selOpt('screen','no',this)"><input type="radio" name="screen" value="no"><div class="rc-lbl">なし</div></div>
+  </div>
+  <div class="st" style="margin-top:16px">外部モール</div>
+  <div class="fn" style="margin-bottom:8px">新設枠と外壁のすきまが大きい時にご利用ください。<br>※既設が樹脂窓の場合、外部モールが必要となります。</div>
+  <div class="rcg">
+    <div class="rc" onclick="A.selOpt('mool','four',this)"><input type="radio" name="mool" value="four"><div class="rc-lbl">四方</div></div>
+    <div class="rc" onclick="A.selOpt('mool','two',this)"><input type="radio" name="mool" value="two"><div class="rc-lbl">二方</div></div>
+    <div class="rc" onclick="A.selOpt('mool','none',this)"><input type="radio" name="mool" value="none"><div class="rc-lbl">なし</div></div>
+  </div>
+</div>
+<div class="footer">
+  <button class="btn-back" onclick="A.prevW('options')">◀ 戻る</button>
+  <button class="btn-save" onclick="A.saveW()">保存</button>
+  <button class="btn-next" onclick="A.nextW('options')">次へ ▶</button>
+</div>
+</div>
+
+<!-- W11: BASE CONFIRM -->
+<div class="page" id="page-base">
+<div class="container">
+  <div class="ph"><h1>窓の基本情報の確認</h1></div>
+  <div id="base-content"></div>
+</div>
+<div class="footer">
+  <button class="btn-back" onclick="A.prevW('base')">◀ 戻る</button>
+  <button class="btn-save" onclick="A.saveW()">保存</button>
+  <button class="btn-next" onclick="A.nextW('base')">次へ ▶</button>
+</div>
+</div>
+
+<!-- W12: UPPER FRAME（上枠の取り合い） -->
+<div class="page" id="page-upper">
+<div class="container">
+  <div class="ph"><h1>上枠の取り合い</h1></div>
+  <div class="fg">
+    <label>上枠見付寸法を測定して選択<span class="req">必須</span></label>
+    <div class="fn" style="margin-bottom:8px">既設窓枠開口から既設上枠室外面上端までの距離を計測してください。</div>
+    <select id="upper-sel" onchange="A.checkUpper()">
+      <option value="">選択してください</option>
+      <option value="short">小（21〜30mm）</option>
+      <option value="long">大（31〜40mm）</option>
+    </select>
+  </div>
+  <div class="alert alert-warn" id="upper-resin-note" style="display:none">
+    新設窓に樹脂窓をお選びの場合、上枠見付寸法は「大（31〜40mm）」に固定となります。
+  </div>
+  <div class="alert alert-info" id="upper-storm-note" style="display:none">
+    既設が雨戸付き引違い窓・シャッター付き引違い窓の場合、専用上枠カバーとなります。
+  </div>
+  <div class="fg"><label>メモ（任意）</label><textarea id="upper-memo" maxlength="100" rows="3"></textarea></div>
+</div>
+<div class="footer">
+  <button class="btn-back" onclick="A.prevW('upper')">◀ 戻る</button>
+  <button class="btn-save" onclick="A.saveW()">保存</button>
+  <button class="btn-next" id="btn-upper" onclick="A.nextW('upper')" disabled>次へ ▶</button>
+</div>
+</div>
+
+<!-- W13: MEMO -->
+<div class="page" id="page-wmemo">
+<div class="container">
+  <div class="ph"><h1>メモ</h1></div>
+  <div class="fg">
+    <label>メモ（任意・最大100文字）</label>
+    <textarea id="w-memo" maxlength="100" rows="5" placeholder="この窓についてのメモを入力してください"></textarea>
+  </div>
+</div>
+<div class="footer">
+  <button class="btn-back" onclick="A.prevW('wmemo')">◀ 戻る</button>
+  <button class="btn-save" onclick="A.saveW()">保存</button>
+  <button class="btn-next" onclick="A.finishWindow()">完了して一覧へ ▶</button>
+</div>
+</div>
+
+<!-- RESULT -->
+<div class="page" id="page-result">
+<div class="container">
+  <div class="ph" style="display:flex;justify-content:space-between;align-items:center">
+    <h1>現場調査結果シート</h1>
+    <button onclick="window.print()" style="background:var(--blue);color:#fff;padding:8px 16px;border-radius:4px;font-size:13px;cursor:pointer">🖨 印刷</button>
+  </div>
+  <div id="result-content"></div>
+</div>
+<div class="footer">
+  <button class="btn-back" onclick="A.go('page-items')">◀ 一覧へ戻る</button>
+</div>
+</div>
+
+</div>
+
+<script>
+'use strict';
+
+// ═══════════════════════════
+//  マスターデータ
+// ═══════════════════════════
+const DATA = {
+
+  // 既設窓種類（APIより確認）
+  establishedItems: [
+    {id:1,  cat:'sliding', name:'引違い窓'},
+    {id:2,  cat:'sliding', name:'二重窓'},
+    {id:3,  cat:'sliding', name:'雨戸付き引違い窓'},
+    {id:4,  cat:'sliding', name:'面格子付き引違い窓'},
+    {id:5,  cat:'sliding', name:'シャッター付き引違い窓'},
+    {id:10, cat:'project', name:'FIX窓'},
+    {id:11, cat:'project', name:'ルーバー窓'},
+    {id:12, cat:'project', name:'面格子上げ下げ窓'},
+    {id:13, cat:'project', name:'面格子ルーバー窓'},
+    {id:14, cat:'project', name:'上げ下げ窓'},
+    {id:15, cat:'project', name:'たてすべり出し窓'},
+    {id:16, cat:'project', name:'すべり出し窓'},
+    {id:17, cat:'other',   name:'一体連窓'},
+    {id:18, cat:'other',   name:'一体段窓'},
+    {id:19, cat:'other',   name:'プロジェクト一体連窓'},
+    {id:20, cat:'other',   name:'プロジェクト一体段窓'},
+    {id:21, cat:'other',   name:'別体連窓'},
+    {id:22, cat:'other',   name:'別体段窓'},
+  ],
+
+  // シリーズ（APIより確認）
+  series: [
+    {id:1, name:'トリプルガラス樹脂窓',     isResin:true},
+    {id:6, name:'樹脂窓 ハイブリッド専用枠', isResin:true},
+    {id:2, name:'樹脂窓',                  isResin:true},
+    {id:5, name:'アルミ樹脂複合窓',         isResin:false},
+  ],
+
+  // 色マスター
+  colors: {
+    WHITE:         {name:'ホワイト',       hex:'#F5F5F5'},
+    PLATINUM_STEN: {name:'プラチナステン', hex:'#C8C8C8'},
+    BROWN:         {name:'ブラウン',       hex:'#7B4A2D'},
+    BLACK:         {name:'ブラック',       hex:'#2B2B2B'},
+    CLEAR:         {name:'クリア',         hex:'#E0E8EF'},
+    NATURAL:       {name:'ナチュラル',     hex:'#D4B896'},
+    DARK_BROWN:    {name:'ダークブラウン', hex:'#4A2510'},
+    CALM_BLACK:    {name:'カームブラック', hex:'#3A3A3A'},
+    PURE_SILVER:   {name:'ピュアシルバー', hex:'#B8B8B8'},
+  },
+
+  // 色の組み合わせ制約（YKK AP公式サイト「マドリモ 戸建用 カラーバリエーション」より）
+  colorRules: {
+    // トリプルガラス樹脂窓（id:1）
+    // 外観4色 × 内観はホワイトのみ
+    1: {
+      outer: ['WHITE','PLATINUM_STEN','BROWN','BLACK'],
+      inner: {WHITE:['WHITE'], PLATINUM_STEN:['WHITE'], BROWN:['WHITE'], BLACK:['WHITE']},
+    },
+    // 樹脂窓 ハイブリッド専用枠（id:6）
+    // 外観4色 × 内観：ホワイト/ナチュラル/ダークブラウン/ブラック
+    // ただし外観ホワイト・ブラック → 内観はホワイトのみ
+    6: {
+      outer: ['WHITE','PLATINUM_STEN','BROWN','BLACK'],
+      inner: {
+        WHITE:         ['WHITE'],
+        PLATINUM_STEN: ['WHITE','NATURAL','DARK_BROWN'],
+        BROWN:         ['WHITE','NATURAL','DARK_BROWN'],
+        BLACK:         ['WHITE'],
+      },
+    },
+    // 樹脂窓（id:2）
+    // ホワイト・ブラック外観 → 内観ホワイトのみ
+    2: {
+      outer: ['WHITE','PLATINUM_STEN','BROWN','BLACK'],
+      inner: {
+        WHITE:         ['WHITE'],
+        PLATINUM_STEN: ['WHITE','NATURAL','DARK_BROWN'],
+        BROWN:         ['WHITE','NATURAL','DARK_BROWN'],
+        BLACK:         ['WHITE'],
+      },
+    },
+    // アルミ樹脂複合窓（id:5）
+    // 外観5色 × 内観（外観色により異なる）計27通り
+    // 出典：https://www.ykkap.co.jp/consumer/products/window/madoremo-kodate/variation
+    5: {
+      outer: ['WHITE','PLATINUM_STEN','BROWN','CALM_BLACK','PURE_SILVER'],
+      inner: {
+        WHITE:         ['WHITE','CLEAR','NATURAL','DARK_BROWN','CALM_BLACK'],
+        PLATINUM_STEN: ['PLATINUM_STEN','WHITE','CLEAR','NATURAL','DARK_BROWN','CALM_BLACK'],
+        BROWN:         ['BROWN','WHITE','CLEAR','NATURAL','DARK_BROWN'],
+        CALM_BLACK:    ['CALM_BLACK','WHITE','CLEAR','NATURAL','DARK_BROWN'],
+        PURE_SILVER:   ['WHITE','CLEAR','NATURAL','DARK_BROWN','CALM_BLACK'],
+      },
+    },
+  },
+
+  // 製作範囲（参考値・後で正確な値に差し替えてください）
+  // 既設窓の計測値からの最小値を使用。引違い系 or プロジェクト系で異なる。
+  sizeRanges: {
+    1: {sliding:{w:[640,1690],h:[570,1570]}, project:{w:[265,780],h:[265,970]}},
+    2: {sliding:{w:[640,1690],h:[570,1570]}, project:{w:[265,780],h:[265,970]}},
+    5: {sliding:{w:[640,2690],h:[570,2090]}, project:{w:[265,1185],h:[265,1570]}},
+    6: {sliding:{w:[640,1690],h:[570,1570]}, project:{w:[265,780],h:[265,970]}},
+  },
+
+  // ガラスの種類（シリーズ別）
+  glassTypes: {
+    1: [{id:'tg_argon', name:'Low-Eトリプルガラス（アルゴンガス入）'}],
+    2: [
+      {id:'pg_argon', name:'Low-Eペアガラス（アルゴンガス入）'},
+      {id:'pg_clear', name:'クリアペアガラス'},
+    ],
+    5: [
+      {id:'pg_argon',  name:'Low-Eペアガラス（アルゴンガス入）'},
+      {id:'pg_low_e',  name:'Low-Eペアガラス'},
+      {id:'pg_clear',  name:'クリアペアガラス'},
+      {id:'dloe_argon',name:'ダブルLow-Eガラス（アルゴンガス入）'},
+    ],
+    6: [
+      {id:'pg_argon', name:'Low-Eペアガラス（アルゴンガス入）'},
+      {id:'pg_clear', name:'クリアペアガラス'},
+    ],
+  },
+
+  // 内額縁の種類（カタログ「オプション 窓額縁」より）
+  edgeTypes: [
+    {id:'resin_w',  name:'樹脂額縁（ホワイト）'},
+    {id:'resin_b',  name:'樹脂額縁（ブラウン）'},
+    {id:'alum',     name:'アルミ額縁'},
+    {id:'none',     name:'なし（額縁不要）'},
+  ],
+
+  // 新設窓の種類（既設窓カテゴリ別・暫定）
+  // ※正確な品番はセッション依存APIのため取得不可。現場で確認してください。
+  newlyItemTypes: {
+    // 既設が引違い系（id:1〜5）
+    sliding: [
+      {id:'s_2',  name:'引違い窓（2枚建て）'},
+      {id:'s_3',  name:'引違い窓（3枚建て）'},
+      {id:'s_fix',name:'FIX窓'},
+    ],
+    // 既設がプロジェクト系（id:10〜16）
+    project: [
+      {id:'p_fix',      name:'FIX窓'},
+      {id:'p_tate',     name:'たてすべり出し窓'},
+      {id:'p_sube',     name:'すべり出し窓'},
+      {id:'p_ageshita', name:'上げ下げ窓'},
+    ],
+    // 既設が段窓・連窓系（id:17〜22）→各窓ごとに選択
+    other: [
+      {id:'s_2',  name:'引違い窓（2枚建て）'},
+      {id:'p_fix',name:'FIX窓'},
+    ],
+  },
+
+  // 製作範囲（参考値 / ※カタログ「仕様・製作範囲」ページの正確な値で差し替えてください）
+  // 単位：mm。w=[最小幅,最大幅], h=[最小高,最大高]
+  sizeRanges: {
+    1: {sliding:{w:[640,1690],h:[570,1570]}, project:{w:[265,780],h:[265,970]}},   // トリプルガラス樹脂窓
+    2: {sliding:{w:[640,1690],h:[570,1570]}, project:{w:[265,780],h:[265,970]}},   // 樹脂窓
+    5: {sliding:{w:[640,2690],h:[570,2090]}, project:{w:[265,1185],h:[265,1570]}}, // アルミ樹脂複合窓
+    6: {sliding:{w:[640,1690],h:[570,1570]}, project:{w:[265,780],h:[265,970]}},   // ハイブリッド専用枠
+  },
+};
+
+// ═══════════════════════════
+//  アプリ
+// ═══════════════════════════
+const SK = 'madoremo_v4';
+let state = {surveys:[], curSurvey:-1, curWindow:-1};
+
+function save(){ try{ localStorage.setItem(SK, JSON.stringify(state)); }catch(e){} }
+function load(){ try{ const d=localStorage.getItem(SK); if(d) state=JSON.parse(d); }catch(e){} }
+function uuid(){ return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&0x3|0x8)).toString(16);}); }
+function S(){ return state.surveys[state.curSurvey]; }
+function W(){ const s=S(); return s&&state.curWindow>=0?s.items[state.curWindow]:null; }
+
+// ウィンドウステップ（フロー）
+// base → upper → wmemo の3ステップに簡略化済み
+const WIN_STEPS = ['places','materials','ei','sizes','series','ni','glass','colors','edges','options','base','upper','wmemo'];
+
+const A = {
+  // ─── ページ遷移 ───
+  go(id){
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.getElementById(id)?.classList.add('active');
+    window.scrollTo(0,0);
+    const s=S();
+    const hn=document.getElementById('hdr-name');
+    const ht=document.getElementById('hdr-name-text');
+    if(s){hn.style.display='block';ht.textContent=s.name;}
+    else hn.style.display='none';
+    if(id==='page-top')    this._renderTop();
+    if(id==='page-items')  this._renderItems();
+    if(id==='page-result') this._renderResult();
+    if(id==='page-base')   this._renderBase();
+    if(id==='page-ni')     this._renderNI();
+    if(id==='page-glass')  this._renderGlass();
+    if(id==='page-edges')  this._renderEdges();
+    if(id==='page-colors') this._renderColors();
+    if(id==='page-upper')  this._initUpper();
+    if(id==='page-options') this._initOptions();
+  },
+
+  // ─── トップ ───
+  _renderTop(){
+    const el=document.getElementById('top-list');
+    if(!state.surveys.length){el.innerHTML='';return;}
+    el.innerHTML=state.surveys.map((s,i)=>`
+      <div class="top-survey">
+        <div class="top-survey-name" onclick="A.openSurvey(${i})">${s.name}</div>
+        <div class="top-survey-meta">作成日時: ${new Date(s.createdAt).toLocaleString('ja-JP')} / 窓: ${s.items.length}個</div>
+        <div class="top-actions">
+          <button class="top-btn" onclick="A.openSurvey(${i})">詳細</button>
+          <button class="top-btn top-btn-danger" onclick="A.delSurvey(${i})">削除</button>
+          <button class="top-btn top-btn-primary" onclick="A.printSurvey(${i})">現場調査結果シート</button>
+        </div>
+      </div>`).join('');
+  },
+  startNew(){ state.curSurvey=-1; document.getElementById('inp-name').value=''; A.checkNew(); A.go('page-new'); },
+  openSurvey(i){ state.curSurvey=i; A.go('page-items'); },
+  delSurvey(i){
+    if(!confirm('現場調査作成シートを削除します。\nよろしいですか？')) return;
+    state.surveys.splice(i,1);
+    if(state.curSurvey>=state.surveys.length) state.curSurvey=state.surveys.length-1;
+    save(); A._renderTop();
+  },
+  printSurvey(i){ state.curSurvey=i; A.go('page-result'); },
+
+  // ─── NEW ───
+  checkNew(){ document.getElementById('btn-new').disabled=!document.getElementById('inp-name').value.trim(); },
+  doNew(){
+    const name=document.getElementById('inp-name').value.trim(); if(!name) return;
+    if(state.curSurvey<0){
+      state.surveys.push({uuid:uuid(),name,building:'',ei:'',eiComment:'',items:[],createdAt:Date.now()});
+      state.curSurvey=state.surveys.length-1;
+    } else { S().name=name; }
+    save(); A.go('page-pre');
+  },
+
+  // ─── PRECONDITION ───
+  selBuilding(val,el){
+    document.querySelectorAll('#rg-building .rc').forEach(c=>c.classList.remove('selected'));
+    el.classList.add('selected');
+    el.querySelector('input').checked=true;
+    A.checkPre();
+  },
+  selEI(val,el){
+    document.querySelectorAll('#rg-ei .rc').forEach(c=>c.classList.remove('selected'));
+    el.classList.add('selected');
+    el.querySelector('input').checked=true;
+    const wrap=document.getElementById('ei-comment-wrap');
+    wrap.style.display=val==='hold'?'block':'none';
+    if(val!=='hold') document.getElementById('ei-comment').value='';
+    A.checkPre();
+  },
+  checkPre(){
+    const b=document.querySelector('input[name="building"]:checked')?.value;
+    const e=document.querySelector('input[name="ei"]:checked')?.value;
+    const c=document.getElementById('ei-comment').value;
+    document.getElementById('btn-pre').disabled=!(b&&e&&(e!=='hold'||c.trim()));
+  },
+  doPre(){
+    const s=S();
+    s.building=document.querySelector('input[name="building"]:checked')?.value||'';
+    s.ei=document.querySelector('input[name="ei"]:checked')?.value||'';
+    s.eiComment=document.getElementById('ei-comment').value;
+    save(); A.go('page-items');
+  },
+
+  // ─── ITEMS ───
+  _renderItems(){
+    const s=S(); const el=document.getElementById('items-list');
+    if(!s?.items.length){el.innerHTML='';return;}
+    el.innerHTML=`<div class="wcards">${s.items.map((w,i)=>{
+      const badge=w.completed
+        ?'<span class="badge badge-ok">完了</span>'
+        :'<span class="badge badge-todo">調査中</span>';
+      const meta=[
+        w.placeLabel,
+        w.wMin&&w.hMin?`${w.wMin}×${w.hMin}mm`:'',
+        w.seriesLabel,
+      ].filter(Boolean).join(' / ');
+      return `<div class="wcard">
+        <div class="wcard-info">
+          <div class="wcard-num">窓 ${i+1}</div>
+          <div class="wcard-title">${w.ewLabel||'（未設定）'}</div>
+          <div class="wcard-meta">${meta}</div>
+        </div>
+        ${badge}
+        <div class="wcard-actions">
+          <button class="btn-edit" onclick="A.editWindow(${i})">変更</button>
+          <button class="btn-del" onclick="A.delWindow(${i})">削除</button>
+        </div>
+      </div>`;
+    }).join('')}</div>`;
+  },
+  addWindow(){
+    const s=S(); if(!s) return;
+    s.items.push({
+      uuid:uuid(),
+      // places
+      placeId:'', placeLabel:'', placeMemo:'',
+      // materials
+      material:'', materialLabel:'',
+      // established item
+      ewId:null, ewLabel:'', ewCat:'',
+      // sizes（3点計測値を保持）
+      wTop:null, wMid:null, wBot:null,
+      hLeft:null, hMid:null, hRight:null,
+      wMin:null, hMin:null,
+      // series
+      seriesId:null, seriesLabel:'', isResin:false,
+      // newly item
+      niId:'', niLabel:'',
+      // glass
+      glassId:'', glassLabel:'',
+      // colors
+      colorOuter:'', colorInner:'',
+      // edge（内額縁）
+      edgeId:'', edgeLabel:'',
+      // options
+      screen:'', mool:'',
+      // upper frame
+      upper:'', upperMemo:'',
+      // memo
+      wmemo:'',
+      completed:false,
+    });
+    state.curWindow=s.items.length-1;
+    save(); A._resetWindowForms(); A.go('page-places');
+  },
+  editWindow(i){
+    state.curWindow=i; save();
+    A._resetWindowForms(); A._loadWindowForms(); A.go('page-places');
+  },
+  delWindow(i){
+    if(!confirm('この窓を削除しますか？')) return;
+    S().items.splice(i,1); save(); A._renderItems();
+  },
+  saveW(){ A._saveWindowData(); save(); alert('保存しました'); },
+  finishWindow(){ A._saveWindowData(); W().completed=true; save(); state.curWindow=-1; A.go('page-items'); },
+
+  // ─── フォームリセット ───
+  _resetWindowForms(){
+    // カード選択解除
+    ['page-places','page-materials','page-ei','page-series','page-ni','page-glass','page-edges']
+      .forEach(pid=>document.querySelectorAll(`#${pid} .card`).forEach(c=>c.classList.remove('selected')));
+    // ラジオ解除
+    document.querySelectorAll('#page-options input[type=radio]').forEach(r=>{ r.checked=false; r.closest('.rc').classList.remove('selected'); });
+    // テキスト入力クリア
+    ['place-memo','w-top','w-mid','w-bot','h-left','h-mid','h-right','upper-memo','w-memo'].forEach(id=>{
+      const el=document.getElementById(id); if(el) el.value='';
+    });
+    // セレクトリセット
+    ['col-outer','col-inner','upper-sel'].forEach(id=>{
+      const el=document.getElementById(id); if(el) el.selectedIndex=0;
+    });
+    // 次へボタンをすべて無効化
+    ['btn-places','btn-materials','btn-ei','btn-sizes','btn-series','btn-ni','btn-glass','btn-colors','btn-edges','btn-upper'].forEach(id=>{
+      const el=document.getElementById(id); if(el) el.disabled=true;
+    });
+    // サイズ検証非表示
+    document.getElementById('size-validation').style.display='none';
+    // 樹脂窓注記非表示
+    document.getElementById('size-resin-note').style.display='none';
+  },
+
+  // ─── フォーム読み込み（editWindow用） ───
+  _loadWindowForms(){
+    const w=W(); if(!w) return;
+    // place
+    if(w.placeId){
+      const c=document.getElementById('pl-'+w.placeId.replace('_','-'));
+      if(c){c.classList.add('selected');document.getElementById('btn-places').disabled=false;}
+    }
+    document.getElementById('place-memo').value=w.placeMemo||'';
+    // material
+    if(w.material){
+      const c=document.getElementById('mat-'+w.material);
+      if(c){c.classList.add('selected');document.getElementById('btn-materials').disabled=false;}
+      document.getElementById('size-resin-note').style.display=w.material==='resin'?'block':'none';
+    }
+    // sizes
+    if(w.wTop!=null){
+      ['w-top','w-mid','w-bot'].forEach((id,i)=>{document.getElementById(id).value=[w.wTop,w.wMid,w.wBot][i]||'';});
+      ['h-left','h-mid','h-right'].forEach((id,i)=>{document.getElementById(id).value=[w.hLeft,w.hMid,w.hRight][i]||'';});
+      A.checkSizes();
+    }
+    // series
+    if(w.seriesId){
+      const c=document.getElementById('ser-'+w.seriesId);
+      if(c){c.classList.add('selected');document.getElementById('btn-series').disabled=false;}
+    }
+    // options
+    ['screen','mool'].forEach(name=>{
+      const v=w[name]; if(!v) return;
+      const r=document.querySelector(`input[name="${name}"][value="${v}"]`);
+      if(r){r.checked=true;r.closest('.rc').classList.add('selected');}
+    });
+    // upper
+    if(w.upper){ document.getElementById('upper-sel').value=w.upper; }
+    document.getElementById('upper-memo').value=w.upperMemo||'';
+    // wmemo
+    document.getElementById('w-memo').value=w.wmemo||'';
+  },
+
+  // ─── フォーム保存 ───
+  _saveWindowData(){
+    const w=W(); if(!w) return;
+    w.placeMemo   = document.getElementById('place-memo')?.value||'';
+    w.wTop  = parseInt(document.getElementById('w-top')?.value)||null;
+    w.wMid  = parseInt(document.getElementById('w-mid')?.value)||null;
+    w.wBot  = parseInt(document.getElementById('w-bot')?.value)||null;
+    w.hLeft = parseInt(document.getElementById('h-left')?.value)||null;
+    w.hMid  = parseInt(document.getElementById('h-mid')?.value)||null;
+    w.hRight= parseInt(document.getElementById('h-right')?.value)||null;
+    if(w.wTop&&w.wMid&&w.wBot)   w.wMin=Math.min(w.wTop,w.wMid,w.wBot)-(w.isResin?6:0);
+    if(w.hLeft&&w.hMid&&w.hRight) w.hMin=Math.min(w.hLeft,w.hMid,w.hRight)-(w.isResin?6:0);
+    w.colorOuter = document.getElementById('col-outer')?.value||'';
+    w.colorInner = document.getElementById('col-inner')?.value||'';
+    w.screen     = document.querySelector('input[name="screen"]:checked')?.value||'';
+    w.mool       = document.querySelector('input[name="mool"]:checked')?.value||'';
+    w.upper      = document.getElementById('upper-sel')?.value||'';
+    w.upperMemo  = document.getElementById('upper-memo')?.value||'';
+    w.wmemo      = document.getElementById('w-memo')?.value||'';
+    save();
+  },
+
+  // ─── ウィンドウステップ遷移 ───
+  nextW(step){
+    A._saveWindowData();
+    const idx=WIN_STEPS.indexOf(step);
+    if(idx>=0&&idx<WIN_STEPS.length-1) A.go('page-'+WIN_STEPS[idx+1]);
+  },
+  prevW(step){
+    const idx=WIN_STEPS.indexOf(step);
+    if(idx<=0) A.go('page-items');
+    else A.go('page-'+WIN_STEPS[idx-1]);
+  },
+
+  // ─── W1: PLACES ───
+  selPlace(id,label,el){
+    document.querySelectorAll('#page-places .card').forEach(c=>c.classList.remove('selected'));
+    el.classList.add('selected');
+    const w=W(); if(w){w.placeId=id;w.placeLabel=label;save();}
+    document.getElementById('btn-places').disabled=false;
+  },
+
+  // ─── W2: MATERIALS ───
+  selMaterial(val,label,el){
+    document.querySelectorAll('#page-materials .card:not(.disabled)').forEach(c=>c.classList.remove('selected'));
+    el.classList.add('selected');
+    const w=W(); if(w){w.material=val;w.materialLabel=label;save();}
+    document.getElementById('btn-materials').disabled=false;
+    document.getElementById('size-resin-note').style.display=val==='resin'?'block':'none';
+  },
+
+  // ─── W3: EI ───
+  switchTab(tab){
+    ['sliding','project','other'].forEach(t=>{
+      document.getElementById('tab-'+t).classList.toggle('active',t===tab);
+      document.getElementById('tab-'+t+'-content').style.display=t===tab?'block':'none';
+    });
+  },
+  selEW(id,label,el){
+    document.querySelectorAll('#page-ei .card').forEach(c=>c.classList.remove('selected'));
+    el.classList.add('selected');
+    const w=W();
+    if(w){
+      w.ewId=id; w.ewLabel=label;
+      const item=DATA.establishedItems.find(i=>i.id===id);
+      w.ewCat=item?.cat||'';
+      save();
+    }
+    document.getElementById('btn-ei').disabled=false;
+  },
+
+  // ─── W4: SIZES ───
+  checkSizes(){
+    const vals=['w-top','w-mid','w-bot','h-left','h-mid','h-right'].map(id=>parseInt(document.getElementById(id)?.value)||0);
+    const ok=vals.every(v=>v>0);
+    document.getElementById('btn-sizes').disabled=!ok;
+    const sv=document.getElementById('size-validation');
+    if(!ok){sv.style.display='none';return;}
+    const w=W();
+    const sub=w?.isResin?6:0;
+    const wMin=Math.min(...vals.slice(0,3))-sub;
+    const hMin=Math.min(...vals.slice(3,6))-sub;
+    // 製作範囲チェック（シリーズ選択済みの場合）
+    let rangeMsg='';
+    if(w?.seriesId){
+      const r=DATA.sizeRanges[w.seriesId];
+      // 引違い系かプロジェクト系かを既設窓IDで判定
+      const isSl=[1,2,3,4,5].includes(w.ewId);
+      const range=r?.[isSl?'sliding':'project'];
+      if(range){
+        const wOk=wMin>=range.w[0]&&wMin<=range.w[1];
+        const hOk=hMin>=range.h[0]&&hMin<=range.h[1];
+        if(!wOk||!hOk) rangeMsg=`<br>⚠ 参考製作範囲: 幅${range.w[0]}〜${range.w[1]}mm × 高さ${range.h[0]}〜${range.h[1]}mm`;
+      }
+    }
+    sv.style.display='block';
+    sv.className='size-preview '+(rangeMsg?'size-warn':'size-ok');
+    sv.innerHTML=`使用寸法 — 幅最小: <strong>${wMin}mm</strong> / 高さ最小: <strong>${hMin}mm</strong>`+(sub?`（樹脂窓 -${sub}mm補正後）`:'')+rangeMsg;
+    if(w){w.wMin=wMin;w.hMin=hMin;save();}
+  },
+
+  // ─── W5: SERIES ───
+  selSeries(id,label,el){
+    document.querySelectorAll('#page-series .card').forEach(c=>c.classList.remove('selected'));
+    el.classList.add('selected');
+    const w=W();
+    if(w){
+      const ser=DATA.series.find(s=>s.id===id);
+      w.seriesId=id; w.seriesLabel=label; w.isResin=ser?.isResin||false;
+      save();
+    }
+    document.getElementById('btn-series').disabled=false;
+    // 製作範囲を再計算
+    A.checkSizes();
+  },
+
+  // ─── W6: NI ───
+  _renderNI(){
+    const w=W(); const el=document.getElementById('ni-container');
+    if(!w?.ewId){el.innerHTML='<div class="alert alert-warn">現在の窓形状を先に選択してください。</div>';return;}
+    // 既設窓カテゴリで分岐
+    const cat = w.ewCat; // 'sliding' / 'project' / 'other'
+    const items=DATA.newlyItemTypes[cat]||DATA.newlyItemTypes.sliding;
+    el.innerHTML=`<div class="alert alert-info" style="margin-bottom:12px">※ 正確な窓種はカタログまたは担当者にご確認ください。</div>
+      <div class="card-grid">${items.map(i=>`
+      <div class="card ${w.niId===i.id?'selected':''}" onclick="A.selNI('${i.id}','${i.name}',this)">
+        <div class="card-icon">🪟</div><div class="card-label">${i.name}</div>
+      </div>`).join('')}</div>`;
+    if(w.niId) document.getElementById('btn-ni').disabled=false;
+  },
+  selNI(id,label,el){
+    document.querySelectorAll('#ni-container .card').forEach(c=>c.classList.remove('selected'));
+    el.classList.add('selected');
+    const w=W(); if(w){w.niId=id;w.niLabel=label;save();}
+    document.getElementById('btn-ni').disabled=false;
+  },
+
+  // ─── W7: GLASS ───
+  _renderGlass(){
+    const w=W(); const el=document.getElementById('glass-cards');
+    const types=DATA.glassTypes[w?.seriesId]||DATA.glassTypes[5];
+    el.innerHTML=types.map(g=>`
+      <div class="card ${w?.glassId===g.id?'selected':''}" onclick="A.selGlass('${g.id}','${g.name}',this)">
+        <div class="card-icon">🔵</div><div class="card-label">${g.name}</div>
+      </div>`).join('');
+    if(w?.glassId) document.getElementById('btn-glass').disabled=false;
+  },
+  selGlass(id,label,el){
+    document.querySelectorAll('#glass-cards .card').forEach(c=>c.classList.remove('selected'));
+    el.classList.add('selected');
+    const w=W(); if(w){w.glassId=id;w.glassLabel=label;save();}
+    document.getElementById('btn-glass').disabled=false;
+  },
+
+  // ─── W8: COLORS ───
+  _renderColors(){
+    const w=W();
+    const rule=DATA.colorRules[w?.seriesId]||DATA.colorRules[5];
+    const sel=document.getElementById('col-outer');
+    sel.innerHTML='<option value="">選択してください</option>'+
+      rule.outer.map(k=>`<option value="${k}"${w?.colorOuter===k?' selected':''}>${DATA.colors[k]?.name||k}</option>`).join('');
+    A.updateColors();
+  },
+  updateColors(){
+    const w=W();
+    const outer=document.getElementById('col-outer').value;
+    const rule=DATA.colorRules[w?.seriesId]||DATA.colorRules[5];
+    const innerList=rule.inner[outer]||[];
+    const sel=document.getElementById('col-inner');
+    sel.innerHTML='<option value="">選択してください</option>'+
+      innerList.map(k=>`<option value="${k}"${w?.colorInner===k?' selected':''}>${DATA.colors[k]?.name||k}</option>`).join('');
+    const note=document.getElementById('color-note');
+    if(innerList.length===1&&outer){
+      sel.value=innerList[0];
+      note.textContent=`この外観色の場合、内観カラーは「${DATA.colors[innerList[0]]?.name}」のみです。`;
+    } else { note.textContent=''; }
+    A.checkColors();
+  },
+  checkColors(){
+    const o=document.getElementById('col-outer').value;
+    const i=document.getElementById('col-inner').value;
+    document.getElementById('btn-colors').disabled=!(o&&i);
+    const w=W(); if(w){w.colorOuter=o;w.colorInner=i;save();}
+  },
+
+  // ─── W9: EDGES ───
+  _renderEdges(){
+    const w=W(); const el=document.getElementById('edges-cards');
+    const isBathBoth=w?.placeId==='bath_both';
+    let note=isBathBoth?'<div class="alert alert-warn">浴室（システムバス同時）の場合は内観カラーと同色の額縁をご使用ください。</div>':'';
+    el.innerHTML=note+DATA.edgeTypes.map(e=>`
+      <div class="card ${w?.edgeId===e.id?'selected':''}" onclick="A.selEdge('${e.id}','${e.name}',this)">
+        <div class="card-icon">🔲</div><div class="card-label">${e.name}</div>
+      </div>`).join('');
+    if(w?.edgeId) document.getElementById('btn-edges').disabled=false;
+  },
+  selEdge(id,label,el){
+    document.querySelectorAll('#edges-cards .card').forEach(c=>c.classList.remove('selected'));
+    el.classList.add('selected');
+    const w=W(); if(w){w.edgeId=id;w.edgeLabel=label;save();}
+    document.getElementById('btn-edges').disabled=false;
+  },
+
+  // ─── W10: OPTIONS ───
+  _initOptions(){
+    const w=W();
+    // FIX窓やプロジェクト窓の場合に網戸注記を表示
+    const isProject = w?.ewCat === 'project' || w?.niId === 'p_fix' || w?.niId === 's_fix';
+    const note = document.getElementById('screen-fix-note');
+    if(note) note.style.display = isProject ? 'block' : 'none';
+  },
+  selOpt(name,val,el){
+    document.querySelectorAll(`input[name="${name}"]`).forEach(r=>{
+      r.checked=r.value===val;
+      r.closest('.rc').classList.toggle('selected',r.value===val);
+    });
+  },
+
+  // ─── W12: UPPER FRAME ───
+  _initUpper(){
+    const w=W();
+    const isResin=w?.isResin||false;
+    // 雨戸付き(id:3)またはシャッター付き(id:5)の場合に注記表示
+    const isStorm=[3,5].includes(w?.ewId);
+    const sel=document.getElementById('upper-sel');
+    // 樹脂窓は「大」に固定
+    if(isResin){ sel.value='long'; sel.disabled=true; document.getElementById('btn-upper').disabled=false; }
+    else { sel.disabled=false; }
+    document.getElementById('upper-resin-note').style.display=isResin?'block':'none';
+    document.getElementById('upper-storm-note').style.display=isStorm?'block':'none';
+    // 既存の選択値を復元
+    if(w?.upper&&!isResin) sel.value=w.upper;
+    document.getElementById('upper-memo').value=w?.upperMemo||'';
+    A.checkUpper();
+  },
+  checkUpper(){
+    const v=document.getElementById('upper-sel').value;
+    document.getElementById('btn-upper').disabled=!v;
+  },
+
+  // ─── W11: BASE CONFIRM ───
+  _renderBase(){
+    const w=W(); if(!w) return;
+    const CL=k=>DATA.colors[k]?.name||k||'－';
+    const ML={four:'四方',two:'二方',none:'なし'};
+    document.getElementById('base-content').innerHTML=`
+      <table class="result-table">
+        <tr><th>リフォーム場所</th><td>${w.placeLabel||'－'}</td></tr>
+        <tr><th>窓の材質</th><td>${w.materialLabel||'－'}</td></tr>
+        <tr><th>現在の窓形状</th><td>${w.ewLabel||'－'}</td></tr>
+        <tr><th>既設窓サイズ（幅×高さ）</th><td>${w.wMin!=null&&w.hMin!=null?w.wMin+'×'+w.hMin+'mm':'－'}</td></tr>
+        <tr><th>窓のシリーズ</th><td>${w.seriesLabel||'－'}</td></tr>
+        <tr><th>窓の種類</th><td>${w.niLabel||'－'}</td></tr>
+        <tr><th>ガラスの種類</th><td>${w.glassLabel||'－'}</td></tr>
+        <tr><th>商品色（外観）</th><td>${CL(w.colorOuter)}</td></tr>
+        <tr><th>商品色（内観）</th><td>${CL(w.colorInner)}</td></tr>
+        <tr><th>内額縁</th><td>${w.edgeLabel||'－'}</td></tr>
+        <tr><th>網戸</th><td>${{yes:'あり',no:'なし'}[w.screen]||'－'}</td></tr>
+        <tr><th>外部モール</th><td>${ML[w.mool]||'－'}</td></tr>
+      </table>`;
+  },
+
+  // ─── RESULT ───
+  _renderResult(){
+    const s=S(); if(!s) return;
+    const BL={wood_3:'木造（3階以下）',wood_4:'木造（4階以上）',rc_3:'RC造（3階以下）',rc_4:'RC造（4階以上）',alc:'ALC造',steel:'鉄骨造'};
+    const EI={unnecessary:'修復不必要',necessary:'修復必要',impossible:'不可',hold:'保留'};
+    const CL=k=>DATA.colors[k]?.name||k||'－';
+    const UF={short:'小（21〜30mm）',long:'大（31〜40mm）'};
+    const ML={four:'四方',two:'二方',none:'なし'};
+
+    let html=`<div class="result-sheet">
+      <div class="result-sheet-hdr">現場情報</div>
+      <table class="result-table">
+        <tr><th>現場調査名</th><td>${s.name}</td></tr>
+        <tr><th>躯体構造</th><td>${BL[s.building]||'－'}</td></tr>
+        <tr><th>既設窓まわり</th><td>${EI[s.ei]||'－'}</td></tr>
+        ${s.eiComment?`<tr><th>コメント</th><td>${s.eiComment.replace(/\n/g,' / ')}</td></tr>`:''}
+      </table>
+    </div>`;
+
+    s.items.forEach((w,i)=>{
+      html+=`<div class="result-sheet">
+        <div class="result-sheet-hdr sub">窓 ${i+1}: ${w.ewLabel||'（未設定）'}</div>
+        <table class="result-table">
+          <tr><th>リフォーム場所</th><td>${w.placeLabel||'－'}${w.placeMemo?' 　'+w.placeMemo:''}</td></tr>
+          <tr><th>窓の材質</th><td>${w.materialLabel||'－'}</td></tr>
+          <tr><th>現在の窓形状</th><td>${w.ewLabel||'－'}</td></tr>
+          <tr><th>既設窓サイズ（幅×高さ）</th><td>${w.wMin!=null&&w.hMin!=null?w.wMin+'×'+w.hMin+'mm（最小値）':'－'}</td></tr>
+          <tr><th>窓のシリーズ</th><td>${w.seriesLabel||'－'}</td></tr>
+          <tr><th>窓の種類</th><td>${w.niLabel||'－'}</td></tr>
+          <tr><th>ガラスの種類</th><td>${w.glassLabel||'－'}</td></tr>
+          <tr><th>商品色（外観）</th><td>${CL(w.colorOuter)}</td></tr>
+          <tr><th>商品色（内観）</th><td>${CL(w.colorInner)}</td></tr>
+          <tr><th>内額縁</th><td>${w.edgeLabel||'－'}</td></tr>
+          <tr><th>網戸</th><td>${{yes:'あり',no:'なし'}[w.screen]||'－'}</td></tr>
+          <tr><th>外部モール</th><td>${ML[w.mool]||'－'}</td></tr>
+          <tr><th>上枠見付寸法</th><td>${UF[w.upper]||'－'}${w.upperMemo?' / '+w.upperMemo:''}</td></tr>
+          ${w.wmemo?`<tr><th>メモ</th><td>${w.wmemo}</td></tr>`:''}
+        </table>
+      </div>`;
+    });
+
+    html+=`<div style="text-align:right;font-size:12px;color:#999;padding:8px 0">作成日時: ${new Date(s.createdAt).toLocaleString('ja-JP')}</div>`;
+    document.getElementById('result-content').innerHTML=html;
+  },
+};
+
+load(); A.go('page-top');
+</script>
+</body>
+</html>
