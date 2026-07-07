@@ -170,7 +170,7 @@ select:focus{outline:none;border-color:var(--accent)}
 
 <div class="header">
   <h1>内窓 現場調査シート</h1>
-  <p>引き違い窓（2・4枚建）</p>
+  <p>ウチリモ 内窓</p>
 </div>
 
 <div class="toolbar">
@@ -246,7 +246,12 @@ const LBL={
   sp:{al:'アルミ',j:'樹脂'},
   kt:{pe:'プレーンタイプ',el:'エレガントタイプ',wa01:'洋風 WA01',wa01m:'洋風 WA01（樹脂格子）',wa02:'洋風 WA02',pa01:'プレーリー PA01',pa02:'プレーリー PA02',yh:'横繁吹寄格子',ar:'荒間格子',yt:'たて繁吹寄格子'},
   fs:{'25':'25㎜','40':'40㎜','60':'60㎜'},
-  fd:{'3':'三方','4':'四方'}
+  fd:{'3':'三方','4':'四方'},
+  winType:{hiki:'引き違い',fix:'FIX窓',hiraki:'開き窓'},
+  leftRight:{r:'右勝手',l:'左勝手'},
+  armStopper:{n:'無',s:'小',l:'大'},
+  hanyoHandle:{y:'必要',n:'不要'},
+  mochidashi:{n:'無',y:'有'}
 };
 const lb=(m,v)=>m[v]||v||'—';
 
@@ -293,13 +298,16 @@ function getWinData(n){
   const t=id=>{const e=document.getElementById(id);return e?e.value.trim():'';};
   return{
     id:n,label:(wins.find(w=>w.id===n)||{}).label||'窓'+n,
-    location:t('loc-'+n),shoji:r('shoji'+n),color:r('color'+n),dimA:t('dima-'+n),
+    windowType:r('wintype'+n),
+    location:t('loc-'+n),shoji:r('shoji'+n),color:r('color'+n),dimA:t('dima-'+n),mochidashi:r('mochidashi'+n),
     kw:[...document.querySelectorAll(`#kw-row-${n} input`)].map(i=>i.value.trim()),
     kh:[...document.querySelectorAll(`#kh-row-${n} input`)].map(i=>i.value.trim()),
     series:r('series'+n),glassType:r('type1_'+n),glassType2:r('type2_'+n),spacer:r('sp'+n),gas:r('gas'+n),
     taikaku:[t('taik1-'+n),t('taik2-'+n)],
     shojiType:(document.getElementById('stype-sel-'+n)||{}).value||'',
     openType:r('opentype'+n),
+    operatorHandle:r('ophandle'+n),hanyoHandle:r('hanyohandle'+n),
+    leftRight:r('leftright'+n),armStopper:r('armstopper'+n),
     cresType:r('cres'+n),cresPos:t('crespos-'+n),
     hikiteType:r('hikite'+n),hikitePos:t('hikitepos-'+n),
     nakazan:r('nakazan'+n),nakazanPos:t('nakazanpos-'+n),
@@ -356,14 +364,14 @@ function restoreWin(wd){
   if(kwR&&wd.kw)[...kwR.querySelectorAll('input')].forEach((inp,i)=>inp.value=wd.kw[i]||'');
 
   if(khR&&wd.kh)[...khR.querySelectorAll('input')].forEach((inp,i)=>inp.value=wd.kh[i]||'');
-  const srmap={shoji:'shoji',color:'color',series:'series','type1_':'type1_','type2_':'glassType2',sp:'sp',gas:'gas',opentype:'openType',cres:'cresType',hikite:'hikiteType',nakazan:'nakazan',shitawaku:'shitawaku',koshi:'koshi',fukaari:'fukaAri',fukasize:'fukaSize',fukadir:'fukaDir',curtain:'curtain',hoko:'hoko'};
+  const srmap={wintype:'windowType',shoji:'shoji',color:'color',series:'series','type1_':'type1_','type2_':'glassType2',sp:'sp',gas:'gas',opentype:'openType',cres:'cresType',hikite:'hikiteType',nakazan:'nakazan',shitawaku:'shitawaku',koshi:'koshi',fukaari:'fukaAri',fukasize:'fukaSize',fukadir:'fukaDir',curtain:'curtain',hoko:'hoko',ophandle:'operatorHandle',hanyohandle:'hanyoHandle',leftright:'leftRight',armstopper:'armStopper',mochidashi:'mochidashi'};
   Object.entries(srmap).forEach(([k,dk])=>{
     const v=wd[dk];if(!v)return;
     const e=p.querySelector(`input[name="${k+n}"][value="${v}"]`);if(e){e.checked=true;e.dispatchEvent(new Event('change'));}
   });
   const ks=document.getElementById('koshi-sel-'+n);if(ks)ks.value=wd.koshiType||'';
   const ss=document.getElementById('stype-sel-'+n);if(ss)ss.value=wd.shojiType||'';
-  toggleKoshi(n);toggleFuka(n);toggleOpenType(n);toggleCresPos(n);toggleNakazanPos(n);
+  toggleWindowType(n);toggleOpHandle(n);toggleMochidashi(n);toggleKoshi(n);toggleFuka(n);toggleOpenType(n);toggleCresPos(n);toggleNakazanPos(n);
   setTimeout(()=>{
     const kw=[...document.querySelectorAll(`#kw-row-${n} input`)];
     const kh=[...document.querySelectorAll(`#kh-row-${n} input`)];
@@ -396,23 +404,27 @@ function buildCards(){
     const taikakuStr=(wd.taikaku&&(wd.taikaku[0]||wd.taikaku[1]))?'対角1: '+(wd.taikaku[0]||'—')+'㎜ ／ 対角2: '+(wd.taikaku[1]||'—')+'㎜':'—';
     const stypeStr=wd.shojiType?lb(LBL.stype,wd.shojiType):'—';
     const openTypeStr=wd.openType?lb(LBL.openType,wd.openType):'—';
+    const winTypeStr=wd.windowType?lb(LBL.winType,wd.windowType):'—';
+    const mochidashiStr=wd.mochidashi?lb(LBL.mochidashi,wd.mochidashi):'—';
+    const opHandleStr=wd.operatorHandle?(wd.operatorHandle==='y'?'有'+(wd.hanyoHandle?' ／ 汎用ハンドル: '+lb(LBL.hanyoHandle,wd.hanyoHandle):''):'無'):'—';
+    const leftRightStr=wd.leftRight?lb(LBL.leftRight,wd.leftRight):'—';
+    const armStopperStr=wd.armStopper?lb(LBL.armStopper,wd.armStopper):'—';
     const cresStr=wd.cresType?(lb(LBL.cres,wd.cresType)+(wd.cresType==='std'&&wd.cresPos?' '+wd.cresPos+'㎜':'')):'—';
     const hikiteStr=wd.hikiteType?(lb(LBL.hikite,wd.hikiteType)+(wd.hikitePos?' '+wd.hikitePos+'㎜':'')):'—';
     const nakazanStr=wd.nakazan?(lb(LBL.nakazan,wd.nakazan)+(wd.nakazan==='y'&&wd.nakazanPos?' '+wd.nakazanPos+'㎜':'')):'—';
     const shitawakuStr=wd.shitawaku?lb(LBL.shitawaku,wd.shitawaku):'—';
+    const hikiRows=wd.windowType==='hiki'?`<tr><th>障子枚数</th><td style="font-size:10px">${wd.shoji?wd.shoji+'枚建':'—'}</td><th>開閉タイプ</th><td style="font-size:10px">${openTypeStr}</td></tr><tr><th>障子種別</th><td colspan="3">${stypeStr}</td></tr><tr><th>下枠</th><td colspan="3" style="font-size:10px">${shitawakuStr}</td></tr><tr><th>クレセント</th><td colspan="3">${cresStr}</td></tr><tr><th>引手</th><td colspan="3">${hikiteStr}</td></tr><tr><th>中桟</th><td colspan="3">${nakazanStr}</td></tr>`:'';
+    const fixHirakiRows=(wd.windowType==='fix'||wd.windowType==='hiraki')?`<tr><th>OPハンドル</th><td colspan="3" style="font-size:10px">${opHandleStr}</td></tr>`:'';
+    const hirakiRows=wd.windowType==='hiraki'?`<tr><th>左右区分</th><td style="font-size:10px">${leftRightStr}</td><th>アームストッパー</th><td style="font-size:10px">${armStopperStr}</td></tr>`:'';
     return`<div class="wc"><div class="wh">${wd.label}${wd.location?' ／ '+wd.location:''}</div><div class="wc-inner"><div class="wc-data"><table>
-<tr><th style="width:28%">障子枚数</th><td style="width:14%;font-size:10px">${wd.shoji?wd.shoji+'枚建':'—'}</td><th style="width:28%">商品色</th><td style="width:30%;font-size:10px">${lb(LBL.color,wd.color)}</td></tr>
-<tr><th>障子種別</th><td colspan="3">${stypeStr}</td></tr>
-<tr><th>開閉タイプ</th><td style="font-size:10px">${openTypeStr}</td><th>下枠</th><td style="font-size:10px">${shitawakuStr}</td></tr>
-<tr><th>取付寸法 A</th><td colspan="3">${wd.dimA||'—'} ㎜</td></tr>
+<tr><th style="width:28%">窓種</th><td style="width:14%;font-size:10px">${winTypeStr}</td><th style="width:28%">商品色</th><td style="width:30%;font-size:10px">${lb(LBL.color,wd.color)}</td></tr>
+${hikiRows}${fixHirakiRows}${hirakiRows}
+<tr><th>取付寸法 A</th><td style="font-size:10px">${wd.dimA||'—'} ㎜</td><th>持ち出し</th><td style="font-size:10px">${mochidashiStr}</td></tr>
 <tr><th>KW 幅<br><sub>上 / 中 / 下</sub></th><td colspan="3">${kwCells}</td></tr>
 <tr><th>KH 高<br><sub>左 / 中 / 右</sub></th><td colspan="3">${khCells}</td></tr>
 <tr><th>対角</th><td colspan="3">${taikakuStr}</td></tr>
 <tr><th>ガラス</th><td colspan="3">${glass}</td></tr>
 <tr><th>スペーサー</th><td colspan="3">${spStr}</td></tr>
-<tr><th>クレセント</th><td colspan="3">${cresStr}</td></tr>
-<tr><th>引手</th><td colspan="3">${hikiteStr}</td></tr>
-<tr><th>中桟</th><td colspan="3">${nakazanStr}</td></tr>
 <tr><th>格子</th><td colspan="3">${koshiStr}</td></tr>
 <tr><th>ふかし枠</th><td colspan="3">${fukaStr}</td></tr>
 </table></div><div class="wc-memo"><div class="wc-memo-label">備考・メモ</div><div class="wc-memo-body">${wd.memo||''}</div></div></div></div>`;
@@ -426,7 +438,8 @@ function validateAll(){
   const data=collectAll();
   data.winData.forEach(wd=>{
     const items=[];
-    if(!wd.shoji) items.push('障子枚数');
+    if(!wd.windowType) items.push('窓種');
+    if(wd.windowType==='hiki'&&!wd.shoji) items.push('障子枚数');
     if(!wd.color) items.push('商品色');
     if(!wd.dimA)  items.push('取付必要寸法 A');
     if(wd.kw.every(v=>!v)) items.push('KW（幅）採寸');
@@ -473,7 +486,7 @@ function showPdfPreview(){
   const {site,date,winCount,cards}=buildCards();
   document.getElementById('pdf-report').innerHTML=`
 <div class="rh">
-  <div class="rt">内窓 現場調査シート<br><span style="font-size:10px;font-weight:400;color:#555">引き違い窓（2・4枚建）</span></div>
+  <div class="rt">内窓 現場調査シート</div>
   <div class="rm">現場名：${site}<br>調査日：${date}<br>窓数：${winCount}か所</div>
 </div>
 <div class="grid">${cards}</div>
@@ -661,6 +674,47 @@ function toggleNakazanPos(n){
   const v=document.querySelector(`input[name="nakazan${n}"]:checked`);
   const e=document.getElementById('nakazanpos-wrap-'+n);if(e)e.style.display=(v&&v.value==='y')?'flex':'none';
 }
+function toggleWindowType(n){
+  const v=document.querySelector(`input[name="wintype${n}"]:checked`);
+  const wt=v?v.value:'';
+  const hikiWrap=document.getElementById('hiki-wrap-'+n);
+  const fixhirakiWrap=document.getElementById('fixhiraki-wrap-'+n);
+  const hirakiWrap=document.getElementById('hiraki-wrap-'+n);
+  const hikiSections=document.getElementById('hiki-sections-'+n);
+  if(hikiWrap)hikiWrap.style.display=(wt==='hiki')?'block':'none';
+  if(fixhirakiWrap)fixhirakiWrap.style.display=(wt==='fix'||wt==='hiraki')?'block':'none';
+  if(hirakiWrap)hirakiWrap.style.display=(wt==='hiraki')?'block':'none';
+  if(hikiSections)hikiSections.style.display=(wt==='hiki')?'block':'none';
+  toggleOpHandle(n);
+  toggleMochidashi(n);
+}
+function toggleOpHandle(n){
+  const v=document.querySelector(`input[name="ophandle${n}"]:checked`);
+  const e=document.getElementById('ophandle-detail-'+n);
+  if(e)e.style.display=(v&&v.value==='y')?'block':'none';
+  const noteEl=document.getElementById('ophandle-note-'+n);
+  if(!noteEl)return;
+  const wt=(document.querySelector(`input[name="wintype${n}"]:checked`)||{}).value||'';
+  if(v&&v.value==='y'){
+    let msg='⚠ 外窓操作部品が突出している場合、A寸法の測定にご注意ください。<br>';
+    if(wt==='fix') msg+='FIX窓：通常納まり A≧50㎜ ／ 持ち出し納まり A≧45㎜';
+    else msg+='開き窓：通常納まり A≧50㎜ ／ 持ち出し納まり A≧39㎜<br>※アームストッパー付の場合：通常 A≧74㎜ ／ 持ち出し A≧63㎜';
+    noteEl.innerHTML=msg;
+  }
+}
+function toggleMochidashi(n){
+  const mv=document.querySelector(`input[name="mochidashi${n}"]:checked`);
+  const noteEl=document.getElementById('mochidashi-note-'+n);
+  if(!noteEl)return;
+  if(!mv||mv.value!=='y'){noteEl.style.display='none';return;}
+  const wt=(document.querySelector(`input[name="wintype${n}"]:checked`)||{}).value||'';
+  let msg='';
+  if(wt==='hiki') msg='⚠ 引き違い窓 持ち出し納まり：必要A寸法 47㎜以上<br>枠見込み 58㎜ ／ 持ち出し量 11㎜';
+  else if(wt==='fix') msg='⚠ FIX窓 持ち出し納まり：必要A寸法 45㎜以上<br>枠見込み 50㎜ ／ 持ち出し量 11㎜';
+  else if(wt==='hiraki'){const as=(document.querySelector(`input[name="armstopper${n}"]:checked`)||{}).value||'';msg=as&&as!=='n'?'⚠ 開き窓（アームストッパー付）持ち出し納まり：必要A寸法 63㎜以上<br>枠見込み 50㎜ ／ 持ち出し量 11㎜':'⚠ 開き窓 持ち出し納まり：必要A寸法 39㎜以上<br>枠見込み 50㎜ ／ 持ち出し量 11㎜';}
+  else{msg='⚠ 先に窓種を選択してください';};
+  noteEl.innerHTML=msg;noteEl.style.display='block';
+}
 
 // ─── パネル生成 ──────────────────────────
 function makePanel(n){
@@ -669,26 +723,45 @@ function makePanel(n){
 <div class="section">
   <div class="sec-title">設置・基本情報</div>
   <div class="field"><label>設置場所</label><input type="text" id="loc-${n}" placeholder="例：リビング南"></div>
-  <div class="field"><label>障子枚数</label><div class="radio-group">
-    <label><input type="radio" name="shoji${n}" value="2" onchange="toggleOpenType(${n})"><span>2枚建</span></label>
-    <label><input type="radio" name="shoji${n}" value="4" onchange="toggleOpenType(${n})"><span>4枚建</span></label>
+  <div class="field"><label>窓種</label><div class="radio-group">
+    <label><input type="radio" name="wintype${n}" value="hiki" onchange="toggleWindowType(${n})"><span>引き違い</span></label>
+    <label><input type="radio" name="wintype${n}" value="fix" onchange="toggleWindowType(${n})"><span>FIX窓</span></label>
+    <label><input type="radio" name="wintype${n}" value="hiraki" onchange="toggleWindowType(${n})"><span>開き窓</span></label>
   </div></div>
-  <div class="field"><label>障子種別</label>
-    <select id="stype-sel-${n}">
-      <option value="">— 障子種別を選択 —</option>
-      <option value="f">複層</option>
-      <option value="fk_io">複層(換気框付)内外障子</option>
-      <option value="fk_i">複層(換気框付)内障子のみ</option>
-      <option value="t">単板</option>
-      <option value="tk">単板(組子組合せ用)</option>
-      <option value="vs">真空(スペーシアクール専用フレーム)</option>
-      <option value="vc">真空(完成品)</option>
-    </select>
+  <div id="hiki-wrap-${n}" style="display:none">
+    <div class="field"><label>障子枚数</label><div class="radio-group">
+      <label><input type="radio" name="shoji${n}" value="2" onchange="toggleOpenType(${n})"><span>2枚建</span></label>
+      <label><input type="radio" name="shoji${n}" value="4" onchange="toggleOpenType(${n})"><span>4枚建</span></label>
+    </div></div>
+    <div id="opentype-wrap-${n}" style="display:none">
+      <div class="field"><label>開閉タイプ（2枚建のみ）</label><div class="radio-group">
+        <label><input type="radio" name="opentype${n}" value="s"><span>正勝手</span></label>
+        <label><input type="radio" name="opentype${n}" value="r"><span>逆勝手</span></label>
+      </div></div>
+    </div>
   </div>
-  <div id="opentype-wrap-${n}" style="display:none">
-    <div class="field"><label>開閉タイプ（2枚建のみ）</label><div class="radio-group">
-      <label><input type="radio" name="opentype${n}" value="s"><span>正勝手</span></label>
-      <label><input type="radio" name="opentype${n}" value="r"><span>逆勝手</span></label>
+  <div id="fixhiraki-wrap-${n}" style="display:none">
+    <div class="field"><label>既設窓のオペレーターハンドル</label><div class="radio-group">
+      <label><input type="radio" name="ophandle${n}" value="n" onchange="toggleOpHandle(${n})"><span>無</span></label>
+      <label><input type="radio" name="ophandle${n}" value="y" onchange="toggleOpHandle(${n})"><span>有</span></label>
+    </div></div>
+    <div id="ophandle-detail-${n}" style="display:none">
+      <div id="ophandle-note-${n}" style="background:var(--danger2);border:0.5px solid #f7c1c1;border-radius:8px;padding:8px 12px;margin:8px 0;font-size:12px;color:var(--danger);line-height:1.7"></div>
+      <div class="field"><label>外窓用汎用ハンドル</label><div class="radio-group">
+        <label><input type="radio" name="hanyohandle${n}" value="y"><span>必要</span></label>
+        <label><input type="radio" name="hanyohandle${n}" value="n"><span>不要</span></label>
+      </div></div>
+    </div>
+  </div>
+  <div id="hiraki-wrap-${n}" style="display:none">
+    <div class="field"><label>左右区分</label><div class="radio-group">
+      <label><input type="radio" name="leftright${n}" value="r"><span>右勝手</span></label>
+      <label><input type="radio" name="leftright${n}" value="l"><span>左勝手</span></label>
+    </div></div>
+    <div class="field"><label>アームストッパー</label><div class="radio-group">
+      <label><input type="radio" name="armstopper${n}" value="n"><span>無</span></label>
+      <label><input type="radio" name="armstopper${n}" value="s"><span>小</span></label>
+      <label><input type="radio" name="armstopper${n}" value="l"><span>大</span></label>
     </div></div>
   </div>
   <div class="field"><label>商品色</label><div class="radio-group">
@@ -701,10 +774,14 @@ function makePanel(n){
     <label><input type="radio" name="color${n}" value="wh"><span>ホワイト</span></label>
   </div></div>
   <div class="sub-row"><span class="il">取付必要寸法 A</span>
-    <div style="display:flex;align-items:center;gap:6px">
-      <input type="text" id="dima-${n}" inputmode="numeric" style="width:80px"><span class="kw-unit">㎜</span>
+    <div style="display:flex;align-items:center;gap:6px"><input type="text" id="dima-${n}" inputmode="numeric" style="width:80px"><span class="kw-unit">㎜</span></div>
+    <span class="il" style="margin-left:12px">持ち出し</span>
+    <div class="radio-group">
+      <label><input type="radio" name="mochidashi${n}" value="n" onchange="toggleMochidashi(${n})"><span>無</span></label>
+      <label><input type="radio" name="mochidashi${n}" value="y" onchange="toggleMochidashi(${n})"><span>有</span></label>
     </div>
   </div>
+  <div id="mochidashi-note-${n}" style="display:none;background:var(--danger2);border:0.5px solid #f7c1c1;border-radius:8px;padding:8px 12px;margin:8px 16px 0;font-size:12px;color:var(--danger);line-height:1.7"></div>
 </div>
 
 <div class="section">
@@ -744,6 +821,7 @@ function makePanel(n){
   </div>
 </div>
 
+<div id="hiki-sections-${n}" style="display:none">
 <div class="section">
   <div class="sec-title">クレセント</div>
   <div class="sub-row"><span class="il">有無</span>
@@ -800,6 +878,7 @@ function makePanel(n){
       <label><input type="radio" name="shitawaku${n}" value="al"><span>アルミレール</span></label>
     </div>
   </div>
+</div>
 </div>
 
 <div class="section">
