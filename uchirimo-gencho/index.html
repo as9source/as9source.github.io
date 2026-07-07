@@ -42,7 +42,8 @@ body{font-family:'Hiragino Sans','Meiryo',sans-serif;background:var(--bg2);displ
 .tbtn.pr{background:var(--accent);color:#fff;border-color:var(--accent)}
 .tbtn.pr:active{opacity:.85}
 
-/* 基本情報 */
+/* 
+基本情報 */
 .top-section{padding:12px 16px;background:var(--bg);border-bottom:0.5px solid var(--bd);flex-shrink:0}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .field{display:flex;flex-direction:column;gap:3px;margin-bottom:8px}
@@ -71,7 +72,8 @@ body{font-family:'Hiragino Sans','Meiryo',sans-serif;background:var(--bg2);displ
 .sec-title::before{content:'';display:inline-block;width:3px;height:12px;background:var(--tag);border-radius:2px}
 
 /* 入力要素 */
-input[type=text]{border:0.5px solid var(--bd);border-radius:8px;padding:9px 12px;font-size:15px;width:100%;background:var(--bg);color:var(--text);font-family:inherit;-webkit-appearance:none;appearance:none}
+input[type=text]{border:0.5px solid var(--bd);border-radius:8p
+x;padding:9px 12px;font-size:15px;width:100%;background:var(--bg);color:var(--text);font-family:inherit;-webkit-appearance:none;appearance:none}
 input[type=text]:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(26,74,122,.12)}
 select{border:0.5px solid var(--bd);border-radius:8px;padding:9px 12px;font-size:14px;width:100%;background:var(--bg);color:var(--text);font-family:inherit;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
 select:focus{outline:none;border-color:var(--accent)}
@@ -89,7 +91,8 @@ select:focus{outline:none;border-color:var(--accent)}
 .kw-table td{padding:5px 6px;border:0.5px solid var(--bd);text-align:center}
 .kw-table td.rh{background:var(--bg3);font-size:12px;color:var(--text2);font-weight:500;width:50px;line-height:1.4}
 .kw-inp{display:flex;align-items:center;justify-content:center;gap:3px}
-.kw-inp input{border:0.5px solid var(--bd);border-radius:6px;padding:7px 4px;font-size:14px;width:72px;text-align:right;background:var(--bg);color:var(--text);font-family:inherit;-webkit-appearance:none;transition:all .18s}
+.kw-inp input{border:0.5px solid var(--bd);border-radius:6px;padding:7px 4px;font-size:14px;width:72px;text-align:right;background:var(--bg);color:var(--text);f
+ont-family:inherit;-webkit-appearance:none;transition:all .18s}
 .kw-inp input:focus{outline:none;border-color:var(--accent)}
 .kw-inp input.err{border-color:var(--danger)!important;background:var(--danger2)!important}
 .kw-inp input.is-min{border-color:var(--min-bd)!important;background:var(--min-bg)!important;color:var(--min-text)!important;font-weight:600}
@@ -116,7 +119,8 @@ select:focus{outline:none;border-color:var(--accent)}
 .toast.show{opacity:1}
 
 /* PDFプレビュー */
-.pdf-overlay{display:none;position:fixed;inset:0;z-index:200;background:#fff;flex-direction:column}
+.pdf-overlay{display:none;position:fixed;inset:0;z-
+index:200;background:#fff;flex-direction:column}
 .pdf-overlay.show{display:flex}
 .pdf-toolbar{display:flex;align-items:center;gap:8px;padding:calc(10px + var(--safe-top)) 12px 10px;background:var(--accent);color:#fff;flex-shrink:0}
 .pdf-toolbar h2{flex:1;font-size:14px;font-weight:500;margin:0}
@@ -133,7 +137,8 @@ select:focus{outline:none;border-color:var(--accent)}
 .pdf-report .wc-data{flex:1;min-width:0;overflow:hidden}
 .pdf-report .wc-memo{width:280px;flex-shrink:0;border-left:1px solid #ccc;display:flex;flex-direction:column;background:#fafafa;height:100%}
 .pdf-report .wc-memo-label{font-size:9px;font-weight:500;color:#888;padding:4px 8px 2px;border-bottom:0.5px solid #e0e0e0}
-.pdf-report .wc-memo-body{flex:1;padding:6px 8px;font-size:11px;color:#333;line-height:1.6;white-space:pre-wrap;overflow:hidden}
+.pdf-report .wc-memo-body{flex:1;padding:6px 8px;font-size:11px;color:#3
+33;line-height:1.6;white-space:pre-wrap;overflow:hidden}
 .pdf-report .wh{background:#1a4a7a;color:#fff;font-size:12px;font-weight:700;padding:5px 8px}
 .pdf-report table{width:100%;border-collapse:collapse}
 .pdf-report th{background:#f0ede8;font-size:10px;font-weight:500;color:#444;padding:2px 6px;text-align:left;border:0.5px solid #ccc;width:30%;vertical-align:top}
@@ -156,7 +161,8 @@ select:focus{outline:none;border-color:var(--accent)}
 .val-win-label::before{content:'';display:inline-block;width:3px;height:11px;background:var(--tag);border-radius:2px}
 .val-item{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);padding:3px 0}
 .val-item::before{content:'⚠';font-size:11px;color:#ba7517}
-.val-divider{height:0.5px;background:var(--bd);margin:4px 16px}
+.val-divider{h
+eight:0.5px;background:var(--bd);margin:4px 16px}
 .val-footer{display:flex;gap:8px;padding:12px 16px;border-top:0.5px solid var(--bd)}
 .val-btn-back{flex:1;padding:12px;border:0.5px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--text);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit}
 .val-btn-go{flex:2;padding:12px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit}
@@ -203,6 +209,7 @@ select:focus{outline:none;border-color:var(--accent)}
 <div class="pdf-overlay" id="pdf-overlay">
   <div class="pdf-toolbar">
     <button class="pdf-back" onclick="closePdfPreview()">← 戻る</button>
+
     <h2>現場調査シート</h2>
     <button class="pdf-share" onclick="sharePdf()">PDF ダウンロード ↓</button>
   </div>
@@ -232,10 +239,17 @@ let wins=[], activeId=null, ctr=0;
 // ─── ラベル定義 ─────────────────────────
 const LBL={
   color:{cb:'カームブラック',gr:'グレージュ',cl:'クリア',na:'ナチュラル',db:'ダークブラウン',mo:'ミディアムオーク',wh:'ホワイト'},
-  series:{f:'複層',t:'単板',v:'真空',ln:'Low-Eニュートラル',lb:'Low-Eブロンズ',lr:'Low-Eルーバー',lh:'遮熱Low-Eルーバー'},
-  gt:{m:'透明',k:'型',s:'すり'},
+  series:{f:'複層',t:'単板',v:'真空',ln:'Low-Eニュートラル',lb:'Low-Eブロンズ',lr:'Low-Eブルー',lh:'遮熱Low-Eブルー'},
+  gt:{m:'透明',k:'型',s:'すり',ih:'異厚'},
+  gt2:{ip:'一般',aw:'合わせ(30mil)',ky:'強化'},
+  stype:{f:'複層',fk_io:'複層(換気框付)内外障子',fk_i:'複層(換気框付)内障子のみ',t:'単板',tk:'単板(組子組合せ用)',vs:'真空(スペーシアクール専用フレーム)',vc:'真空(完成品)'},
+  openType:{s:'正勝手',r:'逆勝手'},
+  cres:{std:'標準',less:'クレセントレス'},
+  hikite:{safe:'ストッパー付安全引手',funa:'舟底引手',tsuki:'突合せ框専用引手'},
+  nakazan:{n:'無',y:'付'},
+  shitawaku:{std:'標準',maji:'間仕切り用',al:'アルミレール'},
   sp:{al:'アルミ',j:'樹脂'},
-  kt:{pe:'プレーンタイプ',el:'エレガントタイプ',wa01:'洋風 WA01',wa01m:'洋風 WA01（無脂格子）',wa02:'洋風 WA02',pa01:'プレーリー PA01',pa02:'プレーリー PA02',yh:'横繁吹寄格子',ar:'荒間格子',yt:'たて繁吹寄格子'},
+  kt:{pe:'プレーンタイプ',el:'エレガントタイプ',wa01:'洋風 WA01',wa01m:'洋風 WA01（樹脂格子）',wa02:'洋風 WA02',pa01:'プレーリー PA01',pa02:'プレーリー PA02',yh:'横繁吹寄格子',ar:'荒間格子',yt:'たて繁吹寄格子'},
   fs:{'25':'25㎜','40':'40㎜','60':'60㎜'},
   fd:{'3':'三方','4':'四方'}
 };
@@ -255,7 +269,8 @@ function updateMin(inputs,noteEl){
   const pairs=inputs.map(i=>({el:i,v:parseFloat(i.value)})).filter(p=>!isNaN(p.v));
   if(pairs.length<2){if(noteEl)noteEl.classList.remove('show');return;}
   const minV=Math.min(...pairs.map(p=>p.v));
-  pairs.filter(p=>p.v===minV).forEach(p=>p.el.classList.add('is-min'));
+  pairs.filter(p=>p.v===minV).forEach(p=>p.el.classLis
+t.add('is-min'));
   if(noteEl){noteEl.classList.add('show');noteEl.querySelector('.min-val').textContent=minV+'㎜ が取付基準寸法';}
 }
 
@@ -287,10 +302,17 @@ function getWinData(n){
     location:t('loc-'+n),shoji:r('shoji'+n),color:r('color'+n),dimA:t('dima-'+n),
     kw:[...document.querySelectorAll(`#kw-row-${n} input`)].map(i=>i.value.trim()),
     kh:[...document.querySelectorAll(`#kh-row-${n} input`)].map(i=>i.value.trim()),
-    series:r('series'+n),glassType:r('type1_'+n),spacer:r('sp'+n),gas:r('gas'+n),
-    ch:t('ch-'+n),
+    series:r('series'+n),glassType:r('type1_'+n),glassType2:r('type2_'+n),spacer:r('sp'+n),gas:r('gas'+n),
+    taikaku:[t('taik1-'+n),t('taik2-'+n)],
+    shojiType:(document.getElementById('stype-sel-'+n)||{}).value||'',
+    openType:r('opentype'+n),
+    cresType:r('cres'+n),cresPos:t('crespos-'+n),
+    hikiteType:r('hikite'+n),hikitePos:t('hikitepos-'+n),
+    nakazan:r('nakazan'+n),nakazanPos:t('nakazanpos-'+n),
+    shitawaku:r('shitawaku'+n),
     koshi:r('koshi'+n),koshiType:(document.getElementById('koshi-sel-'+n)||{}).value||'',
-    fukaAri:r('fukaari'+n),fukaSize:r('fukasize'+n),fukaDir:r('fukadir'+n),
+    fukaAri:r('fukaari'+n),fukaSize:r('fukasize'+n),fukaDir:r('fukadir'+
+n),
     curtain:r('curtain'+n),hoko:r('hoko'+n),memo:t('memo-'+n)
   };
 }
@@ -305,14 +327,14 @@ function collectAll(){
 // ─── 保存 / 読み込み ─────────────────────
 function saveData(){
   try{
-    localStorage.setItem('uchirimo_gencho_v1',JSON.stringify(collectAll()));
+    localStorage.setItem('uchirimo_gencho_v2',JSON.stringify(collectAll()));
     const d=new Date();document.getElementById('save-ind').textContent='保存済み '+d.getHours()+':'+String(d.getMinutes()).padStart(2,'0');
     toast('保存しました');
   }catch(e){toast('保存に失敗しました',1);}
 }
 function loadData(){
   try{
-    const raw=localStorage.getItem('uchirimo_gencho_v1');
+    const raw=localStorage.getItem('uchirimo_gencho_v2');
     if(!raw){toast('保存データがありません',1);return;}
     restoreAll(JSON.parse(raw));toast('読み込みました');
   }catch(e){toast('読み込みに失敗しました',1);}
@@ -334,17 +356,21 @@ function restoreAll(data){
 function restoreWin(wd){
   const n=wd.id,p=document.getElementById('panel-'+n);if(!p)return;
   const si=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v||'';};
-  si('loc-'+n,wd.location);si('dima-'+n,wd.dimA);si('ch-'+n,wd.ch);si('memo-'+n,wd.memo);
+  si('loc-'+n,wd.location);si('dima-'+n,wd.dimA);si('memo-'+n,wd.memo);
+  si('crespos-'+n,wd.cresPos);si('hikitepos-'+n,wd.hikitePos);si('nakazanpos-'+n,wd.nakazanPos);
+  if(wd.taikaku){si('taik1-'+n,wd.taikaku[0]);si('taik2-'+n,wd.taikaku[1]);}
   const kwR=document.getElementById('kw-row-'+n),khR=document.getElementById('kh-row-'+n);
   if(kwR&&wd.kw)[...kwR.querySelectorAll('input')].forEach((inp,i)=>inp.value=wd.kw[i]||'');
+
   if(khR&&wd.kh)[...khR.querySelectorAll('input')].forEach((inp,i)=>inp.value=wd.kh[i]||'');
-  const srmap={shoji:'shoji',color:'color',series:'series','type1_':'type1_',sp:'sp',gas:'gas',koshi:'koshi',fukaari:'fukaAri',fukasize:'fukaSize',fukadir:'fukaDir',curtain:'curtain',hoko:'hoko'};
+  const srmap={shoji:'shoji',color:'color',series:'series','type1_':'type1_','type2_':'glassType2',sp:'sp',gas:'gas',opentype:'openType',cres:'cresType',hikite:'hikiteType',nakazan:'nakazan',shitawaku:'shitawaku',koshi:'koshi',fukaari:'fukaAri',fukasize:'fukaSize',fukadir:'fukaDir',curtain:'curtain',hoko:'hoko'};
   Object.entries(srmap).forEach(([k,dk])=>{
     const v=wd[dk];if(!v)return;
     const e=p.querySelector(`input[name="${k+n}"][value="${v}"]`);if(e){e.checked=true;e.dispatchEvent(new Event('change'));}
   });
   const ks=document.getElementById('koshi-sel-'+n);if(ks)ks.value=wd.koshiType||'';
-  toggleKoshi(n);toggleFuka(n);
+  const ss=document.getElementById('stype-sel-'+n);if(ss)ss.value=wd.shojiType||'';
+  toggleKoshi(n);toggleFuka(n);toggleOpenType(n);toggleCresPos(n);toggleNakazanPos(n);
   setTimeout(()=>{
     const kw=[...document.querySelectorAll(`#kw-row-${n} input`)];
     const kh=[...document.querySelectorAll(`#kh-row-${n} input`)];
@@ -367,21 +393,34 @@ function buildCards(){
     const kwSubCells=wd.kw.map((s,i)=>`<span style="color:#aaa;font-size:9px;">${kwLabels[i]}</span><span style="font-size:10px;color:#555;">${s||'—'}</span>`).join('<span style="color:#ddd;font-size:9px;"> / </span>');
     const kwCells=kwMinCell+`<span style="color:#888;font-size:10px;">(${kwSubCells})</span>`;
     const khLabels=['左','中','右'];
-    const khMinCell=khMin!==null?`<span style="background:#1a4a7a;color:#fff;font-weight:700;border-radius:4px;padding:2px 8px;margin-right:8px;font-size:13px;">${khMin}㎜</span>`:'';
+    const khMinCell=khMin!==null?`<span style="background:#1a4a7a;color:#fff;font-weight:700;border-radius:4px;p
+adding:2px 8px;margin-right:8px;font-size:13px;">${khMin}㎜</span>`:'';
     const khSubCells=wd.kh.map((s,i)=>`<span style="color:#aaa;font-size:9px;">${khLabels[i]}</span><span style="font-size:10px;color:#555;">${s||'—'}</span>`).join('<span style="color:#ddd;font-size:9px;"> / </span>');
     const khCells=khMinCell+`<span style="color:#888;font-size:10px;">(${khSubCells})</span>`;
-    const glass=[lb(LBL.series,wd.series),lb(LBL.gt,wd.glassType)].filter(s=>s&&s!=='—').join(' / ')||'—';
+    const glass=[lb(LBL.series,wd.series),lb(LBL.gt,wd.glassType),wd.glassType2?lb(LBL.gt2,wd.glassType2):''].filter(s=>s&&s!=='—').join(' / ')||'—';
     const spStr=[lb(LBL.sp,wd.spacer),wd.gas==='y'?'ガス有':''].filter(Boolean).join('・')||'—';
     const koshiStr=wd.koshi==='y'?'有（'+lb(LBL.kt,wd.koshiType)+'）':'無';
     const fukaStr=wd.fukaAri==='y'?[lb(LBL.fs,wd.fukaSize),lb(LBL.fd,wd.fukaDir),wd.curtain==='y'?'カーテンレール有':'',wd.hoko==='y'?'補強有':''].filter(Boolean).join('・'):'無';
+    const taikakuStr=(wd.taikaku&&(wd.taikaku[0]||wd.taikaku[1]))?'対角1: '+(wd.taikaku[0]||'—')+'㎜ ／ 対角2: '+(wd.taikaku[1]||'—')+'㎜':'—';
+    const stypeStr=wd.shojiType?lb(LBL.stype,wd.shojiType):'—';
+    const openTypeStr=wd.openType?lb(LBL.openType,wd.openType):'—';
+    const cresStr=wd.cresType?(lb(LBL.cres,wd.cresType)+(wd.cresType==='std'&&wd.cresPos?' '+wd.cresPos+'㎜':'')):'—';
+    const hikiteStr=wd.hikiteType?(lb(LBL.hikite,wd.hikiteType)+(wd.hikitePos?' '+wd.hikitePos+'㎜':'')):'—';
+    const nakazanStr=wd.nakazan?(lb(LBL.nakazan,wd.nakazan)+(wd.nakazan==='y'&&wd.nakazanPos?' '+wd.nakazanPos+'㎜':'')):'—';
+    const shitawakuStr=wd.shitawaku?lb(LBL.shitawaku,wd.shitawaku):'—';
     return`<div class="wc"><div class="wh">${wd.label}${wd.location?' ／ '+wd.location:''}</div><div class="wc-inner"><div class="wc-data"><table>
 <tr><th style="width:28%">障子枚数</th><td style="width:14%;font-size:10px">${wd.shoji?wd.shoji+'枚建':'—'}</td><th style="width:28%">商品色</th><td style="width:30%;font-size:10px">${lb(LBL.color,wd.color)}</td></tr>
+<tr><th>障子種別</th><td colspan="3">${stypeStr}</td></tr>
+<tr><th>開閉タイプ</th><td style="font-size:10px">${openTypeStr}</td><th>下枠</th><td style="font-size:10px">${shitawakuStr}</td></tr>
 <tr><th>取付寸法 A</th><td colspan="3">${wd.dimA||'—'} ㎜</td></tr>
 <tr><th>KW 幅<br><sub>上 / 中 / 下</sub></th><td colspan="3">${kwCells}</td></tr>
 <tr><th>KH 高<br><sub>左 / 中 / 右</sub></th><td colspan="3">${khCells}</td></tr>
-<tr><th>CH</th><td colspan="3">${wd.ch||'—'} ㎜</td></tr>
+<tr><th>対角</th><td colspan="3">${taikakuStr}</td></tr>
 <tr><th>ガラス</th><td colspan="3">${glass}</td></tr>
 <tr><th>スペーサー</th><td colspan="3">${spStr}</td></tr>
+<tr><th>クレセント</th><td colspan="3">${cresStr}</td></tr>
+<tr><th>引手</th><td colspan="3">${hikiteStr}</td></tr>
+<tr><th>中桟</th><td colspan="3">${nakazanStr}</td></tr>
 <tr><th>格子</th><td colspan="3">${koshiStr}</td></tr>
 <tr><th>ふかし枠</th><td colspan="3">${fukaStr}</td></tr>
 </table></div><div class="wc-memo"><div class="wc-memo-label">備考・メモ</div><div class="wc-memo-body">${wd.memo||''}</div></div></div></div>`;
@@ -393,7 +432,8 @@ function buildCards(){
 function validateAll(){
   const issues=[];
   const data=collectAll();
-  data.winData.forEach(wd=>{
+  data.win
+Data.forEach(wd=>{
     const items=[];
     if(!wd.shoji) items.push('障子枚数');
     if(!wd.color) items.push('商品色');
@@ -453,7 +493,8 @@ function showPdfPreview(){
 }
 
 function closePdfPreview(){
-  document.getElementById('pdf-overlay').classList.remove('show');
+  documen
+t.getElementById('pdf-overlay').classList.remove('show');
 }
 
 async function sharePdf(){
@@ -524,7 +565,8 @@ async function sharePdf(){
       });
 
       // 固定高さ cardH で配置（アスペクト比無視して強制fit）
-      doc.addImage(cardCanvas.toDataURL('image/jpeg',0.95),'JPEG',mgnL,cardY,usableW,cardH);
+      doc.addImage(cardCanvas.toDat
+aURL('image/jpeg',0.95),'JPEG',mgnL,cardY,usableW,cardH);
 
       pageCardIdx=(pageCardIdx+1)%CARDS_PER_PAGE;
     }
@@ -581,7 +623,8 @@ function deleteWindow(id,e){
     w.label='窓 '+(i+1);
   });
   if(activeId===id){
-    const nx=wins[Math.min(idx,wins.length-1)];
+    const nx=wins[Math.min(id
+x,wins.length-1)];
     if(nx)setActive(nx.id);
     else{activeId=null;document.getElementById('scroll-area').innerHTML='<div class="empty-state" id="empty-state"><p>窓がありません</p><button class="primary-btn" onclick="addWindow()">＋ 窓を追加</button></div>';}
   }
@@ -615,6 +658,21 @@ function toggleFuka(n){
   const v=document.querySelector(`input[name="fukaari${n}"]:checked`);
   const e=document.getElementById('fuka-detail-'+n);if(e)e.style.display=(v&&v.value==='y')?'block':'none';
 }
+function toggleOpenType(n){
+  const v=document.querySelector(`input[name="shoji${n}"]:checked`);
+  const e=document.getElementById('opentype-wrap-'+n);if(e)e.style.display=(v&&v.value==='2')?'block':'none';
+  // Also update hikite options for 4枚建
+  const tsukiOpt=document.getElementById('hikite-tsuki-'+n);
+  if(tsukiOpt) tsukiOpt.style.display=(v&&v.value==='4')?'inline-flex':'none';
+}
+function toggleCresPos(n){
+  const v=document.querySelector(`input[name="cres${n}"]:checked`);
+  const e=document.getElementById('crespos-wrap-'+n);if(e)e.style.display=(v&&v.value==='std')?'flex':'none';
+}
+function toggleNakazanPos(n){
+  const v=document.querySelector(`input[name="nakazan${n}"]:checked`);
+  const e=document.getElementById('nakazanpos-wrap-'+n);if(e)e.style.display=(v&&v.value==='y')?'flex':'none';
+}
 
 // ─── パネル生成 ──────────────────────────
 function makePanel(n){
@@ -622,11 +680,30 @@ function makePanel(n){
   div.innerHTML=`
 <div class="section">
   <div class="sec-title">設置・基本情報</div>
-  <div class="field"><label>設置場所</label><input type="text" id="loc-${n}" placeholder="例：リビング南"></div>
+  <div class="field"><label>設置場所</label><input type="text" id="loc-${n}" placeholder="例：リビング南"></d
+iv>
   <div class="field"><label>障子枚数</label><div class="radio-group">
-    <label><input type="radio" name="shoji${n}" value="2"><span>2枚建</span></label>
-    <label><input type="radio" name="shoji${n}" value="4"><span>4枚建</span></label>
+    <label><input type="radio" name="shoji${n}" value="2" onchange="toggleOpenType(${n})"><span>2枚建</span></label>
+    <label><input type="radio" name="shoji${n}" value="4" onchange="toggleOpenType(${n})"><span>4枚建</span></label>
   </div></div>
+  <div class="field"><label>障子種別</label>
+    <select id="stype-sel-${n}">
+      <option value="">— 障子種別を選択 —</option>
+      <option value="f">複層</option>
+      <option value="fk_io">複層(換気框付)内外障子</option>
+      <option value="fk_i">複層(換気框付)内障子のみ</option>
+      <option value="t">単板</option>
+      <option value="tk">単板(組子組合せ用)</option>
+      <option value="vs">真空(スペーシアクール専用フレーム)</option>
+      <option value="vc">真空(完成品)</option>
+    </select>
+  </div>
+  <div id="opentype-wrap-${n}" style="display:none">
+    <div class="field"><label>開閉タイプ（2枚建のみ）</label><div class="radio-group">
+      <label><input type="radio" name="opentype${n}" value="s"><span>正勝手</span></label>
+      <label><input type="radio" name="opentype${n}" value="r"><span>逆勝手</span></label>
+    </div></div>
+  </div>
   <div class="field"><label>商品色</label><div class="radio-group">
     <label><input type="radio" name="color${n}" value="cb"><span>カームブラック</span></label>
     <label><input type="radio" name="color${n}" value="gr"><span>グレージュ</span></label>
@@ -655,7 +732,8 @@ function makePanel(n){
     </tr></tbody>
   </table>
   <div id="kw-err-${n}" class="err-msg">⚠ KW（上・中・下）の差が20㎜以上あります。開口部の変形・歪みを確認してください。</div>
-  <div id="kw-min-${n}" class="min-note"><span class="min-dot"></span><span>KW 最小：<strong class="min-val"></strong>（取付基準幅）</span></div>
+  <div id="kw-min-${n}" class="min-note"><span class="min-dot"></span><span>KW 最
+小：<strong class="min-val"></strong>（取付基準幅）</span></div>
 
   <table class="kw-table" style="margin-top:10px">
     <thead><tr><th></th><th>左</th><th>中</th><th>右</th></tr></thead>
@@ -669,9 +747,69 @@ function makePanel(n){
   <div id="kh-err-${n}" class="err-msg">⚠ KH（左・中・右）の差が20㎜以上あります。開口部の変形・歪みを確認してください。</div>
   <div id="kh-min-${n}" class="min-note"><span class="min-dot"></span><span>KH 最小：<strong class="min-val"></strong>（取付基準高）</span></div>
   <p class="note" style="margin-top:8px">※ KW は上・中・下、KH は左・中・右の最小値が取付寸法となります</p>
-  <div class="sub-row" style="margin-top:10px"><span class="il">CH（クレセント高さ）</span>
+  <div class="sub-row" style="margin-top:10px"><span class="il">対角</span>
     <div style="display:flex;align-items:center;gap:6px">
-      <input type="text" id="ch-${n}" inputmode="numeric" style="width:80px"><span class="kw-unit">㎜</span>
+      <span class="il">対角1</span><input type="text" id="taik1-${n}" inputmode="numeric" style="width:80px"><span class="kw-unit">㎜</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <span class="il">対角2</span><input type="text" id="taik2-${n}" inputmode="numeric" style="width:80px"><span class="kw-unit">㎜</span>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="sec-title">クレセント</div>
+  <div class="sub-row"><span class="il">有無</span>
+    <div class="radio-group">
+      <label><input type="radio" name="cres${n}" value="std" onchange="toggleCresPos(${n})"><span>標準</span></label>
+      <label><input type="radio" name="cres${n}" value="less" onchange="toggleCresPos(${n})"><span>クレセントレス</span></label>
+    </div>
+  </div>
+  <div id="crespos-wrap-${n}" class="sub-row" style="display:none"><span class="il">位置</span>
+    <div style="display:flex;align-items:center;gap:6px">
+      <input type="text" id="crespos-${n}" inputmode="numeric" style="width:80px"><span class="kw-unit">㎜</span>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="sec-title">引手</div>
+  <div class="sub-row"><span class="il">仕様</span>
+    <div class="radio-group">
+      <label><input type="radio" name="hikite${n}" value="safe"><span>ストッパー付安全引手</span></label>
+      <label><input type="radio" name="hikite${n}" value="funa"><span>舟底引手</span></label>
+      <label id="hikite-tsuki-${n}" style="display:none"><input type="radio" name="hikite${n}" value="tsuki"><span>突合せ框専用引手</span></label>
+    </div>
+  </div>
+  <div class="sub-row"><span class="il">位置</span>
+    <div style="display:flex;align-items:center;gap:6px">
+      <input type="text" id="hikitepos-${n}" inputmode="numeric" style="width:80px"><span class="kw-unit">㎜</span>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="sec-title">中桟</div>
+  <div class="sub-row"><span class="il">中桟</span>
+    <div class="radio-group">
+      <label><input type="radio" name="nakazan${n}" value="n" onchange="toggleNakazanPos(${n})"><span>無</span></label>
+      <label><input type="radio" name="nakazan${n}" value="y" onchange="toggleNakazanPos(${n})"><span>付</span></label>
+    </div>
+  </div>
+  <div id="nakazanpos-wrap-${n}" class="sub-row" style="display:none"><span class="il">位置</span>
+    <div style="display:flex;align-items:center;gap:6px">
+      <input type="text" id="nakazanpos-${n}" inputmode="numeric" style="width:80px"><span class="kw-unit">㎜</span>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="sec-title">下枠</div>
+  <div class="sub-row"><span class="il">下枠</span>
+    <div class="radio-group">
+      <label><input type="radio" name="shitawaku${n}" value="std"><span>標準</span></label>
+      <label><input type="radio" name="shitawaku${n}" value="maji"><span>間仕切り用</span></label>
+      <label><input type="radio" name="shitawaku${n}" value="al"><span>アルミレール</span></label>
     </div>
   </div>
 </div>
@@ -684,13 +822,20 @@ function makePanel(n){
     <label><input type="radio" name="series${n}" value="v"><span>真空</span></label>
     <label><input type="radio" name="series${n}" value="ln"><span>Low-Eニュートラル</span></label>
     <label><input type="radio" name="series${n}" value="lb"><span>Low-Eブロンズ</span></label>
-    <label><input type="radio" name="series${n}" value="lr"><span>Low-Eルーバー</span></label>
-    <label><input type="radio" name="series${n}" value="lh"><span>遮熱Low-Eルーバー</span></label>
+    <label><input type="radio" name="series${n}" value="lr"><span>Low-Eブルー</span></label>
+    <label><input type="radio" name="series${n}" value="lh"><span>遮熱Low-Eブルー</span></label>
   </div></div>
-  <div class="field"><label>種類</label><div class="radio-group">
+ 
+ <div class="field"><label>種類1</label><div class="radio-group">
     <label><input type="radio" name="type1_${n}" value="m"><span>透明</span></label>
     <label><input type="radio" name="type1_${n}" value="k"><span>型</span></label>
     <label><input type="radio" name="type1_${n}" value="s"><span>すり</span></label>
+    <label><input type="radio" name="type1_${n}" value="ih"><span>異厚</span></label>
+  </div></div>
+  <div class="field"><label>種類2</label><div class="radio-group">
+    <label><input type="radio" name="type2_${n}" value="ip"><span>一般</span></label>
+    <label><input type="radio" name="type2_${n}" value="aw"><span>合わせ(30mil)</span></label>
+    <label><input type="radio" name="type2_${n}" value="ky"><span>強化</span></label>
   </div></div>
   <div class="sub-row">
     <span class="il">スペーサー</span>
@@ -721,7 +866,7 @@ function makePanel(n){
         </optgroup>
         <optgroup label="洋風">
           <option value="wa01">洋風タイプ WA01</option>
-          <option value="wa01m">洋風タイプ WA01（無脂格子）</option>
+          <option value="wa01m">洋風タイプ WA01（樹脂格子）</option>
           <option value="wa02">洋風タイプ WA02</option>
         </optgroup>
         <optgroup label="プレーリー">
@@ -729,7 +874,8 @@ function makePanel(n){
           <option value="pa02">プレーリータイプ PA02</option>
         </optgroup>
         <optgroup label="和室用">
-          <option value="yh">横繁吹寄格子</option>
+        
+  <option value="yh">横繁吹寄格子</option>
           <option value="ar">荒間格子</option>
           <option value="yt">たて繁吹寄格子 ※板設定無し</option>
         </optgroup>
@@ -770,7 +916,8 @@ function makePanel(n){
         <span class="il" style="margin-left:10px">補強</span>
         <div class="radio-group">
           <label><input type="radio" name="hoko${n}" value="n"><span>無</span></label>
-          <label><input type="radio" name="hoko${n}" value="y"><span>有</span></label>
+          <label><input type="radio" name="hoko${n}" va
+lue="y"><span>有</span></label>
         </div>
       </div>
     </div>
@@ -808,3 +955,4 @@ addWindow();
 </script>
 </body>
 </html>
+
