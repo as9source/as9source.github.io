@@ -72,8 +72,7 @@ body{font-family:'Hiragino Sans','Meiryo',sans-serif;background:var(--bg2);displ
 .sec-title::before{content:'';display:inline-block;width:3px;height:12px;background:var(--tag);border-radius:2px}
 
 /* 入力要素 */
-input[type=text]{border:0.5px solid var(--bd);border-radius:8p
-x;padding:9px 12px;font-size:15px;width:100%;background:var(--bg);color:var(--text);font-family:inherit;-webkit-appearance:none;appearance:none}
+input[type=text]{border:0.5px solid var(--bd);border-radius:8px;padding:9px 12px;font-size:15px;width:100%;background:var(--bg);color:var(--text);font-family:inherit;-webkit-appearance:none;appearance:none}
 input[type=text]:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(26,74,122,.12)}
 select{border:0.5px solid var(--bd);border-radius:8px;padding:9px 12px;font-size:14px;width:100%;background:var(--bg);color:var(--text);font-family:inherit;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
 select:focus{outline:none;border-color:var(--accent)}
@@ -91,8 +90,7 @@ select:focus{outline:none;border-color:var(--accent)}
 .kw-table td{padding:5px 6px;border:0.5px solid var(--bd);text-align:center}
 .kw-table td.rh{background:var(--bg3);font-size:12px;color:var(--text2);font-weight:500;width:50px;line-height:1.4}
 .kw-inp{display:flex;align-items:center;justify-content:center;gap:3px}
-.kw-inp input{border:0.5px solid var(--bd);border-radius:6px;padding:7px 4px;font-size:14px;width:72px;text-align:right;background:var(--bg);color:var(--text);f
-ont-family:inherit;-webkit-appearance:none;transition:all .18s}
+.kw-inp input{border:0.5px solid var(--bd);border-radius:6px;padding:7px 4px;font-size:14px;width:72px;text-align:right;background:var(--bg);color:var(--text);font-family:inherit;-webkit-appearance:none;transition:all .18s}
 .kw-inp input:focus{outline:none;border-color:var(--accent)}
 .kw-inp input.err{border-color:var(--danger)!important;background:var(--danger2)!important}
 .kw-inp input.is-min{border-color:var(--min-bd)!important;background:var(--min-bg)!important;color:var(--min-text)!important;font-weight:600}
@@ -119,8 +117,7 @@ ont-family:inherit;-webkit-appearance:none;transition:all .18s}
 .toast.show{opacity:1}
 
 /* PDFプレビュー */
-.pdf-overlay{display:none;position:fixed;inset:0;z-
-index:200;background:#fff;flex-direction:column}
+.pdf-overlay{display:none;position:fixed;inset:0;z-index:200;background:#fff;flex-direction:column}
 .pdf-overlay.show{display:flex}
 .pdf-toolbar{display:flex;align-items:center;gap:8px;padding:calc(10px + var(--safe-top)) 12px 10px;background:var(--accent);color:#fff;flex-shrink:0}
 .pdf-toolbar h2{flex:1;font-size:14px;font-weight:500;margin:0}
@@ -137,8 +134,7 @@ index:200;background:#fff;flex-direction:column}
 .pdf-report .wc-data{flex:1;min-width:0;overflow:hidden}
 .pdf-report .wc-memo{width:280px;flex-shrink:0;border-left:1px solid #ccc;display:flex;flex-direction:column;background:#fafafa;height:100%}
 .pdf-report .wc-memo-label{font-size:9px;font-weight:500;color:#888;padding:4px 8px 2px;border-bottom:0.5px solid #e0e0e0}
-.pdf-report .wc-memo-body{flex:1;padding:6px 8px;font-size:11px;color:#3
-33;line-height:1.6;white-space:pre-wrap;overflow:hidden}
+.pdf-report .wc-memo-body{flex:1;padding:6px 8px;font-size:11px;color:#333;line-height:1.6;white-space:pre-wrap;overflow:hidden}
 .pdf-report .wh{background:#1a4a7a;color:#fff;font-size:12px;font-weight:700;padding:5px 8px}
 .pdf-report table{width:100%;border-collapse:collapse}
 .pdf-report th{background:#f0ede8;font-size:10px;font-weight:500;color:#444;padding:2px 6px;text-align:left;border:0.5px solid #ccc;width:30%;vertical-align:top}
@@ -161,8 +157,7 @@ index:200;background:#fff;flex-direction:column}
 .val-win-label::before{content:'';display:inline-block;width:3px;height:11px;background:var(--tag);border-radius:2px}
 .val-item{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);padding:3px 0}
 .val-item::before{content:'⚠';font-size:11px;color:#ba7517}
-.val-divider{h
-eight:0.5px;background:var(--bd);margin:4px 16px}
+.val-divider{height:0.5px;background:var(--bd);margin:4px 16px}
 .val-footer{display:flex;gap:8px;padding:12px 16px;border-top:0.5px solid var(--bd)}
 .val-btn-back{flex:1;padding:12px;border:0.5px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--text);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit}
 .val-btn-go{flex:2;padding:12px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit}
@@ -269,8 +264,7 @@ function updateMin(inputs,noteEl){
   const pairs=inputs.map(i=>({el:i,v:parseFloat(i.value)})).filter(p=>!isNaN(p.v));
   if(pairs.length<2){if(noteEl)noteEl.classList.remove('show');return;}
   const minV=Math.min(...pairs.map(p=>p.v));
-  pairs.filter(p=>p.v===minV).forEach(p=>p.el.classLis
-t.add('is-min'));
+  pairs.filter(p=>p.v===minV).forEach(p=>p.el.classList.add('is-min'));
   if(noteEl){noteEl.classList.add('show');noteEl.querySelector('.min-val').textContent=minV+'㎜ が取付基準寸法';}
 }
 
@@ -311,8 +305,7 @@ function getWinData(n){
     nakazan:r('nakazan'+n),nakazanPos:t('nakazanpos-'+n),
     shitawaku:r('shitawaku'+n),
     koshi:r('koshi'+n),koshiType:(document.getElementById('koshi-sel-'+n)||{}).value||'',
-    fukaAri:r('fukaari'+n),fukaSize:r('fukasize'+n),fukaDir:r('fukadir'+
-n),
+    fukaAri:r('fukaari'+n),fukaSize:r('fukasize'+n),fukaDir:r('fukadir'+n),
     curtain:r('curtain'+n),hoko:r('hoko'+n),memo:t('memo-'+n)
   };
 }
@@ -393,8 +386,7 @@ function buildCards(){
     const kwSubCells=wd.kw.map((s,i)=>`<span style="color:#aaa;font-size:9px;">${kwLabels[i]}</span><span style="font-size:10px;color:#555;">${s||'—'}</span>`).join('<span style="color:#ddd;font-size:9px;"> / </span>');
     const kwCells=kwMinCell+`<span style="color:#888;font-size:10px;">(${kwSubCells})</span>`;
     const khLabels=['左','中','右'];
-    const khMinCell=khMin!==null?`<span style="background:#1a4a7a;color:#fff;font-weight:700;border-radius:4px;p
-adding:2px 8px;margin-right:8px;font-size:13px;">${khMin}㎜</span>`:'';
+    const khMinCell=khMin!==null?`<span style="background:#1a4a7a;color:#fff;font-weight:700;border-radius:4px;padding:2px 8px;margin-right:8px;font-size:13px;">${khMin}㎜</span>`:'';
     const khSubCells=wd.kh.map((s,i)=>`<span style="color:#aaa;font-size:9px;">${khLabels[i]}</span><span style="font-size:10px;color:#555;">${s||'—'}</span>`).join('<span style="color:#ddd;font-size:9px;"> / </span>');
     const khCells=khMinCell+`<span style="color:#888;font-size:10px;">(${khSubCells})</span>`;
     const glass=[lb(LBL.series,wd.series),lb(LBL.gt,wd.glassType),wd.glassType2?lb(LBL.gt2,wd.glassType2):''].filter(s=>s&&s!=='—').join(' / ')||'—';
@@ -432,8 +424,7 @@ adding:2px 8px;margin-right:8px;font-size:13px;">${khMin}㎜</span>`:'';
 function validateAll(){
   const issues=[];
   const data=collectAll();
-  data.win
-Data.forEach(wd=>{
+  data.winData.forEach(wd=>{
     const items=[];
     if(!wd.shoji) items.push('障子枚数');
     if(!wd.color) items.push('商品色');
@@ -493,8 +484,7 @@ function showPdfPreview(){
 }
 
 function closePdfPreview(){
-  documen
-t.getElementById('pdf-overlay').classList.remove('show');
+  document.getElementById('pdf-overlay').classList.remove('show');
 }
 
 async function sharePdf(){
@@ -565,8 +555,7 @@ async function sharePdf(){
       });
 
       // 固定高さ cardH で配置（アスペクト比無視して強制fit）
-      doc.addImage(cardCanvas.toDat
-aURL('image/jpeg',0.95),'JPEG',mgnL,cardY,usableW,cardH);
+      doc.addImage(cardCanvas.toDataURL('image/jpeg',0.95),'JPEG',mgnL,cardY,usableW,cardH);
 
       pageCardIdx=(pageCardIdx+1)%CARDS_PER_PAGE;
     }
@@ -623,8 +612,7 @@ function deleteWindow(id,e){
     w.label='窓 '+(i+1);
   });
   if(activeId===id){
-    const nx=wins[Math.min(id
-x,wins.length-1)];
+    const nx=wins[Math.min(idx,wins.length-1)];
     if(nx)setActive(nx.id);
     else{activeId=null;document.getElementById('scroll-area').innerHTML='<div class="empty-state" id="empty-state"><p>窓がありません</p><button class="primary-btn" onclick="addWindow()">＋ 窓を追加</button></div>';}
   }
@@ -680,8 +668,7 @@ function makePanel(n){
   div.innerHTML=`
 <div class="section">
   <div class="sec-title">設置・基本情報</div>
-  <div class="field"><label>設置場所</label><input type="text" id="loc-${n}" placeholder="例：リビング南"></d
-iv>
+  <div class="field"><label>設置場所</label><input type="text" id="loc-${n}" placeholder="例：リビング南"></div>
   <div class="field"><label>障子枚数</label><div class="radio-group">
     <label><input type="radio" name="shoji${n}" value="2" onchange="toggleOpenType(${n})"><span>2枚建</span></label>
     <label><input type="radio" name="shoji${n}" value="4" onchange="toggleOpenType(${n})"><span>4枚建</span></label>
@@ -788,6 +775,7 @@ iv>
   </div>
 </div>
 
+
 <div class="section">
   <div class="sec-title">中桟</div>
   <div class="sub-row"><span class="il">中桟</span>
@@ -825,7 +813,7 @@ iv>
     <label><input type="radio" name="series${n}" value="lr"><span>Low-Eブルー</span></label>
     <label><input type="radio" name="series${n}" value="lh"><span>遮熱Low-Eブルー</span></label>
   </div></div>
- 
+
  <div class="field"><label>種類1</label><div class="radio-group">
     <label><input type="radio" name="type1_${n}" value="m"><span>透明</span></label>
     <label><input type="radio" name="type1_${n}" value="k"><span>型</span></label>
@@ -874,8 +862,7 @@ iv>
           <option value="pa02">プレーリータイプ PA02</option>
         </optgroup>
         <optgroup label="和室用">
-        
-  <option value="yh">横繁吹寄格子</option>
+          <option value="yh">横繁吹寄格子</option>
           <option value="ar">荒間格子</option>
           <option value="yt">たて繁吹寄格子 ※板設定無し</option>
         </optgroup>
@@ -916,8 +903,7 @@ iv>
         <span class="il" style="margin-left:10px">補強</span>
         <div class="radio-group">
           <label><input type="radio" name="hoko${n}" value="n"><span>無</span></label>
-          <label><input type="radio" name="hoko${n}" va
-lue="y"><span>有</span></label>
+          <label><input type="radio" name="hoko${n}" value="y"><span>有</span></label>
         </div>
       </div>
     </div>
@@ -928,7 +914,7 @@ lue="y"><span>有</span></label>
   return div;
 }
 
-// ─── 初期化 ──────────────────────────────
+// ─── 初期化 ──────────────────────────────────────────
 function forceReload(){
   if('serviceWorker' in navigator){
     navigator.serviceWorker.getRegistrations().then(regs=>{
@@ -955,4 +941,3 @@ addWindow();
 </script>
 </body>
 </html>
-
