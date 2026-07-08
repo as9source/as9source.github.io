@@ -709,7 +709,7 @@ function toggleMochidashi(n){
   if(!mv||mv.value!=='y'){noteEl.style.display='none';return;}
   const wt=(document.querySelector(`input[name="wintype${n}"]:checked`)||{}).value||'';
   let msg='';
-  if(wt==='hiki') msg='⚠ 引き違い窓 持ち出し納まり：必要A寸法 47㎜以上<br>枠見込み 58㎜ ／ 持ち出し量 11㎜';
+  if(wt==='hiki') msg='⚠ 引き違い窓 持ち出し納まり：必要A寸法 47㎜以上<br>枠見込み 59.5㎜ ／ 持ち出し量 11㎜';
   else if(wt==='fix') msg='⚠ FIX窓 持ち出し納まり：必要A寸法 45㎜以上<br>枠見込み 50㎜ ／ 持ち出し量 11㎜';
   else if(wt==='hiraki'){const as=(document.querySelector(`input[name="armstopper${n}"]:checked`)||{}).value||'';msg=as&&as!=='n'?'⚠ 開き窓（アームストッパー付）持ち出し納まり：必要A寸法 63㎜以上<br>枠見込み 50㎜ ／ 持ち出し量 11㎜':'⚠ 開き窓 持ち出し納まり：必要A寸法 39㎜以上<br>枠見込み 50㎜ ／ 持ち出し量 11㎜';}
   else{msg='⚠ 先に窓種を選択してください';};
