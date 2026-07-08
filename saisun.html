@@ -493,6 +493,7 @@
 
   <div class="field-warn" id="warn-kh">⚠ KH 3点の値に差があります。最小値を採用します。</div>
   <div class="field-warn" id="warn-kw">⚠ KW 3点の値に差があります。最小値を採用します。</div>
+  <div class="field-warn" id="warn-wh" style="color:var(--err);background:rgba(224,64,64,0.08);border:1px solid rgba(224,64,64,0.2);border-radius:4px;padding:6px 10px;font-weight:600">⚠ KW（幅）がKH（高さ）より大きいです。入力が逆になっていませんか？</div>
 
   <!-- 額縁 -->
   <div class="sec-header">額縁</div>
@@ -670,7 +671,34 @@ function syncKWmin() {
 function checkWarn(key, ids) {
   const vals = ids.map(id => parseFloat(val(id))).filter(n => !isNaN(n));
   const warn = document.getElementById('warn-' + key);
-  warn.classList.toggle('show', vals.length >= 2 && Math.max(...vals) - Math.min(...vals) > 0);
+  if (vals.length >= 2) {
+    const diff = Math.max(...vals) - Math.min(...vals);
+    if (diff >= 20) {
+      warn.textContent = `⚠ ${key.toUpperCase()} 3点の値に ${diff}mm の差があります。入力ミスの可能性があります。`;
+      warn.style.color = 'var(--err)';
+      warn.classList.add('show');
+    } else if (diff > 0) {
+      warn.textContent = `⚠ ${key.toUpperCase()} 3点の値に差があります。最小値を採用します。`;
+      warn.style.color = 'var(--warn)';
+      warn.classList.add('show');
+    } else {
+      warn.classList.remove('show');
+    }
+  } else {
+    warn.classList.remove('show');
+  }
+  checkKWvsKH();
+}
+
+function checkKWvsKH() {
+  const kwMin = getKW();
+  const khMin = getKHmin();
+  const warn = document.getElementById('warn-wh');
+  if (kwMin !== null && khMin !== null && kwMin > khMin) {
+    warn.classList.add('show');
+  } else {
+    warn.classList.remove('show');
+  }
 }
 
 // ======= Calc =======
@@ -831,7 +859,6 @@ function updateSotoCompatibility() {
       if (!opt.value) { opt.disabled = false; return; } // "―" always enabled
       const optGroup = getSotoGroup(opt.value);
       if (!activeGroup) {
-        // No selection yet — all enabled except 155 (already handled by main lock)
         opt.disabled = false;
       } else {
         // Only allow same group
@@ -889,9 +916,22 @@ function toggleFrameIndiv(key) {
   btn.classList.toggle('active', open);
   btn.textContent = open ? '個別▴' : '個別▾';
   if (open) {
-    const v = val(key);
-    if (v) ['_r','_l','_t'].forEach(s => { if (!val(key+s)) setVal(key+s, v); });
+    // 個別パネルを開いた時、サブが全て同じならクリアして自由に選択可能にする
+    const subs = [key+'_r', key+'_l', key+'_t'];
+    const sv = subs.map(id => val(id));
+    const allSame = sv.every(v => v === sv[0]);
+    if (allSame && sv[0] !== '') {
+      subs.forEach(id => setVal(id, ''));
+    }
     if (key === 'soto') updateSotoCompatibility();
+  } else {
+    // パネルを閉じた時、サブが全て空ならメイン値を復元
+    const subs = [key+'_r', key+'_l', key+'_t'];
+    const sv = subs.map(id => val(id));
+    if (sv.every(v => v === '')) {
+      const mainV = val(key);
+      if (mainV) subs.forEach(id => setVal(id, mainV));
+    }
   }
 }
 
@@ -1286,4 +1326,40 @@ async function shareSheet(btn) {
 // ======= Clear =======
 function clearAll(silent=false) {
   if (!silent && !confirm('入力をすべてリセットしますか？')) return;
-  document.querySelectorAll('.inline-input, .notes-input').forEach(el => el.value = ''
+  document.querySelectorAll('.inline-input, .notes-input').forEach(el => el.value = '');
+  document.querySelectorAll('.frame-select').forEach(el => el.value = '');
+  document.querySelectorAll('.measure-table input').forEach(el => el.value = '');
+  document.getElementById('site-name').value = '';
+  document.getElementById('kh').value = '';
+  document.getElementById('kw').value = '';
+  tsukeMethod = '';
+  document.getElementById('tsuke-hanzoto').classList.remove('selected');
+  document.getElementById('tsuke-uchi').classList.remove('selected');
+  document.getElementById('cb-shimowaku').checked = false;
+  document.getElementById('cb-tsuri').checked = false;
+  currentType = '';
+  Object.keys(chipState).forEach(k => delete chipState[k]);
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+  document.getElementById('door-detail').classList.remove('show');
+  document.getElementById('sliding-detail').classList.remove('show');
+  document.getElementById('door-dims').style.display = '';
+  document.getElementById('shimowaku-row').style.display = '';
+  document.querySelectorAll('.field-warn').forEach(w => w.classList.remove('show'));
+  document.querySelectorAll('.indiv-badge').forEach(b => b.classList.remove('show'));
+  document.querySelectorAll('.frame-indiv').forEach(p => p.classList.remove('open'));
+  document.querySelectorAll('.frame-toggle').forEach(b => { b.classList.remove('active'); b.textContent = '個別▾'; b.disabled = false; b.title = ''; });
+  // Reset disabled options in frame selects
+  document.querySelectorAll('.frame-select option').forEach(opt => opt.disabled = false);
+  document.getElementById('kouchi-card').style.display = 'none';
+  document.getElementById('save-status').textContent = '未保存';
+  recalc();
+}
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('saisun-sw.js').catch(() => {});
+}
+</script>
+
+</body>
+</html>
