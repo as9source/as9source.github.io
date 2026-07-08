@@ -2715,6 +2715,12 @@
                 resultCanvasHeight = resultCanvasWidth * 0.75;
             }
             
+            const dimensionedLineCount = lines.filter(line => {
+                const dim = dimensions[line.id];
+                return dim && dim.length;
+            }).length;
+            resultCanvasHeight += Math.max(0, dimensionedLineCount - 2) * (containerWidth < 400 ? 28 : 36);
+            
             resultCanvas.width = resultCanvasWidth;
             resultCanvas.height = resultCanvasHeight;
             
@@ -2785,6 +2791,125 @@
             const baseFontSize = resultCanvas.width < 400 ? 12 : 16;
             const smallFontSize = resultCanvas.width < 400 ? 8 : 10;
             const tinyFontSize = resultCanvas.width < 400 ? 9 : 11;
+            const placedLabelRects = [];
+            
+            function makeLabelRect(centerX, centerY, width, height) {
+                return {
+                    left: centerX - width / 2,
+                    top: centerY - height / 2,
+                    right: centerX + width / 2,
+                    bottom: centerY + height / 2
+                };
+            }
+            
+            function rectsOverlap(a, b, gap = 6) {
+                return !(
+                    a.right + gap <= b.left ||
+                    a.left >= b.right + gap ||
+                    a.bottom + gap <= b.top ||
+                    a.top >= b.bottom + gap
+                );
+            }
+            
+            function rectOverlapArea(a, b, gap = 6) {
+                const left = Math.max(a.left, b.left - gap);
+                const right = Math.min(a.right, b.right + gap);
+                const top = Math.max(a.top, b.top - gap);
+                const bottom = Math.min(a.bottom, b.bottom + gap);
+                return Math.max(0, right - left) * Math.max(0, bottom - top);
+            }
+            
+            function keepRectInCanvas(rect) {
+                const edge = resultCanvas.width < 400 ? 12 : 18;
+                return rect.left >= edge &&
+                    rect.top >= edge &&
+                    rect.right <= resultCanvas.width - edge &&
+                    rect.bottom <= resultCanvas.height - edge;
+            }
+            
+            function clampLabelPosition(centerX, centerY, width, height) {
+                const edge = resultCanvas.width < 400 ? 12 : 18;
+                return {
+                    x: Math.max(edge + width / 2, Math.min(resultCanvas.width - edge - width / 2, centerX)),
+                    y: Math.max(edge + height / 2, Math.min(resultCanvas.height - edge - height / 2, centerY))
+                };
+            }
+            
+            function chooseLabelPosition(lineMidX, lineMidY, dirX, dirY, perpX, perpY, labelWidth, labelHeight) {
+                const distances = resultCanvas.width < 400
+                    ? [38, 56, 76, 100, 128, 158, 190]
+                    : [52, 76, 104, 136, 172, 212, 258];
+                const shifts = resultCanvas.width < 400
+                    ? [0, -36, 36, -72, 72, -108, 108]
+                    : [0, -52, 52, -104, 104, -156, 156, -208, 208];
+                const normalSides = [];
+                
+                const sideA = clampLabelPosition(
+                    lineMidX + perpX * distances[0],
+                    lineMidY + perpY * distances[0],
+                    labelWidth,
+                    labelHeight
+                );
+                const sideB = clampLabelPosition(
+                    lineMidX - perpX * distances[0],
+                    lineMidY - perpY * distances[0],
+                    labelWidth,
+                    labelHeight
+                );
+                const areaA = keepRectInCanvas(makeLabelRect(sideA.x, sideA.y, labelWidth, labelHeight)) ? 0 : 1;
+                const areaB = keepRectInCanvas(makeLabelRect(sideB.x, sideB.y, labelWidth, labelHeight)) ? 0 : 1;
+                
+                if (areaA <= areaB) {
+                    normalSides.push(1, -1);
+                } else {
+                    normalSides.push(-1, 1);
+                }
+                
+                let fallback = null;
+                
+                for (const distance of distances) {
+                    for (const shift of shifts) {
+                        for (const side of normalSides) {
+                            const rawX = lineMidX + perpX * distance * side + dirX * shift;
+                            const rawY = lineMidY + perpY * distance * side + dirY * shift;
+                            const clamped = clampLabelPosition(rawX, rawY, labelWidth, labelHeight);
+                            const rect = makeLabelRect(clamped.x, clamped.y, labelWidth, labelHeight);
+                            const overlapScore = placedLabelRects.reduce((total, placed) => total + rectOverlapArea(rect, placed), 0);
+                            const distancePenalty = Math.hypot(clamped.x - lineMidX, clamped.y - lineMidY) * 0.01;
+                            const score = overlapScore + distancePenalty;
+                            
+                            if (!placedLabelRects.some(placed => rectsOverlap(rect, placed))) {
+                                return { x: clamped.x, y: clamped.y, rect };
+                            }
+                            
+                            if (!fallback || score < fallback.score) {
+                                fallback = { x: clamped.x, y: clamped.y, rect, score };
+                            }
+                        }
+                    }
+                }
+                
+                const edge = resultCanvas.width < 400 ? 12 : 18;
+                const gridStep = resultCanvas.width < 400 ? 10 : 14;
+                for (let y = edge + labelHeight / 2; y <= resultCanvas.height - edge - labelHeight / 2; y += gridStep) {
+                    for (let x = edge + labelWidth / 2; x <= resultCanvas.width - edge - labelWidth / 2; x += gridStep) {
+                        const rect = makeLabelRect(x, y, labelWidth, labelHeight);
+                        if (!placedLabelRects.some(placed => rectsOverlap(rect, placed))) {
+                            return { x, y, rect };
+                        }
+                        
+                        const overlapScore = placedLabelRects.reduce((total, placed) => total + rectOverlapArea(rect, placed), 0);
+                        const distancePenalty = Math.hypot(x - lineMidX, y - lineMidY) * 0.01;
+                        const score = overlapScore + distancePenalty + 1000;
+                        
+                        if (!fallback || score < fallback.score) {
+                            fallback = { x, y, rect, score };
+                        }
+                    }
+                }
+                
+                return fallback;
+            }
             
             function drawResultPoint(x, y, state) {
                 const colors = {
@@ -2894,48 +3019,55 @@
                     const perpX = -dy / lineLength;
                     const perpY = dx / lineLength;
                     
-                    const offset = 80;  // 50 → 80（引き出し線で大きく離す v1.18.0）
-                                            // 余白を計算して広い方に配置（v1.21.5）
-                                    const lineMidX_transformed = transformX(midX);
-                                    const lineMidY_transformed = transformY(midY);
-
-                                            // 線が垂直か水平かを判定
-                                            const isVertical = Math.abs(dy) > Math.abs(dx);
-
-                                let textX, textY;
-
-                                            if (isVertical) {
-                                                // 垂直線：左右の余白を比較
-                                                                            const leftSpace = lineMidX_transformed;
-                                    const rightSpace = resultCanvas.width - lineMidX_transformed;
-
-                                                        if (leftSpace > rightSpace) {
-                                    textX = transformX(midX - Math.abs(perpX) * offset);
-                                } else {
-                                                                                            textX = transformX(midX + Math.abs(perpX) * offset);
-                                }
-                                    textY = transformY(midY + perpY * offset);
-                                            } else {
-                                // 水平線：上下の余白を比較
-                                                                            const topSpace = lineMidY_transformed;
-                                                                            const bottomSpace = resultCanvas.height - lineMidY_transformed;
-
-                                    textX = transformX(midX + perpX * offset);
-
-                                if (topSpace > bottomSpace) {
-                                                                  textY = transformY(midY - Math.abs(perpY) * offset);
-                                            } else {
-                                            textY = transformY(midY + Math.abs(perpY) * offset);
-                }
-        }
-                    
-                    const labelMargin = resultCanvas.width < 400 ? 28 : 40;
-                    textX = Math.max(labelMargin, Math.min(resultCanvas.width - labelMargin, textX));
-                    textY = Math.max(labelMargin, Math.min(resultCanvas.height - labelMargin, textY));
-                    
-                    // 引き出し線を描画（NEW - v1.18.0）
                     const lineMidX = transformX(midX);
                     const lineMidY = transformY(midY);
+                    const lineStartX = transformX(dLine.x1);
+                    const lineStartY = transformY(dLine.y1);
+                    const lineEndX = transformX(dLine.x2);
+                    const lineEndY = transformY(dLine.y2);
+                    const screenDx = lineEndX - lineStartX;
+                    const screenDy = lineEndY - lineStartY;
+                    const screenLength = Math.max(Math.sqrt(screenDx * screenDx + screenDy * screenDy), 1);
+                    const screenDirX = screenDx / screenLength;
+                    const screenDirY = screenDy / screenLength;
+                    const screenPerpX = -screenDirY;
+                    const screenPerpY = screenDirX;
+                    
+                    ctx.font = `bold ${baseFontSize}px sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    
+                    const resultText = `${Math.floor(result)}mm`;
+                    const resultMetrics = ctx.measureText(resultText);
+                    const padding = resultCanvas.width < 400 ? 6 : 8;
+                    const labelWidth = resultMetrics.width + padding * 2;
+                    let labelHeight = 24;
+                    let widthText = '';
+                    let widthMetrics = null;
+                    
+                    if (dim.width) {
+                        ctx.font = `${smallFontSize}px sans-serif`;
+                        widthText = `幅:${dim.width}`;
+                        widthMetrics = ctx.measureText(widthText);
+                        labelHeight = 42;
+                        ctx.font = `bold ${baseFontSize}px sans-serif`;
+                    }
+                    
+                    const labelPosition = chooseLabelPosition(
+                        lineMidX,
+                        lineMidY,
+                        screenDirX,
+                        screenDirY,
+                        screenPerpX,
+                        screenPerpY,
+                        Math.max(labelWidth, widthMetrics ? widthMetrics.width + 6 : 0),
+                        labelHeight
+                    );
+                    const textX = labelPosition.x;
+                    const textY = dim.width ? labelPosition.y - 7 : labelPosition.y;
+                    placedLabelRects.push(labelPosition.rect);
+                    
+                    // 引き出し線を描画（NEW - v1.18.0）
                     ctx.strokeStyle = '#f59e0b';
                     ctx.lineWidth = 1.5;
                     ctx.setLineDash([3, 3]);  // 破線
@@ -2946,12 +3078,6 @@
                     ctx.setLineDash([]);  // 破線リセット
                     
                     ctx.font = `bold ${baseFontSize}px sans-serif`;
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    
-                    const resultText = `${Math.floor(result)}mm`;
-                    const resultMetrics = ctx.measureText(resultText);
-                    const padding = resultCanvas.width < 400 ? 6 : 8;
                     
                     ctx.fillStyle = 'rgba(254, 243, 199, 0.95)';  // 0.85 → 0.95（より不透明に v1.17.5）
                     ctx.fillRect(textX - resultMetrics.width/2 - padding, textY - 12, resultMetrics.width + padding*2, 24);
@@ -2963,10 +3089,8 @@
                     ctx.fillStyle = '#1e40af';
                     ctx.fillText(resultText, textX, textY);
                     
-                    if (dim.width) {
+                    if (dim.width && widthMetrics) {
                         ctx.font = `${smallFontSize}px sans-serif`;
-                        const widthText = `幅:${dim.width}`;
-                        const widthMetrics = ctx.measureText(widthText);
                         const widthY = textY + 16;
                         const widthPadding = 3;
                         
