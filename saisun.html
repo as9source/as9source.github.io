@@ -182,6 +182,7 @@
     transition: border-color 0.15s;
   }
   .frame-select:focus { border-color: var(--border-focus); }
+  .frame-select option:disabled { color: #ccc; }
   .frame-toggle {
     font-size: 11px; color: var(--accent); background: none;
     border: 1px solid var(--border); border-radius: 4px; padding: 4px 10px;
@@ -429,19 +430,19 @@
       <span class="inline-unit">mm</span>
     </div>
     <div class="inline-field">
-      <span class="inline-label">戸厚 扉厚み</span>
+      <span class="inline-label">戸厚</span>
       <input class="inline-input" id="ats" type="number" inputmode="decimal" placeholder="0">
       <span class="inline-unit">mm</span>
     </div>
   </div>
 
   <div class="inline-field">
-    <span class="inline-label">段差 下枠段差</span>
+    <span class="inline-label">下枠段差</span>
     <input class="inline-input" id="shita-dansa" type="number" inputmode="decimal" placeholder="0">
     <span class="inline-unit">mm</span>
   </div>
   <div class="inline-field">
-    <span class="inline-label">外段差 外側段差</span>
+    <span class="inline-label">下枠外側段差</span>
     <input class="inline-input" id="shita-soto-dansa" type="number" inputmode="decimal" placeholder="0">
     <span class="inline-unit">mm</span>
   </div>
@@ -761,8 +762,8 @@ const NUM_FIELDS = ['kh','kw','dw','ats','shita-dansa','shita-soto-dansa'];
 const FRAME_FIELDS = ['soto','uchi'];
 const LABELS = {
   kh: ['KH','既存開口高さ'], kw: ['KW','既存開口幅'],
-  dw: ['DW','扉幅'], ats: ['戸厚','扉厚み'],
-  'shita-dansa': ['段差','下枠段差'], 'shita-soto-dansa': ['外段差','下枠外側段差'],
+  dw: ['DW','扉幅'], ats: ['戸厚','戸厚'],
+  'shita-dansa': ['下枠段差','下枠段差'], 'shita-soto-dansa': ['下枠外側段差','下枠外側段差'],
   soto: ['外額縁','外額縁'], uchi: ['内額縁','内額縁'],
 };
 const LS_KEY = 'saisun_records';
@@ -797,6 +798,53 @@ function getKenguText() {
   return parts.join(' / ');
 }
 
+// ======= 外額縁 組合せルール =======
+// Group A: 21, 50, 80K(薄見込) — 組合せ可
+// Group B: 80B(厚見込), 100, 135 — 組合せ可
+// 155: 単独のみ
+const SOTO_GROUP_A = ['21', '50', '80thin'];
+const SOTO_GROUP_B = ['80', '100', '135'];
+const SOTO_GROUP_C = ['155'];
+
+function getSotoGroup(v) {
+  if (!v) return null;
+  if (SOTO_GROUP_A.includes(v)) return 'A';
+  if (SOTO_GROUP_B.includes(v)) return 'B';
+  if (SOTO_GROUP_C.includes(v)) return 'C';
+  return null;
+}
+
+function updateSotoCompatibility() {
+  const subs = ['soto_r', 'soto_l', 'soto_t'];
+  const selectedVals = subs.map(id => val(id)).filter(v => v);
+  // Determine the active group from any selected value
+  let activeGroup = null;
+  for (const v of selectedVals) {
+    const g = getSotoGroup(v);
+    if (g) { activeGroup = g; break; }
+  }
+  // For each sub select, enable/disable options based on group
+  subs.forEach(id => {
+    const sel = document.getElementById(id);
+    const currentVal = sel.value;
+    Array.from(sel.options).forEach(opt => {
+      if (!opt.value) { opt.disabled = false; return; } // "―" always enabled
+      const optGroup = getSotoGroup(opt.value);
+      if (!activeGroup) {
+        // No selection yet — all enabled except 155 (already handled by main lock)
+        opt.disabled = false;
+      } else {
+        // Only allow same group
+        opt.disabled = (optGroup !== activeGroup);
+      }
+    });
+    // If current value is now disabled, reset it
+    if (currentVal && sel.options[sel.selectedIndex]?.disabled) {
+      sel.value = '';
+    }
+  });
+}
+
 // ======= Frame select =======
 function onMainSelect(key) {
   const v = val(key);
@@ -810,11 +858,12 @@ function onMainSelect(key) {
       btn.classList.remove('active');
       btn.textContent = '個別▾';
       btn.disabled = true;
-      btn.title = '155mmは共通設定のみ';
+      btn.title = '155mmは単独設定のみ';
     } else {
       btn.disabled = false;
       btn.title = '';
     }
+    updateSotoCompatibility();
   }
 }
 
@@ -829,6 +878,7 @@ function onSubSelect(key) {
     setVal(key, '');
     document.getElementById('ind-'+key).classList.toggle('show', vals.some(v => v !== ''));
   }
+  if (key === 'soto') updateSotoCompatibility();
 }
 
 function toggleFrameIndiv(key) {
@@ -841,6 +891,7 @@ function toggleFrameIndiv(key) {
   if (open) {
     const v = val(key);
     if (v) ['_r','_l','_t'].forEach(s => { if (!val(key+s)) setVal(key+s, v); });
+    if (key === 'soto') updateSotoCompatibility();
   }
 }
 
@@ -952,6 +1003,7 @@ function restoreState(state) {
       document.getElementById('ind-'+k).classList.add('show');
     }
   });
+  updateSotoCompatibility();
 }
 
 // ======= Save / Load =======
@@ -1234,38 +1286,4 @@ async function shareSheet(btn) {
 // ======= Clear =======
 function clearAll(silent=false) {
   if (!silent && !confirm('入力をすべてリセットしますか？')) return;
-  document.querySelectorAll('.inline-input, .notes-input').forEach(el => el.value = '');
-  document.querySelectorAll('.frame-select').forEach(el => el.value = '');
-  document.querySelectorAll('.measure-table input').forEach(el => el.value = '');
-  document.getElementById('site-name').value = '';
-  document.getElementById('kh').value = '';
-  document.getElementById('kw').value = '';
-  tsukeMethod = '';
-  document.getElementById('tsuke-hanzoto').classList.remove('selected');
-  document.getElementById('tsuke-uchi').classList.remove('selected');
-  document.getElementById('cb-shimowaku').checked = false;
-  document.getElementById('cb-tsuri').checked = false;
-  currentType = '';
-  Object.keys(chipState).forEach(k => delete chipState[k]);
-  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
-  document.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
-  document.getElementById('door-detail').classList.remove('show');
-  document.getElementById('sliding-detail').classList.remove('show');
-  document.getElementById('door-dims').style.display = '';
-  document.getElementById('shimowaku-row').style.display = '';
-  document.querySelectorAll('.field-warn').forEach(w => w.classList.remove('show'));
-  document.querySelectorAll('.indiv-badge').forEach(b => b.classList.remove('show'));
-  document.querySelectorAll('.frame-indiv').forEach(p => p.classList.remove('open'));
-  document.querySelectorAll('.frame-toggle').forEach(b => { b.classList.remove('active'); b.textContent = '個別▾'; b.disabled = false; b.title = ''; });
-  document.getElementById('kouchi-card').style.display = 'none';
-  document.getElementById('save-status').textContent = '未保存';
-  recalc();
-}
-
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('saisun-sw.js').catch(() => {});
-}
-</script>
-
-</body>
-</html>
+  document.querySelectorAll('.inline-input, .notes-input').forEach(el => el.value = ''
