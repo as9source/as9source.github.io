@@ -100,6 +100,8 @@ select:focus{outline:none;border-color:var(--accent)}
 .min-note{display:none;font-size:11px;color:var(--min-text);margin-top:4px;align-items:center;gap:5px}
 .min-note.show{display:flex}
 .min-dot{width:9px;height:9px;border-radius:2px;background:var(--min-bg);border:1.5px solid var(--min-bd);flex-shrink:0}
+.auto-note{display:none;font-size:11px;color:#7a4f0a;background:#fdf4e3;border:0.5px solid #e3c98d;border-radius:6px;padding:6px 10px;margin-top:5px;line-height:1.55}
+.auto-note.show{display:block}
 
 .sub-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
 .il{font-size:13px;color:var(--text2);white-space:nowrap}
@@ -142,6 +144,7 @@ select:focus{outline:none;border-color:var(--accent)}
 .pdf-report .wc-memo{width:280px;flex-shrink:0;border-left:1px solid #ccc;display:flex;flex-direction:column;background:#fafafa}
 .pdf-report .wc-memo-label{font-size:9px;font-weight:500;color:#888;padding:4px 8px 2px;border-bottom:0.5px solid #e0e0e0}
 .pdf-report .wc-memo-body{flex:1;padding:6px 8px;font-size:11px;color:#333;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+.pdf-report .memo-auto{border:0.5px solid #d9a441;background:#fdf4e3;border-radius:3px;padding:4px 6px;margin-bottom:5px;font-size:10px;color:#7a4f0a;line-height:1.55;white-space:normal}
 .pdf-report .wh{background:#1a4a7a;color:#fff;font-size:12px;font-weight:700;padding:5px 8px}
 .pdf-report table{width:100%;border-collapse:collapse}
 .pdf-report th{background:#f0ede8;font-size:10px;font-weight:500;color:#444;padding:2px 6px;text-align:left;border:0.5px solid #ccc;width:30%;vertical-align:top}
@@ -288,9 +291,29 @@ function updateMin(inputs,noteEl){
   if(noteEl){noteEl.classList.add('show');noteEl.querySelector('.min-val').textContent=minV+'㎜ が取付基準寸法';}
 }
 
-function checkDiff(inputs,msgEl,noteEl){
+// ─── 寸法差の自動記載文 ───────────────────
+// 開口寸法の最大差が AUTO_DIFF_MM 以上のとき、備考へ自動記載する一文を返す。
+// 画面表示とPDF出力で必ず同じ文言になるよう、ここに一本化している。
+const AUTO_DIFF_MM=3;
+function diffNote(vals,labels,name){
+  if(!vals)return null;
+  const nums=vals.map(s=>parseFloat(s)).filter(v=>!isNaN(v));
+  if(nums.length<2)return null;
+  const d=Math.round((Math.max(...nums)-Math.min(...nums))*10)/10;
+  if(d<AUTO_DIFF_MM)return null;
+  const parts=vals.map((s,i)=>labels[i]+' '+((s&&String(s).trim())?String(s).trim():'—')).join(' / ');
+  return name+' 寸法差 '+d+'㎜（'+parts+'）→ 最小 '+Math.min(...nums)+'㎜ を採用'
+    +(d>=20?' ／ 変形・歪みの確認要':'');
+}
+
+function checkDiff(inputs,msgEl,noteEl,auto){
   const vals=inputs.map(i=>parseFloat(i.value)).filter(v=>!isNaN(v));
   updateMin(inputs,noteEl);
+  if(auto&&auto.el){
+    const txt=diffNote(inputs.map(i=>i.value),auto.labels,auto.name);
+    if(txt){auto.el.textContent='⚠ 備考へ自動記載：'+txt;auto.el.classList.add('show');}
+    else{auto.el.textContent='';auto.el.classList.remove('show');}
+  }
   if(vals.length<2){inputs.forEach(i=>i.classList.remove('err'));msgEl.classList.remove('show');return;}
   const diff=Math.max(...vals)-Math.min(...vals);
   if(diff>=20){inputs.forEach(i=>{if(!isNaN(parseFloat(i.value)))i.classList.add('err');});msgEl.classList.add('show');}
@@ -302,8 +325,19 @@ function attachCheck(n){
   const kh=[...document.querySelectorAll(`#kh-row-${n} input`)];
   const km=document.getElementById('kw-err-'+n),khm=document.getElementById('kh-err-'+n);
   const kwn=document.getElementById('kw-min-'+n),khn=document.getElementById('kh-min-'+n);
-  kw.forEach(i=>i.addEventListener('input',()=>checkDiff(kw,km,kwn)));
-  kh.forEach(i=>i.addEventListener('input',()=>checkDiff(kh,khm,khn)));
+  const kwa={el:document.getElementById('kw-auto-'+n),labels:['上','中','下'],name:'KW'};
+  const kha={el:document.getElementById('kh-auto-'+n),labels:['左','中','右'],name:'KH'};
+  kw.forEach(i=>i.addEventListener('input',()=>checkDiff(kw,km,kwn,kwa)));
+  kh.forEach(i=>i.addEventListener('input',()=>checkDiff(kh,khm,khn,kha)));
+}
+
+// 読込直後など、値を流し込んだあとに表示を同期させる
+function refreshDiff(n){
+  const kw=[...document.querySelectorAll(`#kw-row-${n} input`)];
+  const kh=[...document.querySelectorAll(`#kh-row-${n} input`)];
+  const km=document.getElementById('kw-err-'+n),khm=document.getElementById('kh-err-'+n);
+  if(km) checkDiff(kw,km,document.getElementById('kw-min-'+n),{el:document.getElementById('kw-auto-'+n),labels:['上','中','下'],name:'KW'});
+  if(khm) checkDiff(kh,khm,document.getElementById('kh-min-'+n),{el:document.getElementById('kh-auto-'+n),labels:['左','中','右'],name:'KH'});
 }
 
 // ─── データ収集 ──────────────────────────
@@ -393,6 +427,7 @@ function restoreWin(wd){
     const kh=[...document.querySelectorAll(`#kh-row-${n} input`)];
     updateMin(kw,document.getElementById('kw-min-'+n));
     updateMin(kh,document.getElementById('kh-min-'+n));
+    refreshDiff(n);
   },50);
 }
 
@@ -429,6 +464,9 @@ function buildCards(){
     const hikiteStr=wd.hikiteType?(lb(LBL.hikite,wd.hikiteType)+(wd.hikitePos?' '+wd.hikitePos+'㎜':'')):'—';
     const nakazanStr=wd.nakazan?(lb(LBL.nakazan,wd.nakazan)+(wd.nakazan==='y'&&wd.nakazanPos?' '+wd.nakazanPos+'㎜':'')):'—';
     const shitawakuStr=wd.shitawaku?lb(LBL.shitawaku,wd.shitawaku):'—';
+    // 開口寸法差の自動記載（画面表示と同一文言）
+    const autoNotes=[diffNote(wd.kw,['上','中','下'],'KW'),diffNote(wd.kh,['左','中','右'],'KH')].filter(Boolean);
+    const autoMemo=autoNotes.length?`<div class="memo-auto">${autoNotes.map(s=>'⚠ '+s).join('<br>')}</div>`:'';
     const hikiRows=wd.windowType==='hiki'?`<tr><th>障子枚数</th><td style="font-size:10px">${wd.shoji?wd.shoji+'枚建':'—'}</td><th>開閉タイプ</th><td style="font-size:10px">${openTypeStr}</td></tr><tr><th>障子種別</th><td colspan="3">${stypeStr}</td></tr><tr><th>下枠</th><td colspan="3" style="font-size:10px">${shitawakuStr}</td></tr><tr><th>クレセント</th><td colspan="3">${cresStr}</td></tr><tr><th>引手</th><td colspan="3">${hikiteStr}</td></tr><tr><th>中桟</th><td colspan="3">${nakazanStr}</td></tr>`:'';
     const fixHirakiRows=(wd.windowType==='fix'||wd.windowType==='hiraki')?`<tr><th>OPハンドル</th><td colspan="3" style="font-size:10px">${opHandleStr}</td></tr>`:'';
     const hirakiRows=wd.windowType==='hiraki'?`<tr><th>左右区分</th><td style="font-size:10px">${leftRightStr}</td><th>アームストッパー</th><td style="font-size:10px">${armStopperStr}</td></tr>`:'';
@@ -443,7 +481,7 @@ ${hikiRows}${fixHirakiRows}${hirakiRows}
 <tr><th>スペーサー</th><td colspan="3">${spStr}</td></tr>
 <tr><th>格子</th><td colspan="3">${koshiStr}</td></tr>
 <tr><th>ふかし枠</th><td colspan="3">${fukaStr}</td></tr>
-</table></div><div class="wc-memo"><div class="wc-memo-label">備考・メモ</div><div class="wc-memo-body">${wd.memo||''}</div></div></div></div>`;
+</table></div><div class="wc-memo"><div class="wc-memo-label">備考・メモ</div><div class="wc-memo-body">${autoMemo}${wd.memo||''}</div></div></div></div>`;
   }).join('');
   return{site,date,winCount:data.winData.length,cards};
 }
@@ -868,6 +906,7 @@ function makePanel(n){
   <div id="kw-err-${n}" class="err-msg">⚠ KW（上・中・下）の差が20㎜以上あります。開口部の変形・歪みを確認してください。</div>
   <div id="kw-min-${n}" class="min-note"><span class="min-dot"></span><span>KW 最
 小：<strong class="min-val"></strong>（取付基準幅）</span></div>
+  <div id="kw-auto-${n}" class="auto-note"></div>
 
   <table class="kw-table" style="margin-top:10px">
     <thead><tr><th></th><th>左</th><th>中</th><th>右</th></tr></thead>
@@ -880,7 +919,8 @@ function makePanel(n){
   </table>
   <div id="kh-err-${n}" class="err-msg">⚠ KH（左・中・右）の差が20㎜以上あります。開口部の変形・歪みを確認してください。</div>
   <div id="kh-min-${n}" class="min-note"><span class="min-dot"></span><span>KH 最小：<strong class="min-val"></strong>（取付基準高）</span></div>
-  <p class="note" style="margin-top:8px">※ KW は上・中・下、KH は左・中・右の最小値が取付寸法となります</p>
+  <div id="kh-auto-${n}" class="auto-note"></div>
+  <p class="note" style="margin-top:8px">※ KW は上・中・下、KH は左・中・右の最小値が取付寸法となります<br>※ 寸法差が ${AUTO_DIFF_MM}㎜以上の場合、備考欄へ自動記載されます</p>
   <div class="sub-row" style="margin-top:10px"><span class="il">対角</span>
     <div style="display:flex;align-items:center;gap:6px">
       <span class="il">対角1</span><input type="text" id="taik1-${n}" inputmode="numeric" style="width:80px"><span class="kw-unit">㎜</span>
