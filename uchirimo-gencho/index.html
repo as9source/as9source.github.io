@@ -255,7 +255,6 @@ const LBL={
   series:{f:'複層',t:'単板',v:'真空',ln:'Low-Eニュートラル',lb:'Low-Eブロンズ',lr:'Low-Eブルー',lh:'遮熱Low-Eブルー'},
   gt:{m:'透明',k:'型',s:'すり',ih:'異厚'},
   gt2:{ip:'一般',aw:'合わせ(30mil)',ky:'強化'},
-  stype:{f:'複層',fk_io:'複層(換気框付)内外障子',fk_i:'複層(換気框付)内障子のみ',t:'単板',tk:'単板(組子組合せ用)',vs:'真空(スペーシアクール専用フレーム)',vc:'真空(完成品)'},
   openType:{s:'正勝手',r:'逆勝手'},
   cres:{std:'標準',less:'クレセントレス'},
   hikite:{safe:'ストッパー付安全引手',funa:'舟底引手',tsuki:'突合せ框専用引手'},
@@ -353,7 +352,6 @@ function getWinData(n){
     kh:[...document.querySelectorAll(`#kh-row-${n} input`)].map(i=>i.value.trim()),
     series:r('series'+n),glassType:r('type1_'+n),glassType2:r('type2_'+n),spacer:r('sp'+n),gas:r('gas'+n),
     taikaku:[t('taik1-'+n),t('taik2-'+n)],
-    shojiType:(document.getElementById('stype-sel-'+n)||{}).value||'',
     openType:r('opentype'+n),
     operatorHandle:r('ophandle'+n),hanyoHandle:r('hanyohandle'+n),
     leftRight:r('leftright'+n),armStopper:r('armstopper'+n),
@@ -420,7 +418,6 @@ function restoreWin(wd){
     const e=p.querySelector(`input[name="${k+n}"][value="${v}"]`);if(e){e.checked=true;e.dispatchEvent(new Event('change'));}
   });
   const ks=document.getElementById('koshi-sel-'+n);if(ks)ks.value=wd.koshiType||'';
-  const ss=document.getElementById('stype-sel-'+n);if(ss)ss.value=wd.shojiType||'';
   toggleWindowType(n);toggleOpHandle(n);toggleMochidashi(n);toggleKoshi(n);toggleFuka(n);toggleOpenType(n);toggleCresPos(n);toggleNakazanPos(n);
   setTimeout(()=>{
     const kw=[...document.querySelectorAll(`#kw-row-${n} input`)];
@@ -453,8 +450,7 @@ function buildCards(){
     const koshiStr=wd.koshi==='y'?'有（'+lb(LBL.kt,wd.koshiType)+'）':'無';
     const fukaStr=wd.fukaAri==='y'?[lb(LBL.fs,wd.fukaSize),lb(LBL.fd,wd.fukaDir),wd.curtain==='y'?'カーテンレール有':'',wd.hoko==='y'?'補強有':''].filter(Boolean).join('・'):'無';
     const taikakuStr=(wd.taikaku&&(wd.taikaku[0]||wd.taikaku[1]))?'対角1: '+(wd.taikaku[0]||'—')+'㎜ ／ 対角2: '+(wd.taikaku[1]||'—')+'㎜':'—';
-    const stypeStr=wd.shojiType?lb(LBL.stype,wd.shojiType):'—';
-    const openTypeStr=wd.openType?lb(LBL.openType,wd.openType):'—';
+    const openTypeStr=(wd.shoji==='2'&&wd.openType)?lb(LBL.openType,wd.openType):'—';
     const winTypeStr=wd.windowType?lb(LBL.winType,wd.windowType):'—';
     const mochidashiStr=wd.mochidashi?lb(LBL.mochidashi,wd.mochidashi):'—';
     const opHandleStr=wd.operatorHandle?(wd.operatorHandle==='y'?'有'+(wd.hanyoHandle?' ／ 汎用ハンドル: '+lb(LBL.hanyoHandle,wd.hanyoHandle):''):'無'):'—';
@@ -467,7 +463,7 @@ function buildCards(){
     // 開口寸法差の自動記載（画面表示と同一文言）
     const autoNotes=[diffNote(wd.kw,['上','中','下'],'KW'),diffNote(wd.kh,['左','中','右'],'KH')].filter(Boolean);
     const autoMemo=autoNotes.length?`<div class="memo-auto">${autoNotes.map(s=>'⚠ '+s).join('<br>')}</div>`:'';
-    const hikiRows=wd.windowType==='hiki'?`<tr><th>障子枚数</th><td style="font-size:10px">${wd.shoji?wd.shoji+'枚建':'—'}</td><th>開閉タイプ</th><td style="font-size:10px">${openTypeStr}</td></tr><tr><th>障子種別</th><td colspan="3">${stypeStr}</td></tr><tr><th>下枠</th><td colspan="3" style="font-size:10px">${shitawakuStr}</td></tr><tr><th>クレセント</th><td colspan="3">${cresStr}</td></tr><tr><th>引手</th><td colspan="3">${hikiteStr}</td></tr><tr><th>中桟</th><td colspan="3">${nakazanStr}</td></tr>`:'';
+    const hikiRows=wd.windowType==='hiki'?`<tr><th>障子枚数</th><td style="font-size:10px">${wd.shoji?wd.shoji+'枚建':'—'}</td><th>開閉タイプ</th><td style="font-size:10px">${openTypeStr}</td></tr><tr><th>下枠</th><td colspan="3" style="font-size:10px">${shitawakuStr}</td></tr><tr><th>クレセント</th><td colspan="3">${cresStr}</td></tr><tr><th>引手</th><td colspan="3">${hikiteStr}</td></tr><tr><th>中桟</th><td colspan="3">${nakazanStr}</td></tr>`:'';
     const fixHirakiRows=(wd.windowType==='fix'||wd.windowType==='hiraki')?`<tr><th>OPハンドル</th><td colspan="3" style="font-size:10px">${opHandleStr}</td></tr>`:'';
     const hirakiRows=wd.windowType==='hiraki'?`<tr><th>左右区分</th><td style="font-size:10px">${leftRightStr}</td><th>アームストッパー</th><td style="font-size:10px">${armStopperStr}</td></tr>`:'';
     return`<div class="wc"><div class="wh">${wd.label}${wd.location?' ／ '+wd.location:''}</div><div class="wc-inner"><div class="wc-data"><table>
@@ -494,7 +490,6 @@ function validateAll(){
     const items=[];
     if(!wd.windowType) items.push('窓種');
     if(wd.windowType==='hiki'&&!wd.shoji) items.push('障子枚数');
-    if(wd.windowType==='hiki'&&!wd.shojiType) items.push('障子種別');
     if(!wd.color) items.push('商品色');
     if(!wd.dimA)  items.push('取付必要寸法 A');
     if(wd.kw.every(v=>!v)) items.push('KW（幅）採寸');
@@ -825,27 +820,9 @@ function makePanel(n){
     </div></div>
     <div id="opentype-wrap-${n}" style="display:none">
       <div class="field"><label>開閉タイプ（2枚建のみ）</label><div class="radio-group">
-        <label><input type="radio" name="opentype${n}" value="s"><span>正勝手</span></label>
+        <label><input type="radio" name="opentype${n}" value="s" checked><span>正勝手</span></label>
         <label><input type="radio" name="opentype${n}" value="r"><span>逆勝手</span></label>
       </div></div>
-    </div>
-    <div class="field"><label>障子種別</label>
-      <select id="stype-sel-${n}">
-        <option value="">— 障子種別を選択してください —</option>
-        <optgroup label="複層">
-          <option value="f">複層</option>
-          <option value="fk_io">複層（換気框付）内外障子</option>
-          <option value="fk_i">複層（換気框付）内障子のみ</option>
-        </optgroup>
-        <optgroup label="単板">
-          <option value="t">単板</option>
-          <option value="tk">単板（組子組合せ用）</option>
-        </optgroup>
-        <optgroup label="真空">
-          <option value="vs">真空（スペーシアクール専用フレーム）</option>
-          <option value="vc">真空（完成品）</option>
-        </optgroup>
-      </select>
     </div>
   </div>
   <div id="fixhiraki-wrap-${n}" style="display:none">
@@ -936,11 +913,11 @@ function makePanel(n){
   <div class="sec-title">クレセント</div>
   <div class="sub-row"><span class="il">有無</span>
     <div class="radio-group">
-      <label><input type="radio" name="cres${n}" value="std" onchange="toggleCresPos(${n})"><span>標準</span></label>
+      <label><input type="radio" name="cres${n}" value="std" checked onchange="toggleCresPos(${n})"><span>標準</span></label>
       <label><input type="radio" name="cres${n}" value="less" onchange="toggleCresPos(${n})"><span>クレセントレス</span></label>
     </div>
   </div>
-  <div id="crespos-wrap-${n}" class="sub-row" style="display:none"><span class="il">位置</span>
+  <div id="crespos-wrap-${n}" class="sub-row" style="display:flex"><span class="il">位置</span>
     <div style="display:flex;align-items:center;gap:6px">
       <input type="text" id="crespos-${n}" inputmode="numeric" style="width:80px"><span class="kw-unit">㎜</span>
     </div>
@@ -968,7 +945,7 @@ function makePanel(n){
   <div class="sec-title">中桟</div>
   <div class="sub-row"><span class="il">中桟</span>
     <div class="radio-group">
-      <label><input type="radio" name="nakazan${n}" value="n" onchange="toggleNakazanPos(${n})"><span>無</span></label>
+      <label><input type="radio" name="nakazan${n}" value="n" checked onchange="toggleNakazanPos(${n})"><span>無</span></label>
       <label><input type="radio" name="nakazan${n}" value="y" onchange="toggleNakazanPos(${n})"><span>付</span></label>
     </div>
   </div>
@@ -983,7 +960,7 @@ function makePanel(n){
   <div class="sec-title">下枠</div>
   <div class="sub-row"><span class="il">下枠</span>
     <div class="radio-group">
-      <label><input type="radio" name="shitawaku${n}" value="std"><span>標準</span></label>
+      <label><input type="radio" name="shitawaku${n}" value="std" checked><span>標準</span></label>
       <label><input type="radio" name="shitawaku${n}" value="maji"><span>間仕切り用</span></label>
       <label><input type="radio" name="shitawaku${n}" value="al"><span>アルミレール</span></label>
     </div>
@@ -1029,7 +1006,7 @@ function makePanel(n){
   <div class="divider"></div>
   <div class="sub-row" style="margin-bottom:4px"><span class="il">格子</span>
     <div class="radio-group">
-      <label><input type="radio" name="koshi${n}" value="n" onchange="toggleKoshi(${n})"><span>無</span></label>
+      <label><input type="radio" name="koshi${n}" value="n" checked onchange="toggleKoshi(${n})"><span>無</span></label>
       <label><input type="radio" name="koshi${n}" value="y" onchange="toggleKoshi(${n})"><span>有</span></label>
     </div>
   </div>
@@ -1099,7 +1076,7 @@ function makePanel(n){
   </div>
   <div class="field" style="margin-top:12px"><label>備考・メモ</label><input type="text" id="memo-${n}" placeholder="特記事項など"></div>
 </div>`;
-  setTimeout(()=>attachCheck(n),0);
+  setTimeout(()=>{attachCheck(n);toggleCresPos(n);toggleNakazanPos(n);toggleKoshi(n);toggleFuka(n);},0);
   return div;
 }
 
