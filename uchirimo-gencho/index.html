@@ -123,18 +123,25 @@ select:focus{outline:none;border-color:var(--accent)}
 .pdf-toolbar h2{flex:1;font-size:14px;font-weight:500;margin:0}
 .pdf-back{display:flex;align-items:center;gap:4px;padding:7px 12px;background:rgba(255,255,255,.18);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
 .pdf-share{display:flex;align-items:center;gap:4px;padding:7px 14px;background:#fff;border:none;border-radius:8px;color:var(--accent);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
-.pdf-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px}
-.pdf-report{font-family:'Hiragino Sans','Meiryo',sans-serif;font-size:11px;color:#111;max-width:900px;margin:0 auto}
+.pdf-body{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:12px}
+
+/* レポート本体は画面幅に依存しない固定幅（PDF_W）でレイアウトする */
+.pdf-scale-wrap{width:760px;transform-origin:top left}
+/* 撮影用ステージ：画面には出さず、レイアウトだけ確定させる */
+#pdf-stage{position:fixed;top:0;left:0;width:760px;background:#fff;z-index:150;visibility:hidden;pointer-events:none}
+
+.pdf-report{font-family:'Hiragino Sans','Meiryo',sans-serif;font-size:11px;color:#111;width:760px;background:#fff}
 .pdf-report .rh{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #1a4a7a;padding-bottom:6px;margin-bottom:10px;flex-wrap:wrap;gap:4px}
 .pdf-report .rt{font-size:15px;font-weight:400;color:#1a4a7a}
 .pdf-report .rm{font-size:10px;color:#444;text-align:right;line-height:1.8}
 .pdf-report .grid{display:grid;grid-template-columns:1fr;gap:8px}
-.pdf-report .wc{border:1px solid #aaa;border-radius:4px;overflow:hidden;break-inside:avoid;page-break-inside:avoid;margin-bottom:0;height:85mm;box-sizing:border-box}
-.pdf-report .wc-inner{display:flex;align-items:stretch;height:calc(100% - 26px)}
-.pdf-report .wc-data{flex:1;min-width:0;overflow:hidden}
-.pdf-report .wc-memo{width:280px;flex-shrink:0;border-left:1px solid #ccc;display:flex;flex-direction:column;background:#fafafa;height:100%}
+/* height 固定 → min-height に変更。収まらない場合は切らずにカードを伸ばす */
+.pdf-report .wc{border:1px solid #aaa;border-radius:4px;overflow:hidden;break-inside:avoid;page-break-inside:avoid;margin-bottom:0;min-height:330px;box-sizing:border-box;display:flex;flex-direction:column;background:#fff}
+.pdf-report .wc-inner{display:flex;align-items:stretch;flex:1}
+.pdf-report .wc-data{flex:1;min-width:0}
+.pdf-report .wc-memo{width:280px;flex-shrink:0;border-left:1px solid #ccc;display:flex;flex-direction:column;background:#fafafa}
 .pdf-report .wc-memo-label{font-size:9px;font-weight:500;color:#888;padding:4px 8px 2px;border-bottom:0.5px solid #e0e0e0}
-.pdf-report .wc-memo-body{flex:1;padding:6px 8px;font-size:11px;color:#333;line-height:1.6;white-space:pre-wrap;overflow:hidden}
+.pdf-report .wc-memo-body{flex:1;padding:6px 8px;font-size:11px;color:#333;line-height:1.6;white-space:pre-wrap;word-break:break-word}
 .pdf-report .wh{background:#1a4a7a;color:#fff;font-size:12px;font-weight:700;padding:5px 8px}
 .pdf-report table{width:100%;border-collapse:collapse}
 .pdf-report th{background:#f0ede8;font-size:10px;font-weight:500;color:#444;padding:2px 6px;text-align:left;border:0.5px solid #ccc;width:30%;vertical-align:top}
@@ -208,10 +215,15 @@ select:focus{outline:none;border-color:var(--accent)}
     <h2>現場調査シート</h2>
     <button class="pdf-share" onclick="sharePdf()">PDF ダウンロード ↓</button>
   </div>
-  <div class="pdf-body">
-    <div class="pdf-report" id="pdf-report"></div>
+  <div class="pdf-body" id="pdf-body">
+    <div class="pdf-scale-wrap" id="pdf-scale-wrap">
+      <div class="pdf-report" id="pdf-report"></div>
+    </div>
   </div>
 </div>
+
+<!-- PDF撮影用ステージ（画面幅に影響されない固定760px） -->
+<div id="pdf-stage" aria-hidden="true"><div class="pdf-report" id="pdf-stage-report"></div></div>
 
 <div class="val-overlay" id="val-overlay" onclick="closeVal(event)">
   <div class="val-sheet" id="val-sheet">
@@ -230,6 +242,9 @@ select:focus{outline:none;border-color:var(--accent)}
 <script>
 // ─── 状態 ───────────────────────────────
 let wins=[], activeId=null, ctr=0;
+
+// レポートのレイアウト基準幅（px）。画面サイズに関わらずこの幅で組む
+const PDF_W=760;
 
 // ─── ラベル定義 ─────────────────────────
 const LBL={
@@ -364,7 +379,8 @@ function restoreWin(wd){
   if(kwR&&wd.kw)[...kwR.querySelectorAll('input')].forEach((inp,i)=>inp.value=wd.kw[i]||'');
 
   if(khR&&wd.kh)[...khR.querySelectorAll('input')].forEach((inp,i)=>inp.value=wd.kh[i]||'');
-  const srmap={wintype:'windowType',shoji:'shoji',color:'color',series:'series','type1_':'type1_','type2_':'glassType2',sp:'sp',gas:'gas',opentype:'openType',cres:'cresType',hikite:'hikiteType',nakazan:'nakazan',shitawaku:'shitawaku',koshi:'koshi',fukaari:'fukaAri',fukasize:'fukaSize',fukadir:'fukaDir',curtain:'curtain',hoko:'hoko',ophandle:'operatorHandle',hanyohandle:'hanyoHandle',leftright:'leftRight',armstopper:'armStopper',mochidashi:'mochidashi'};
+  // ラジオ名 → 保存キー の対応表（保存側のキー名と必ず一致させること）
+  const srmap={wintype:'windowType',shoji:'shoji',color:'color',series:'series','type1_':'glassType','type2_':'glassType2',sp:'spacer',gas:'gas',opentype:'openType',cres:'cresType',hikite:'hikiteType',nakazan:'nakazan',shitawaku:'shitawaku',koshi:'koshi',fukaari:'fukaAri',fukasize:'fukaSize',fukadir:'fukaDir',curtain:'curtain',hoko:'hoko',ophandle:'operatorHandle',hanyohandle:'hanyoHandle',leftright:'leftRight',armstopper:'armStopper',mochidashi:'mochidashi'};
   Object.entries(srmap).forEach(([k,dk])=>{
     const v=wd[dk];if(!v)return;
     const e=p.querySelector(`input[name="${k+n}"][value="${v}"]`);if(e){e.checked=true;e.dispatchEvent(new Event('change'));}
@@ -440,6 +456,7 @@ function validateAll(){
     const items=[];
     if(!wd.windowType) items.push('窓種');
     if(wd.windowType==='hiki'&&!wd.shoji) items.push('障子枚数');
+    if(wd.windowType==='hiki'&&!wd.shojiType) items.push('障子種別');
     if(!wd.color) items.push('商品色');
     if(!wd.dimA)  items.push('取付必要寸法 A');
     if(wd.kw.every(v=>!v)) items.push('KW（幅）採寸');
@@ -482,19 +499,44 @@ function exportPDF(){
   showPdfPreview();
 }
 
-function showPdfPreview(){
+// レポートHTMLを1回だけ組み立て、プレビューと撮影ステージの両方に流し込む
+function reportHTML(){
   const {site,date,winCount,cards}=buildCards();
-  document.getElementById('pdf-report').innerHTML=`
+  return `
 <div class="rh">
   <div class="rt">内窓 現場調査シート</div>
   <div class="rm">現場名：${site}<br>調査日：${date}<br>窓数：${winCount}か所</div>
 </div>
 <div class="grid">${cards}</div>
 <div class="leg"><span class="leg-dot"></span><span>緑ハイライト = 最小値（取付基準寸法）</span></div>`;
+}
+
+// プレビューを画面幅に合わせて等倍縮小（レイアウトは760pxのまま＝PDFと完全一致）
+function fitPreviewScale(){
+  const body=document.getElementById('pdf-body');
+  const wrap=document.getElementById('pdf-scale-wrap');
+  const rep=document.getElementById('pdf-report');
+  if(!body||!wrap||!rep)return;
+  const avail=body.clientWidth-24;
+  const s=Math.min(1,avail/PDF_W);
+  wrap.style.transform='scale('+s+')';
+  // transform はレイアウト高さに反映されないため、スクロール用に実高さを与える
+  wrap.style.height=(rep.offsetHeight*s)+'px';
+}
+
+function showPdfPreview(){
+  const html=reportHTML();
+  document.getElementById('pdf-report').innerHTML=html;
+  document.getElementById('pdf-stage-report').innerHTML=html;
   const ov=document.getElementById('pdf-overlay');
   ov.classList.add('show');
   ov.querySelector('.pdf-body').scrollTop=0;
+  setTimeout(fitPreviewScale,0);
 }
+
+window.addEventListener('resize',()=>{
+  if(document.getElementById('pdf-overlay').classList.contains('show')) fitPreviewScale();
+});
 
 function closePdfPreview(){
   document.getElementById('pdf-overlay').classList.remove('show');
@@ -514,7 +556,7 @@ async function sharePdf(){
   const data=collectAll();
   const site=data.siteName||'無題';
 
-  // プレビュー表示
+  // プレビュー表示（同時に撮影ステージにも同じHTMLが入る）
   showPdfPreview();
   toast('PDF生成中...');
   await new Promise(r=>setTimeout(r,400));
@@ -523,26 +565,33 @@ async function sharePdf(){
   const pageW=210, pageH=297;
   const mgnL=8, mgnR=8, mgnT=8, mgnB=8;
   const usableW=pageW-mgnL-mgnR;  // 194mm
-  const hdrH=11;                   // ページヘッダー高さ
   const cardGap=3;                 // カード間隔
   const CARDS_PER_PAGE=3;
-  // カード高さ = (297 - 16 - 11 - 9) / 4 = 65.25mm → 65mm
-  const cardH=(pageH-mgnT-mgnB-hdrH-cardGap*(CARDS_PER_PAGE-1))/CARDS_PER_PAGE;
+  let hdrH=11, cardH=0;            // ヘッダー実測後に確定
 
   const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
 
-  const reportEl=document.getElementById('pdf-report');
+  // 撮影は画面幅に依存しない固定760pxのステージから行う
+  const stage=document.getElementById('pdf-stage');
+  const reportEl=document.getElementById('pdf-stage-report');
   const headerEl=reportEl.querySelector('.rh');
   const cardEls=[...reportEl.querySelectorAll('.wc')];
 
   if(cardEls.length===0){toast('カードが見つかりません',1);return;}
 
-  try{
-    // ヘッダーキャプチャ
-    const hdrCanvas=await html2canvas(headerEl,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false});
+  // html2canvas は visibility:hidden の要素を描画しないため、撮影中だけ可視化する。
+  // pdf-overlay（z-index:200・不透明）が前面にあるので画面には見えない。
+  stage.style.visibility='visible';
 
+  try{
+    // ヘッダーキャプチャ → 実際の縦横比からヘッダー高さを決める
+    const hdrCanvas=await html2canvas(headerEl,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false});
+    hdrH=Math.min(22, usableW*hdrCanvas.height/hdrCanvas.width);
+    cardH=(pageH-mgnT-mgnB-hdrH-cardGap*(CARDS_PER_PAGE-1))/CARDS_PER_PAGE;
+
+    const hdrData=hdrCanvas.toDataURL('image/jpeg',0.95);
     function addPageHeader(doc, y){
-      doc.addImage(hdrCanvas.toDataURL('image/jpeg',0.95),'JPEG',mgnL,y,usableW,hdrH);
+      doc.addImage(hdrData,'JPEG',mgnL,y,usableW,hdrH);
     }
 
     let pageCardIdx=0;
@@ -559,16 +608,17 @@ async function sharePdf(){
       // カードのY位置（固定）
       const cardY=mgnT+hdrH+pageCardIdx*(cardH+cardGap);
 
-      // カードをキャプチャして固定サイズで配置
       const cardCanvas=await html2canvas(cardEls[i],{
-        scale:3,
+        scale:2,
         useCORS:true,
         backgroundColor:'#ffffff',
-        logging:false,
+        logging:false
       });
 
-      // 固定高さ cardH で配置（アスペクト比無視して強制fit）
-      doc.addImage(cardCanvas.toDataURL('image/jpeg',0.95),'JPEG',mgnL,cardY,usableW,cardH);
+      // 縦横比を保ったままスロットに収める（はみ出しても切り捨てない）
+      let cw=usableW, ch=usableW*cardCanvas.height/cardCanvas.width;
+      if(ch>cardH){ ch=cardH; cw=cardH*cardCanvas.width/cardCanvas.height; }
+      doc.addImage(cardCanvas.toDataURL('image/jpeg',0.95),'JPEG',mgnL,cardY,cw,ch);
 
       pageCardIdx=(pageCardIdx+1)%CARDS_PER_PAGE;
     }
@@ -604,6 +654,8 @@ async function sharePdf(){
   }catch(e){
     console.error(e);
     toast('PDF生成に失敗しました: '+e.message,1);
+  }finally{
+    stage.style.visibility='hidden';
   }
 }
 
@@ -738,6 +790,24 @@ function makePanel(n){
         <label><input type="radio" name="opentype${n}" value="s"><span>正勝手</span></label>
         <label><input type="radio" name="opentype${n}" value="r"><span>逆勝手</span></label>
       </div></div>
+    </div>
+    <div class="field"><label>障子種別</label>
+      <select id="stype-sel-${n}">
+        <option value="">— 障子種別を選択してください —</option>
+        <optgroup label="複層">
+          <option value="f">複層</option>
+          <option value="fk_io">複層（換気框付）内外障子</option>
+          <option value="fk_i">複層（換気框付）内障子のみ</option>
+        </optgroup>
+        <optgroup label="単板">
+          <option value="t">単板</option>
+          <option value="tk">単板（組子組合せ用）</option>
+        </optgroup>
+        <optgroup label="真空">
+          <option value="vs">真空（スペーシアクール専用フレーム）</option>
+          <option value="vc">真空（完成品）</option>
+        </optgroup>
+      </select>
     </div>
   </div>
   <div id="fixhiraki-wrap-${n}" style="display:none">
