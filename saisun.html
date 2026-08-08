@@ -307,6 +307,36 @@
     main { padding: 12px 12px 0; }
     .measure-table input { width: 60px; font-size: 13px; }
   }
+/* 読みやすさ調整：内容と配色はそのまま */
+body{font-size:16px;line-height:1.65;padding-bottom:32px}
+.app-header{padding:15px 20px 14px;box-shadow:0 3px 14px rgba(26,74,122,.16)}
+.app-header h1{font-size:20px}.app-header .sub{font-size:13px;color:rgba(255,255,255,.82);margin-top:3px}
+.toolbar{min-height:58px;padding:9px 16px;gap:10px}.toolbar-left{font-size:13px;font-weight:500}.toolbar-right{gap:8px}
+.tool-btn{min-height:42px;padding:9px 14px;border-radius:9px;font-size:13px}
+main{max-width:940px;padding:24px 20px 12px}
+.top-info{gap:18px;margin-bottom:28px;padding:18px;background:var(--surface);border:1px solid var(--border);border-radius:12px}
+.top-info label{font-size:13px;font-weight:600;color:var(--text);margin-bottom:7px}.top-info input{min-height:48px;border-radius:10px;padding:12px 14px;font-size:16px;background:#fff}
+.top-info input:focus,.inline-input:focus,.measure-table input:focus,.frame-select:focus,.notes-input:focus{box-shadow:0 0 0 3px rgba(26,74,122,.12)}
+.sec-header{font-size:16px;padding:11px 0;margin:30px 0 18px;border-bottom-width:2px;gap:10px}.sec-header::before{width:5px;height:21px}
+.field-row{margin-bottom:20px}.field-label{font-size:13.5px;font-weight:600;color:var(--text);margin-bottom:9px}.chip-row{gap:9px}
+.chip{min-height:43px;padding:9px 17px;border-radius:22px;font-size:14px}.type-row{gap:10px;margin-bottom:16px}.type-btn{min-height:52px;padding:13px 10px;border-radius:10px;font-size:16px}
+.detail-panel{margin-top:12px;padding-top:16px}.inline-field{gap:10px;margin-bottom:14px;flex-wrap:wrap}.inline-label{font-size:13.5px;font-weight:500;min-width:92px;color:var(--text)}
+.inline-input{width:140px;min-height:46px;border-radius:9px;padding:10px 12px;font-size:17px}.inline-unit{font-size:14px}
+.check-row{min-height:48px;gap:12px;padding:12px 0;margin-bottom:8px}.check-row input[type="checkbox"]{width:22px;height:22px}.check-row-label{font-size:14.5px;font-weight:600}.check-row-sub{font-size:12.5px}
+.measure-table{margin-bottom:11px;border-radius:10px}.measure-table th{font-size:12.5px;padding:10px}.measure-table td{padding:10px}.measure-table .row-label{font-size:13px;min-width:58px}
+.measure-table input{width:94px;min-height:43px;border-radius:8px;padding:9px;font-size:16px}.measure-note{font-size:12.5px;line-height:1.65;margin-bottom:18px}
+.frame-group{margin-bottom:18px}.frame-row{gap:10px;margin-bottom:9px}.frame-label{font-size:13px;font-weight:600;min-width:58px;color:var(--text)}
+.frame-select{min-height:44px;border-radius:9px;padding:9px 34px 9px 12px;font-size:14px}.frame-toggle{min-height:40px;border-radius:8px;padding:8px 12px;font-size:12.5px;font-weight:600}
+.frame-indiv{margin-top:10px;padding-top:12px}.indiv-badge{font-size:11.5px;padding:4px 8px}
+.calc-section,.kouchi-section{border-radius:11px;padding:17px 18px;margin-bottom:18px}.calc-title,.kouchi-title{font-size:13px;margin-bottom:13px}.calc-grid{gap:12px}
+.calc-cell{border-radius:9px;padding:13px 14px}.calc-key{font-size:12px;margin-bottom:5px}.calc-val,.kouchi-val{font-size:25px}.calc-val.na{font-size:14px}.calc-formula{font-size:11.5px;margin-top:6px}
+.notes-input{min-height:112px;border-radius:10px;padding:13px 14px;font-size:15px;line-height:1.65}.field-warn{font-size:12.5px;padding:7px 0}
+.toast{padding:12px 20px;border-radius:24px;font-size:13px}.modal{border-radius:14px;padding:22px}.modal-title{font-size:17px;margin-bottom:19px}
+.summary-grid{gap:11px;margin-bottom:19px}.summary-cell{border-radius:9px;padding:13px 14px}.s-key{font-size:11.5px}.s-val{font-size:17px}.s-label{font-size:12.5px}
+.record-list{gap:10px}.record-item{min-height:58px;padding:13px 14px;border-radius:10px}.record-name{font-size:15px}.record-date{font-size:12px}.record-del{min-height:39px;padding:8px 12px;border-radius:8px;font-size:12.5px}
+@media(max-width:600px){body{padding-bottom:24px}.app-header{padding:14px 16px 13px}.app-header h1{font-size:18px}.toolbar{padding:8px 10px;overflow-x:auto}.toolbar-left{white-space:nowrap}.toolbar-right{flex-shrink:0}.tool-btn{min-height:41px;padding:8px 12px;white-space:nowrap}main{padding:18px 14px 10px}.top-info{gap:14px;margin-bottom:22px;padding:15px}.sec-header{margin-top:25px;font-size:15px}.measure-table th,.measure-table td{padding:7px 5px}.measure-table input{width:72px;min-height:42px;padding:7px 4px;font-size:15px}.calc-grid{grid-template-columns:1fr 1fr}.summary-grid{grid-template-columns:1fr 1fr}.modal{padding:18px 16px}}
+.photo-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:13px}.photo-action{min-height:47px;padding:11px 17px;border:1px solid var(--accent);border-radius:10px;background:#fff;color:var(--accent);font-family:'Noto Sans JP',sans-serif;font-size:14px;font-weight:700;cursor:pointer}.photo-action.camera{background:var(--accent);color:#fff}.photo-help{font-size:12.5px;color:var(--text-sub);line-height:1.65;margin-bottom:13px}.photo-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.photo-card{position:relative;overflow:hidden;border:1px solid var(--border);border-radius:11px;background:var(--surface)}.photo-card img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;background:#eee}.photo-caption{width:100%;min-height:40px;border:0;border-top:1px solid var(--border);padding:8px 10px;background:#fff;color:var(--text);font-family:'Noto Sans JP',sans-serif;font-size:12.5px;outline:none}.photo-caption:focus{background:var(--accent-light)}.photo-remove{position:absolute;top:7px;right:7px;width:31px;height:31px;border:0;border-radius:50%;background:rgba(0,0,0,.62);color:#fff;font-size:16px;cursor:pointer}.photo-empty{grid-column:1/-1;padding:24px 15px;border:2px dashed var(--border);border-radius:11px;color:var(--text-sub);font-size:13px;text-align:center;background:var(--surface)}
+@media(max-width:600px){.photo-actions{display:grid;grid-template-columns:1fr 1fr}.photo-action{padding:10px 8px}.photo-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}}
 </style>
 </head>
 <body>
@@ -568,6 +598,17 @@
   <div class="sec-header">備考</div>
   <textarea class="notes-input" id="notes" placeholder="特記事項など"></textarea>
 
+  <!-- 現場写真 -->
+  <div class="sec-header">現場写真</div>
+  <div class="photo-actions">
+    <button type="button" class="photo-action camera" onclick="document.getElementById('photo-camera').click()">📷 カメラで撮影</button>
+    <button type="button" class="photo-action" onclick="document.getElementById('photo-library').click()">＋ 後から写真を追加</button>
+  </div>
+  <div class="photo-help">撮影した写真は保存データに含まれます。保存済みの現場を読み込んだ後にも追加できます（最大8枚）。</div>
+  <div class="photo-list" id="photo-list"></div>
+  <input type="file" id="photo-camera" accept="image/*" capture="environment" hidden>
+  <input type="file" id="photo-library" accept="image/*" multiple hidden>
+
   <div style="height:40px"></div>
 
 </main>
@@ -607,6 +648,7 @@
 <script>
 // ======= State =======
 let currentType = '';
+let photoData = [];
 let tsukeMethod = '';
 const chipState = {};
 
@@ -795,6 +837,87 @@ const LABELS = {
   soto: ['外額縁','外額縁'], uchi: ['内額縁','内額縁'],
 };
 const LS_KEY = 'saisun_records';
+
+// ======= Site photos =======
+function renderPhotos() {
+  const list = document.getElementById('photo-list');
+  if (!list) return;
+  list.innerHTML = '';
+  if (!photoData.length) {
+    const empty = document.createElement('div');
+    empty.className = 'photo-empty';
+    empty.textContent = '写真はまだありません';
+    list.appendChild(empty);
+    return;
+  }
+  photoData.forEach((photo, index) => {
+    const card = document.createElement('div');
+    card.className = 'photo-card';
+    const img = document.createElement('img');
+    img.src = photo.src;
+    img.alt = `現場写真 ${index + 1}`;
+    const caption = document.createElement('input');
+    caption.className = 'photo-caption';
+    caption.placeholder = '写真メモ（例：既存枠）';
+    caption.value = photo.caption || '';
+    caption.addEventListener('input', () => {
+      photoData[index].caption = caption.value;
+      document.getElementById('save-status').textContent = '未保存';
+    });
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'photo-remove';
+    remove.setAttribute('aria-label', '写真を削除');
+    remove.textContent = '×';
+    remove.addEventListener('click', () => {
+      if (!confirm('この写真を削除しますか？')) return;
+      photoData.splice(index, 1);
+      renderPhotos();
+      document.getElementById('save-status').textContent = '未保存';
+    });
+    card.append(img, caption, remove);
+    list.appendChild(card);
+  });
+}
+
+function resizePhoto(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        const max = 1100;
+        const scale = Math.min(1, max / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(img.width * scale));
+        canvas.height = Math.max(1, Math.round(img.height * scale));
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.74));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function addPhotoFiles(files) {
+  const room = Math.max(0, 8 - photoData.length);
+  if (!room) { showToast('写真は最大8枚です', true); return; }
+  const selected = [...files].filter(f => f.type.startsWith('image/')).slice(0, room);
+  if (!selected.length) return;
+  showToast('写真を取り込んでいます…');
+  try {
+    for (const file of selected) photoData.push({ src: await resizePhoto(file), caption: '' });
+    renderPhotos();
+    document.getElementById('save-status').textContent = '未保存';
+    showToast(`📷 写真を${selected.length}枚追加しました`);
+  } catch (_) { showToast('写真を読み込めませんでした', true); }
+}
+document.getElementById('photo-camera').addEventListener('change', async e => { await addPhotoFiles(e.target.files); e.target.value = ''; });
+document.getElementById('photo-library').addEventListener('change', async e => { await addPhotoFiles(e.target.files); e.target.value = ''; });
+renderPhotos();
 
 // ======= Helpers =======
 function val(id) { const el = document.getElementById(id); return el ? el.value : ''; }
@@ -1009,6 +1132,7 @@ function collectState() {
     tsukeMethod,
     shimowaku: document.getElementById('cb-shimowaku').checked,
     tsuri: document.getElementById('cb-tsuri').checked,
+    photos: photoData.map(p => ({ src: p.src, caption: p.caption || '' })),
     fields: {},
   };
   const allIds = ['kh','kh_l','kh_c','kh_r','kw','kw_t','kw_c','kw_b','dw','ats','shita-dansa','shita-soto-dansa',
@@ -1031,6 +1155,8 @@ function restoreState(state) {
   if (state.tsukeMethod) selectTsuke(state.tsukeMethod);
   document.getElementById('cb-shimowaku').checked = !!state.shimowaku;
   document.getElementById('cb-tsuri').checked = !!state.tsuri;
+  photoData = Array.isArray(state.photos) ? state.photos.map(p => ({ src: p.src, caption: p.caption || '' })) : [];
+  renderPhotos();
   const sotoBtn = document.getElementById('toggle-soto');
   if (val('soto') === '155') { sotoBtn.disabled = true; sotoBtn.title = '155mmは共通設定のみ'; }
   else { sotoBtn.disabled = false; sotoBtn.title = ''; }
@@ -1064,7 +1190,8 @@ function saveRecord() {
   } else {
     records.unshift(state);
   }
-  putRecords(records);
+  try { putRecords(records); }
+  catch (_) { showToast('保存容量が不足しています。写真を減らして再度保存してください', true); return; }
   document.getElementById('save-status').textContent = '保存済み ✓';
   showToast('💾 保存しました：' + siteName);
 }
@@ -1175,6 +1302,13 @@ function buildSheetHTML(siteName, siteDate, kengu, tsukeLabel, shimowakuTxt, isD
                     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const showKouchi = isDoor && chipState['katachi'] === 'single';
   const pdfTitle = getPdfTitle();
+  const photoHtml = photoData.length ? `<div style="margin-top:12px">
+    <div style="font-size:9px;font-weight:700;letter-spacing:.15em;color:#666;border-bottom:1px solid #ccc;padding-bottom:3px;margin-bottom:7px">現場写真</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${photoData.map((p,i) => {
+      const cap = (p.caption || `写真 ${i+1}`).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      return `<div style="border:1px solid #ccc;border-radius:5px;overflow:hidden;break-inside:avoid"><img src="${p.src}" style="display:block;width:100%;height:210px;object-fit:contain;background:#f4f4f4"><div style="padding:5px 7px;font-size:10px;color:#444">${cap}</div></div>`;
+    }).join('')}</div>
+  </div>` : '';
 
   return `
 <div style="font-family:'Noto Sans JP',sans-serif;font-size:13px;color:#111">
@@ -1254,6 +1388,8 @@ ${isDoor ? `<div style="margin-bottom:11px">
   <div style="font-size:9px;font-weight:700;letter-spacing:.15em;color:#666;border-bottom:1px solid #ccc;padding-bottom:3px;margin-bottom:7px">備考</div>
   <div style="border:1px solid #ccc;border-radius:5px;min-height:180px;padding:10px 12px;font-size:13px;line-height:1.9;white-space:pre-wrap;word-break:break-all">${notes}</div>
 </div>
+
+${photoHtml}
 
 <div style="margin-top:10px;font-size:10px;color:#aaa;text-align:right;border-top:1px solid #eee;padding-top:5px">${siteName} | ${siteDate}</div>
 </div>`;
@@ -1338,6 +1474,8 @@ function clearAll(silent=false) {
   document.getElementById('cb-shimowaku').checked = false;
   document.getElementById('cb-tsuri').checked = false;
   currentType = '';
+  photoData = [];
+  renderPhotos();
   Object.keys(chipState).forEach(k => delete chipState[k]);
   document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
   document.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
