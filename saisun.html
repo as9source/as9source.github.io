@@ -340,6 +340,11 @@ main{max-width:940px;padding:24px 20px 12px}
 .meeting-card{padding:18px;border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:16px}.meeting-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.meeting-field{margin-bottom:16px}.meeting-field:last-child{margin-bottom:0}.meeting-label{display:block;margin-bottom:7px;font-size:13px;font-weight:700;color:var(--text)}.meeting-select,.meeting-input,.meeting-notes{width:100%;min-height:48px;border:1px solid var(--border);border-radius:10px;background:#fff;padding:11px 13px;color:var(--text);font:15px 'Noto Sans JP',sans-serif;outline:none}.meeting-select:focus,.meeting-input:focus,.meeting-notes:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(26,74,122,.12)}.meeting-notes{min-height:105px;resize:vertical;line-height:1.65}.meeting-hint{margin-top:6px;font-size:12px;line-height:1.6;color:var(--text-sub)}.meeting-preview{display:grid;grid-template-columns:180px 1fr;gap:16px;align-items:center;padding:14px;border:1px solid var(--border);border-radius:11px;background:#fff}.meeting-preview img{display:block;width:100%;height:230px;object-fit:contain;background:#f5f5f5;border-radius:8px}.meeting-preview-empty{display:grid;place-items:center;width:100%;height:230px;background:var(--surface);border:2px dashed var(--border);border-radius:8px;color:var(--text-sub);font-size:12px;text-align:center;padding:10px}.meeting-preview-title{font-size:18px;font-weight:700;color:var(--accent);margin-bottom:8px}.meeting-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.meeting-links a{display:inline-flex;align-items:center;min-height:39px;padding:8px 12px;border:1px solid var(--accent);border-radius:8px;color:var(--accent);background:#fff;text-decoration:none;font-size:12.5px;font-weight:700}.meeting-alert{padding:11px 13px;border:1px solid #e3c98d;border-radius:9px;background:#fdf4e3;color:#7a4f0a;font-size:12.5px;line-height:1.65}
 @media(max-width:600px){.meeting-grid{grid-template-columns:1fr;gap:0}.meeting-card{padding:15px}.meeting-preview{grid-template-columns:125px 1fr;gap:12px}.meeting-preview img,.meeting-preview-empty{height:180px}.meeting-preview-title{font-size:16px}}
 </style>
+<style>
+.sec-header{display:flex;align-items:center;gap:10px}
+.help-btn{margin-left:auto;width:32px;height:32px;min-width:32px;padding:0;border-radius:50%;border:1px solid #9db4cc;background:#fff;color:#1a4a7a;font-size:16px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.help-btn:hover{background:#eaf1f8}.help-content{font-size:14px;line-height:1.75;color:var(--text)}.help-page{margin:10px 0;padding:12px 14px;border-radius:9px;background:#eaf1f8;color:#173f67;font-weight:700}.help-links{display:grid;gap:8px;margin-top:14px}.help-links a{display:block;padding:11px 13px;border:1px solid var(--border);border-radius:9px;color:#1a4a7a;font-weight:700;text-decoration:none;background:#fff}
+</style>
 </head>
 <body>
 
@@ -383,7 +388,7 @@ main{max-width:940px;padding:24px 20px 12px}
   </div>
 
   <!-- 既存ドア情報 -->
-  <div class="sec-header">設置・基本情報</div>
+<div class="sec-header"><span>設置・基本情報</span><button type="button" class="help-btn" onclick="openHelp('basic')" aria-label="設置・基本情報の採寸ヘルプ">?</button></div>
 
   <div class="field-row">
     <div class="field-label">建具種別</div>
@@ -481,7 +486,7 @@ main{max-width:940px;padding:24px 20px 12px}
   </div>
 
   <!-- 既存開口 採寸 -->
-  <div class="sec-header">既存開口部 採寸</div>
+<div class="sec-header"><span>既存開口部 採寸</span><button type="button" class="help-btn" onclick="openHelp('opening')" aria-label="既存開口部の採寸ヘルプ">?</button></div>
 
   <label class="check-row" for="cb-tsuri">
     <input type="checkbox" id="cb-tsuri" onchange="recalc()">
@@ -529,7 +534,7 @@ main{max-width:940px;padding:24px 20px 12px}
   <div class="field-warn" id="warn-wh" style="color:var(--err);background:rgba(224,64,64,0.08);border:1px solid rgba(224,64,64,0.2);border-radius:4px;padding:6px 10px;font-weight:600">⚠ KW（幅）がKH（高さ）より大きいです。入力が逆になっていませんか？</div>
 
   <!-- 額縁 -->
-  <div class="sec-header">額縁</div>
+<div class="sec-header"><span>額縁</span><button type="button" class="help-btn" onclick="openHelp('frame')" aria-label="額縁の採寸ヘルプ">?</button></div>
 
   <div class="frame-group">
     <div class="frame-row">
@@ -632,7 +637,7 @@ main{max-width:940px;padding:24px 20px 12px}
 
   <!-- 現地打ち合わせ内容（ドア選択時） -->
   <div id="meeting-section" style="display:none">
-    <div class="sec-header">現地打ち合わせ内容</div>
+    <div class="sec-header"><span>現地打ち合わせ内容</span><button type="button" class="help-btn" onclick="openHelp('meeting')" aria-label="商品選択のカタログヘルプ">?</button></div>
     <div class="meeting-card door-meeting-only">
       <div class="meeting-grid">
         <div class="meeting-field"><label class="meeting-label" for="meeting-series">商品・仕様</label><select class="meeting-select" id="meeting-series"><option value="">選択してください</option><option>D50 高断熱ドア</option><option>D30 断熱ドア D2仕様</option><option>D30 断熱ドア D4仕様</option><option>D30 防火ドア D2仕様</option><option>D30 防火ドア D4仕様</option><option>アルミドア</option></select></div>
@@ -721,6 +726,10 @@ main{max-width:940px;padding:24px 20px 12px}
         <div class="meeting-grid">
           <div class="meeting-field"><label class="meeting-label" for="back-design">扉デザイン</label><select class="meeting-select" id="back-design"><option value="">選択してください</option><option>横格子</option><option>ラチス格子</option><option>井桁格子</option><option>一本格子</option><option>全面ガラス</option><option>中桟付</option></select></div>
           <div class="meeting-field"><label class="meeting-label" for="back-ranma">ランマ</label><select class="meeting-select" id="back-ranma"><option value="">選択してください</option><option>ランマなし</option><option>ランマ付</option></select></div>
+        </div>
+        <div class="meeting-grid" id="back-middle-panels" style="display:none">
+          <div class="meeting-field"><label class="meeting-label" for="back-upper-panel">中桟上部</label><select class="meeting-select" id="back-upper-panel"><option value="">選択してください</option><option>ガラス</option><option>断熱パネル</option></select></div>
+          <div class="meeting-field"><label class="meeting-label" for="back-lower-panel">中桟下部</label><select class="meeting-select" id="back-lower-panel"><option value="">選択してください</option><option>ガラス</option><option>断熱パネル</option></select></div>
         </div>
         <div class="meeting-grid">
           <div class="meeting-field"><label class="meeting-label" for="back-color-mode">内外色</label><select class="meeting-select" id="back-color-mode"><option value="">選択してください</option><option>内外別色</option><option>内外同系色</option></select></div>
@@ -812,6 +821,7 @@ function selectChip(el) {
   else { el.classList.add('selected'); chipState[group] = el.dataset.val; }
   if (group === 'katachi') { updateKouchiVisibility(); updateChildDoorVisibility(); updateDoorDesignRules(); }
   if (group === 'backFloor') setVal('back-floor', chipState[group]==='floor'?'フロア納まり':chipState[group]==='doma'?'土間納まり':'');
+  if (group === 'ranmaS') updateSlidingCombinationRules(true);
 }
 
 function updateKouchiVisibility() {
@@ -1060,10 +1070,11 @@ renderPhotos();
 
 // ======= On-site meeting details =======
 const MEETING_IDS = ['meeting-series','meeting-status','meeting-design','meeting-color','meeting-child-type','meeting-child-door','meeting-lock','meeting-power','meeting-handle','meeting-handle-color','meeting-lower-type','meeting-lower-relief','meeting-lower-cover','meeting-lower-baseboard','meeting-lower-angle','meeting-lower-vertical','meeting-lower-wood-cover','meeting-notes'];
-const BACKDOOR_IDS = ['back-frame','back-floor','back-design','back-ranma','back-color-mode','back-outer-color','back-inner-color','back-cylinder','back-thumbturn'];
+const BACKDOOR_IDS = ['back-frame','back-floor','back-design','back-ranma','back-upper-panel','back-lower-panel','back-color-mode','back-outer-color','back-inner-color','back-cylinder','back-thumbturn'];
 const SLIDING_IDS = ['sliding-series','sliding-status','sliding-design','sliding-color','sliding-glass','sliding-handle','sliding-handle-color','sliding-lock','sliding-latch','sliding-screen','sliding-screen-type','sliding-screen-net','sliding-screen-color'];
 const SLIDING_STD_COLORS=['KG ナチュラルオーク','YF キャラメルチーク','YA ステインウォールナット','B1 ブラウン','B7 カームブラック','H2 プラチナステン'];
 const SLIDING_WA_COLORS=['LC 新槇','LG ひのき','B1 ブラウン','B7 カームブラック'];
+const SLIDING_DOUBLE_ONLY=['C05','C06','C09','B10','A09 横太桟'];
 const SLIDING_CATALOG={
   '袖付2枚連動引込み戸':{designs:['Y01','Y02','Y03','Y04'],colors:SLIDING_STD_COLORS,handles:['内外バーハンドル'],locks:['召合せ錠＋戸先錠（内外錠）']},
   '2枚建 現代和風':{designs:['C01','C02','C03','C04','C05','C06','C08','C09','C10','A11','C16','C17'],colors:SLIDING_STD_COLORS,handles:['内外バーハンドル','外側バーハンドル','舟底引手'],locks:['召合せ錠＋戸先錠（内外錠）','召合せ錠＋戸先錠（内錠）']},
@@ -1172,7 +1183,17 @@ function updateChildDoorVisibility(){const el=document.getElementById('meeting-c
 function collectMeeting() { const data={}; MEETING_IDS.forEach(id=>data[id.replace('meeting-','')]=val(id)); return data; }
 function collectBackdoor(){const data={};BACKDOOR_IDS.forEach(id=>data[id.replace('back-','')]=val(id));return data;}
 function collectSliding(){const data={};SLIDING_IDS.forEach(id=>data[id.replace('sliding-','')]=val(id));return data;}
-function updateSlidingOptions(preserve=true){const c=SLIDING_CATALOG[val('sliding-series')];const old={design:val('sliding-design'),color:val('sliding-color'),handle:val('sliding-handle'),lock:val('sliding-lock')};fillSelect('sliding-design',c?.designs||[],c?'選択してください':'商品を先に選択');fillSelect('sliding-color',c?.colors||[],c?'選択してください':'商品を先に選択');fillSelect('sliding-handle',c?.handles||[],c?'選択してください':'商品を先に選択');fillSelect('sliding-lock',c?.locks||[],c?'選択してください':'商品を先に選択');if(preserve)Object.entries(old).forEach(([k,v])=>setVal('sliding-'+k,v));updateSlidingScreenOptions(true);}
+function updateSlidingOptions(preserve=true){const c=SLIDING_CATALOG[val('sliding-series')];const old={design:val('sliding-design'),color:val('sliding-color'),handle:val('sliding-handle'),lock:val('sliding-lock')};fillSelect('sliding-design',c?.designs||[],c?'選択してください':'商品を先に選択');fillSelect('sliding-color',c?.colors||[],c?'選択してください':'商品を先に選択');fillSelect('sliding-handle',c?.handles||[],c?'選択してください':'商品を先に選択');fillSelect('sliding-lock',c?.locks||[],c?'選択してください':'商品を先に選択');if(preserve)Object.entries(old).forEach(([k,v])=>setVal('sliding-'+k,v));updateSlidingCombinationRules(true);}
+function updateSlidingCombinationRules(preserve=true){
+  const design=val('sliding-design'),oldGlass=val('sliding-glass'),series=val('sliding-series');
+  const glass=SLIDING_DOUBLE_ONLY.includes(design)?['複層ガラス']:['複層ガラス','単板ガラス'];
+  fillSelect('sliding-glass',design?glass:[],design?'選択してください':'デザインを先に選択');
+  if(glass.includes(oldGlass))setVal('sliding-glass',oldGlass);else if(design&&glass.length===1)setVal('sliding-glass',glass[0]);
+  if(series==='袖付2枚連動引込み戸'&&chipState.ranmaS==='yes'){
+    delete chipState.ranmaS;document.querySelectorAll('.chip[data-group="ranmaS"]').forEach(x=>x.classList.remove('selected'));
+  }
+  updateSlidingScreenOptions(preserve);
+}
 function updateSlidingScreenOptions(preserve=true){
   const has=val('sliding-screen')==='あり',series=val('sliding-series'),handle=val('sliding-handle');
   const typeWrap=document.getElementById('sliding-screen-type-wrap'),detail=document.getElementById('sliding-screen-detail'),advice=document.getElementById('sliding-screen-advice');
@@ -1180,7 +1201,7 @@ function updateSlidingScreenOptions(preserve=true){
   if(!has)return;
   const oldType=val('sliding-screen-type'),oldNet=val('sliding-screen-net');
   let types=[];
-  if(series==='袖付2枚連動引込み戸')types=['横引き収納網戸 フラットタイプ XMA'];
+  if(series==='袖付2枚連動引込み戸'||handle==='内外バーハンドル')types=['横引き収納網戸 フラットタイプ XMA'];
   else if(series)types=['スライド網戸 XME（中桟なし）','スライド網戸 XME（中桟付）','スライド網戸 XME（格子付）','横引き収納網戸 フラットタイプ XMA'];
   fillSelect('sliding-screen-type',types,series?'選択してください':'商品を先に選択');
   if(preserve)setVal('sliding-screen-type',oldType);
@@ -1193,7 +1214,7 @@ function updateSlidingScreenOptions(preserve=true){
 }
 function restoreMeeting(data={}) { setVal('meeting-series',data.series||''); updateProductOptions(false); MEETING_IDS.filter(id=>id!=='meeting-series').forEach(id=>setVal(id,data[id.replace('meeting-','')]||'')); updateDesignColorOptions(true); updateChildProductOptions(true); updateMeetingPreview(); updateLockPower(false); updateChildDoorVisibility(); updateDoorDesignRules(); if(data['lower-type'])syncLowerFrameToCalc(false); updateLowerFrameAdvice(); }
 function restoreBackdoor(data={}){BACKDOOR_IDS.forEach(id=>setVal(id,data[id.replace('back-','')]||''));updateBackdoorColors(true);}
-function restoreSliding(data={}){setVal('sliding-series',data.series||'');updateSlidingOptions(false);SLIDING_IDS.filter(id=>id!=='sliding-series').forEach(id=>setVal(id,data[id.replace('sliding-','')]||''));updateSlidingScreenOptions(true);}
+function restoreSliding(data={}){setVal('sliding-series',data.series||'');updateSlidingOptions(false);SLIDING_IDS.filter(id=>id!=='sliding-series').forEach(id=>setVal(id,data[id.replace('sliding-','')]||''));updateSlidingCombinationRules(true);}
 function clearMeeting() { MEETING_IDS.forEach(id=>setVal(id,'')); BACKDOOR_IDS.forEach(id=>setVal(id,'')); SLIDING_IDS.forEach(id=>setVal(id,'')); updateProductOptions(false); updateSlidingOptions(false); updateMeetingPreview(); updateLockPower(false); updateChildDoorVisibility(); updateBackdoorColors(false); }
 function updateMeetingPreview() {
   const design=val('meeting-design'), media=document.getElementById('meeting-preview-media'), title=document.getElementById('meeting-preview-title');
@@ -1260,7 +1281,10 @@ function updateBackdoorColors(preserve=true){
   fillSelect('back-outer-color',frame?outer:[],frame?'選択してください':'枠タイプを先に選択');
   fillSelect('back-inner-color',frame?inner:[],frame?'選択してください':'枠タイプを先に選択');
   if(preserve){setVal('back-outer-color',outerOld);setVal('back-inner-color',innerOld);}
+  syncBackdoorSameColor();updateBackdoorDesignRules();
 }
+function syncBackdoorSameColor(){const frame=val('back-frame'),mode=val('back-color-mode'),outer=val('back-outer-color');if(!outer)return;if(frame==='アルミ枠')setVal('back-inner-color',outer);else if(mode==='内外同系色'){const map={'YW ホワイト':'YW ホワイト','S1 ピュアシルバー':'DC ピュアシルバー','H2 プラチナステン':'ET プラチナステン','B1 ブラウン':'B1 ブラウン','B7 カームブラック':'B7 カームブラック'};setVal('back-inner-color',map[outer]||'');}}
+function updateBackdoorDesignRules(){const middle=val('back-design')==='中桟付';document.getElementById('back-middle-panels').style.display=middle?'':'none';if(!middle){setVal('back-upper-panel','');setVal('back-lower-panel','');}const advice=document.getElementById('backdoor-advice');if(middle)advice.textContent='中桟付は、上部・下部それぞれガラスまたは断熱パネルを選択してください。';}
 function syncLowerFrameToCalc(markUnsaved=true){
   const lower=val('meeting-lower-type'), flat=lower.includes('下枠フラット材');
   document.getElementById('cb-shimowaku').checked=flat;
@@ -1280,11 +1304,14 @@ document.getElementById('meeting-power').addEventListener('change',updateCompati
 document.getElementById('meeting-handle-color').addEventListener('change',updateCompatibilityStatus);
 document.getElementById('meeting-child-type').addEventListener('change',()=>updateChildProductOptions(false));
 document.getElementById('sliding-series').addEventListener('change',()=>updateSlidingOptions(false));
+document.getElementById('sliding-design').addEventListener('change',()=>updateSlidingCombinationRules(false));
 document.getElementById('sliding-screen').addEventListener('change',()=>updateSlidingScreenOptions(false));
 document.getElementById('sliding-screen-type').addEventListener('change',()=>updateSlidingScreenOptions(true));
-document.getElementById('sliding-handle').addEventListener('change',()=>updateSlidingScreenOptions(true));
+document.getElementById('sliding-handle').addEventListener('change',()=>updateSlidingCombinationRules(true));
 document.getElementById('back-frame').addEventListener('change',()=>updateBackdoorColors(false));
 document.getElementById('back-color-mode').addEventListener('change',()=>updateBackdoorColors(true));
+document.getElementById('back-outer-color').addEventListener('change',syncBackdoorSameColor);
+document.getElementById('back-design').addEventListener('change',updateBackdoorDesignRules);
 document.getElementById('meeting-lower-type').addEventListener('change',()=>syncLowerFrameToCalc(true));
 document.getElementById('meeting-lower-baseboard').addEventListener('change',updateLowerFrameAdvice);
 document.getElementById('cb-shimowaku').addEventListener('change',e=>{
@@ -1508,7 +1535,7 @@ function buildText() {
   }
   if(currentType==='backdoor'){
     const b=collectBackdoor();
-    const items=[['枠タイプ',b.frame],['納まり',b.floor],['扉デザイン',b.design],['ランマ',b.ranma],['内外色',b['color-mode']],['外観色',b['outer-color']],['内観色',b['inner-color']],['シリンダー',b.cylinder],['サムターン',b.thumbturn]].filter(x=>x[1]);
+    const items=[['枠タイプ',b.frame],['納まり',b.floor],['扉デザイン',b.design],['ランマ',b.ranma],['中桟上部',b['upper-panel']],['中桟下部',b['lower-panel']],['内外色',b['color-mode']],['外観色',b['outer-color']],['内観色',b['inner-color']],['シリンダー',b.cylinder],['サムターン',b.thumbturn]].filter(x=>x[1]);
     if(items.length||meeting.notes){lines.push('','【勝手口 打ち合わせ内容】');items.forEach(([k,v])=>lines.push(`${k}：${v}`));if(meeting.notes)lines.push('打ち合わせメモ：'+meeting.notes);}
   }
   if(currentType==='sliding'){
@@ -1725,7 +1752,7 @@ function buildSheetHTML(siteName, siteDate, kengu, tsukeLabel, shimowakuTxt, isD
     ${meeting.notes?`<div style="margin-top:5px;border:1px solid #ddd;border-radius:5px;padding:7px 9px"><div style="font-size:9px;color:#888">打ち合わせメモ</div><div style="font-size:11px;white-space:pre-wrap">${esc(meeting.notes)}</div></div>`:''}
   </div>` : '';
   const backdoor=collectBackdoor();
-  const backdoorRows=[['枠タイプ',backdoor.frame],['納まり',backdoor.floor],['扉デザイン',backdoor.design],['ランマ',backdoor.ranma],['内外色',backdoor['color-mode']],['外観色',backdoor['outer-color']],['内観色',backdoor['inner-color']],['シリンダー',backdoor.cylinder],['サムターン',backdoor.thumbturn]].filter(x=>x[1]);
+  const backdoorRows=[['枠タイプ',backdoor.frame],['納まり',backdoor.floor],['扉デザイン',backdoor.design],['ランマ',backdoor.ranma],['中桟上部',backdoor['upper-panel']],['中桟下部',backdoor['lower-panel']],['内外色',backdoor['color-mode']],['外観色',backdoor['outer-color']],['内観色',backdoor['inner-color']],['シリンダー',backdoor.cylinder],['サムターン',backdoor.thumbturn]].filter(x=>x[1]);
   const backdoorHtml=currentType==='backdoor'&&(backdoorRows.length||meeting.notes)?`<div style="margin-top:12px;break-inside:avoid"><div style="font-size:9px;font-weight:700;letter-spacing:.15em;color:#666;border-bottom:1px solid #ccc;padding-bottom:3px;margin-bottom:7px">勝手口 打ち合わせ内容</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">${backdoorRows.map(([k,v])=>`<div style="border:1px solid #ddd;border-radius:5px;padding:6px 9px"><div style="font-size:9px;color:#888">${k}</div><div style="font-size:12px;font-weight:600">${esc(v)}</div></div>`).join('')}</div>${meeting.notes?`<div style="margin-top:5px;border:1px solid #ddd;border-radius:5px;padding:7px 9px"><div style="font-size:9px;color:#888">打ち合わせメモ</div><div style="font-size:11px;white-space:pre-wrap">${esc(meeting.notes)}</div></div>`:''}</div>`:'';
   const sliding=collectSliding();
   const slidingRows=[['商品・建て方',sliding.series],['状況',sliding.status],['デザイン',sliding.design],['カラー',sliding.color],['ガラス',sliding.glass],['引手・ハンドル',sliding.handle],['ハンドル色',sliding['handle-color']],['錠仕様',sliding.lock],['ラッチ',sliding.latch],['網戸',sliding.screen],['網戸種類',sliding['screen-type']],['ネット',sliding['screen-net']],['網戸色',sliding['screen-color']]].filter(x=>x[1]);
