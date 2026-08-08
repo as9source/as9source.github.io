@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1a4a7a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="現場状況">
+<title>現場状況 調査シート</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--bg2:#f7f7f5;--bg3:#f0ede8;--bd:#d8d4cc;
+  --text:#1a1a1a;--text2:#666;
+  --accent:#1a4a7a;--accent2:#e8f0f8;--tag:#3b6db5;
+  --danger:#a32d2d;--danger2:#fcebeb;
+  --ok-bg:#dff0e8;--ok-bd:#1d9e75;--ok-text:#085041;
+  --warn-bg:#fdf4e3;--warn-bd:#e3c98d;--warn-text:#7a4f0a;
+  --safe-top: env(safe-area-inset-top);
+  --safe-bottom: env(safe-area-inset-bottom);
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Hiragino Sans','Meiryo',sans-serif;background:var(--bg2);display:flex;flex-direction:column;color:var(--text)}
+
+.header{background:var(--accent);color:#fff;padding:calc(10px + var(--safe-top)) 16px 10px;flex-shrink:0}
+.header h1{font-size:15px;font-weight:500;letter-spacing:.03em}
+.header p{font-size:11px;opacity:.65;margin-top:2px}
+
+.toolbar{display:flex;align-items:center;gap:6px;padding:8px 12px;background:var(--bg2);border-bottom:0.5px solid var(--bd);flex-shrink:0;overflow-x:auto;scrollbar-width:none}
+.toolbar::-webkit-scrollbar{display:none}
+.save-ind{font-size:11px;color:var(--text2);margin-right:auto;white-space:nowrap}
+.tbtn{display:flex;align-items:center;gap:4px;padding:6px 11px;border:0.5px solid var(--bd);border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;background:var(--bg);color:var(--text);font-family:inherit;white-space:nowrap;-webkit-tap-highlight-color:transparent;flex-shrink:0}
+.tbtn:active{background:var(--accent2)}
+.tbtn.pr{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tbtn.pr:active{opacity:.85}
+
+.top-section{padding:12px 16px;background:var(--bg);border-bottom:0.5px solid var(--bd);flex-shrink:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:15px}
+.field:last-child{margin-bottom:0}
+.field label.lb{font-size:11.5px;color:var(--text2)}
+.hint{font-size:10.5px;color:var(--text2);line-height:1.5;margin-top:3px}
+
+.tab-bar-wrap{flex-shrink:0;background:var(--bg2);border-bottom:0.5px solid var(--bd)}
+.tab-bar{display:flex;overflow-x:auto;scrollbar-width:none}
+.tab-bar::-webkit-scrollbar{display:none}
+.tab-btn{flex-shrink:0;display:flex;align-items:center;gap:5px;padding:10px 13px;font-size:12px;font-weight:500;color:var(--text2);border:none;border-bottom:2px solid transparent;background:none;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent;font-family:inherit}
+.tab-btn.active{color:var(--accent);background:var(--bg);border-bottom-color:var(--accent)}
+
+.scroll-area{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(60px + var(--safe-bottom));scroll-behavior:smooth}
+
+.section{padding:15px 16px 18px;background:var(--bg);border-bottom:0.5px solid var(--bd);margin-bottom:10px;scroll-margin-top:0}
+.sec-title{font-size:11px;font-weight:500;color:var(--tag);letter-spacing:.06em;margin-bottom:15px;display:flex;align-items:center;gap:6px}
+.sec-title::before{content:'';display:inline-block;width:3px;height:12px;background:var(--tag);border-radius:2px}
+
+input[type=text],textarea{border:0.5px solid var(--bd);border-radius:8px;padding:9px 12px;font-size:15px;width:100%;background:var(--bg);color:var(--text);font-family:inherit;-webkit-appearance:none;appearance:none}
+textarea{line-height:1.6;resize:vertical}
+input[type=text]:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(26,74,122,.12)}
+.num-row{display:flex;align-items:center;gap:6px}
+.num-row input{width:120px;text-align:right}
+.num-row .unit{font-size:12px;color:var(--text2)}
+.dim-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.dim-row .dim-item{display:flex;align-items:center;gap:4px}
+.dim-row .dim-item span{font-size:11px;color:var(--text2)}
+.dim-row input{width:82px;text-align:right}
+select{border:0.5px solid var(--bd);border-radius:8px;padding:10px 34px 10px 12px;font-size:14px;width:auto;min-width:130px;max-width:100%;align-self:flex-start;background:var(--bg);color:var(--text);font-family:inherit;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+select:focus{outline:none;border-color:var(--accent)}
+.note-box{background:var(--warn-bg);border:0.5px solid var(--warn-bd);color:var(--warn-text);border-radius:8px;padding:10px 12px;font-size:12.5px;line-height:1.6}
+
+.radio-group{display:flex;flex-wrap:wrap;gap:7px;margin-top:2px}
+.radio-group label{display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;background:var(--bg2);border:0.5px solid var(--bd);border-radius:20px;padding:7px 14px;color:var(--text);-webkit-tap-highlight-color:transparent}
+.radio-group input{display:none}
+.radio-group label:has(input:checked){background:var(--accent2);border-color:var(--accent)}
+.radio-group label:has(input:checked) span{color:var(--accent);font-weight:500}
+
+.geo-box{background:var(--bg2);border:0.5px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:10px}
+.geo-val{font-size:14px;font-family:'SF Mono',Menlo,monospace;color:var(--text);word-break:break-all;line-height:1.6}
+.geo-acc{font-size:11px;color:var(--text2);margin-top:3px}
+.geo-btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.geo-btns a,.geo-btns button{display:inline-flex;align-items:center;gap:4px;padding:8px 13px;border:0.5px solid var(--bd);border-radius:8px;font-size:12.5px;font-weight:500;background:var(--bg);color:var(--text);text-decoration:none;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
+.geo-btns .go{background:var(--accent);color:#fff;border-color:var(--accent)}
+.geo-btns a.dis{opacity:.4;pointer-events:none}
+
+.photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:10px;margin-top:4px}
+.ph-card{position:relative;border:0.5px solid var(--bd);border-radius:10px;overflow:hidden;background:var(--bg2)}
+.ph-card img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#ddd}
+.ph-cap{width:100%;border:none;border-top:0.5px solid var(--bd);border-radius:0;padding:6px 8px;font-size:11.5px;background:var(--bg);font-family:inherit;color:var(--text);-webkit-appearance:none;appearance:none}
+.ph-cap:focus{outline:none;background:var(--accent2)}
+.ph-del{position:absolute;top:5px;right:5px;width:24px;height:24px;padding:0;border:none;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;font-size:12px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit;-webkit-tap-highlight-color:transparent}
+.ph-add{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;aspect-ratio:1/1;border:1px dashed var(--bd);border-radius:10px;background:var(--bg2);color:var(--text2);font-size:11px;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
+.ph-add .ic{font-size:21px;line-height:1}
+.ph-add.cam{border-style:solid;border-color:var(--accent);background:var(--accent2);color:var(--accent);font-weight:500}
+.ph-add:active{background:var(--accent2)}
+.map-thumb{position:relative;margin-top:8px}
+.map-thumb img{width:100%;max-height:260px;object-fit:contain;border:0.5px solid var(--bd);border-radius:10px;background:var(--bg2)}
+
+.primary-btn{display:inline-flex;align-items:center;gap:6px;padding:11px 22px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
+
+.toast{position:fixed;bottom:calc(20px + var(--safe-bottom));left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:9px 18px;border-radius:20px;font-size:12px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;max-width:90%}
+.toast.show{opacity:1}
+
+/* PDFプレビュー */
+.pdf-overlay{display:none;position:fixed;inset:0;z-index:200;background:#fff;flex-direction:column}
+.pdf-overlay.show{display:flex}
+.pdf-toolbar{display:flex;align-items:center;gap:8px;padding:calc(10px + var(--safe-top)) 12px 10px;background:var(--accent);color:#fff;flex-shrink:0}
+.pdf-toolbar h2{flex:1;font-size:14px;font-weight:500;margin:0}
+.pdf-back,.pdf-share{display:flex;align-items:center;gap:4px;padding:7px 12px;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
+.pdf-back{background:rgba(255,255,255,.18);color:#fff}
+.pdf-share{background:#fff;color:var(--accent)}
+.pdf-body{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:12px}
+.pdf-scale-wrap{width:760px;transform-origin:top left}
+#pdf-stage{position:fixed;top:0;left:0;width:760px;background:#fff;z-index:150;visibility:hidden;pointer-events:none}
+
+.pdf-report{font-family:'Hiragino Sans','Meiryo',sans-serif;font-size:11px;color:#111;width:760px;background:#fff}
+.pdf-report .rh{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #1a4a7a;padding-bottom:6px;margin-bottom:10px;flex-wrap:wrap;gap:4px}
+.pdf-report .rt{font-size:15px;color:#1a4a7a}
+.pdf-report .rm{font-size:10px;color:#444;text-align:right;line-height:1.8}
+.pdf-report .blk{border:1px solid #aaa;border-radius:4px;overflow:hidden;background:#fff;margin-bottom:0}
+.pdf-report .bh{background:#1a4a7a;color:#fff;font-size:12px;font-weight:700;padding:5px 8px}
+.pdf-report table{width:100%;border-collapse:collapse;table-layout:fixed}
+.pdf-report th{background:#f0ede8;font-size:10px;font-weight:500;color:#444;padding:3px 6px;text-align:left;border:0.5px solid #ccc;width:20%;vertical-align:top;word-break:break-word}
+.pdf-report td{font-size:11px;padding:3px 6px;border:0.5px solid #ccc;vertical-align:top;width:30%;word-break:break-word}
+.pdf-report td.pre{white-space:pre-wrap;line-height:1.6}
+.pdf-report td.em{font-weight:700;color:#1a4a7a}
+.pdf-report td.warn{background:#fdf4e3;color:#7a4f0a;font-weight:500}
+.pdf-report .ph-row{display:flex;gap:8px}
+.pdf-report .ph-box{flex:1;border:1px solid #ccc;border-radius:4px;overflow:hidden;background:#fff}
+.pdf-report .ph-box img{width:100%;height:230px;object-fit:contain;display:block;background:#f4f4f4}
+.pdf-report .ph-box .cap{font-size:10px;padding:4px 6px;border-top:0.5px solid #ddd;color:#333}
+.pdf-report .map-box img{width:100%;max-height:300px;object-fit:contain;display:block;background:#f4f4f4}
+.pdf-report .gap{height:6px}
+
+/* ボトムシート */
+.sheet-overlay{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.5);align-items:flex-end;justify-content:center}
+.sheet-overlay.show{display:flex}
+.sheet{background:#fff;border-radius:16px 16px 0 0;width:100%;max-width:600px;max-height:82vh;display:flex;flex-direction:column;overflow:hidden;padding-bottom:env(safe-area-inset-bottom)}
+.sheet-header{padding:16px 16px 12px;border-bottom:0.5px solid var(--bd)}
+.sheet-header h3{font-size:15px;font-weight:500;margin:0 0 4px}
+.sheet-header p{font-size:12px;color:var(--text2);margin:0}
+.sheet-list{flex:1;overflow-y:auto;padding:6px 0}
+.rec-item{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:0.5px solid var(--bd)}
+.rec-main{flex:1;min-width:0;cursor:pointer}
+.rec-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rec-sub{font-size:11px;color:var(--text2);margin-top:2px}
+.rec-del{border:0.5px solid var(--bd);background:var(--bg);color:var(--danger);border-radius:8px;padding:7px 11px;font-size:12px;cursor:pointer;font-family:inherit;flex-shrink:0}
+.sheet-footer{display:flex;gap:8px;padding:12px 16px;border-top:0.5px solid var(--bd)}
+.sh-btn{flex:1;padding:12px;border:0.5px solid var(--bd);border-radius:10px;background:var(--bg);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;color:var(--text)}
+.sh-btn.pr{border:none;background:var(--accent);color:#fff;flex:2}
+.val-item{display:flex;align-items:center;gap:8px;font-size:13px;padding:3px 16px}
+.val-item::before{content:'⚠';font-size:11px;color:#ba7517}
+.val-grp{font-size:11px;font-weight:500;color:var(--tag);padding:10px 16px 4px}
+.empty-msg{padding:40px 20px;text-align:center;color:var(--text2);font-size:13px}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+
+<div class="header">
+  <h1>現場状況 調査シート</h1>
+  <p>駐車・設備・道路・搬入経路の事前確認</p>
+</div>
+
+<div class="toolbar">
+  <span class="save-ind" id="save-ind">新規</span>
+  <button class="tbtn" onclick="newRecord()">✚ 新規</button>
+  <button class="tbtn" onclick="openRecords()">📂 一覧</button>
+  <button class="tbtn" onclick="saveNow(1)">💾 保存</button>
+  <button class="tbtn pr" onclick="exportPDF()">📄 PDF</button>
+  <button class="tbtn" onclick="forceReload()" title="キャッシュをクリアして最新版を読み込む">🔄</button>
+</div>
+
+<div class="top-section">
+  <div class="grid2">
+    <div class="field"><label class="lb">調査日</label><input type="text" id="m_date" inputmode="numeric" placeholder="yyyy/mm/dd"></div>
+    <div class="field"><label class="lb">現場名</label><input type="text" id="m_site" placeholder="◯◯様邸"></div>
+  </div>
+  <div class="field"><label class="lb">住所</label><input type="text" id="m_addr" placeholder="長野県長野市…"></div>
+  <div class="grid2">
+    <div class="field"><label class="lb">立会</label>
+      <div class="radio-group">
+        <label><input type="radio" name="m_attend" value="有"><span>有</span></label>
+        <label><input type="radio" name="m_attend" value="無"><span>無</span></label>
+        <label><input type="radio" name="m_attend" value="未定"><span>未定</span></label>
+      </div>
+    </div>
+    <div class="field"><label class="lb">立会者・連絡先</label><input type="text" id="m_person" placeholder="施主 / 担当者"></div>
+  </div>
+  <div class="field"><label class="lb">工事内容</label><input type="text" id="m_work" placeholder="内窓 / ドアリモ など"></div>
+</div>
+
+<div class="tab-bar-wrap"><div class="tab-bar" id="tab-bar"></div></div>
+
+<div class="scroll-area" id="scroll-area"></div>
+
+<div class="toast" id="toast"></div>
+
+<div class="pdf-overlay" id="pdf-overlay">
+  <div class="pdf-toolbar">
+    <button class="pdf-back" onclick="closePdf()">← 戻る</button>
+    <h2>現場状況 調査シート</h2>
+    <button class="pdf-share" onclick="sharePdf()">PDF ダウンロード ↓</button>
+  </div>
+  <div class="pdf-body" id="pdf-body">
+    <div class="pdf-scale-wrap" id="pdf-scale-wrap"><div class="pdf-report" id="pdf-report"></div></div>
+  </div>
+</div>
+
+<div id="pdf-stage" aria-hidden="true"><div class="pdf-report" id="pdf-stage-report"></div></div>
+
+<div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet(event)">
+  <div class="sheet">
+    <div class="sheet-header"><h3 id="sheet-title">保存済み現場</h3><p id="sheet-desc">読み込む現場を選んでください。</p></div>
+    <div class="sheet-list" id="sheet-list"></div>
+    <div class="sheet-footer" id="sheet-footer"></div>
+  </div>
+</div>
+
+<input type="file" id="photo-input" accept="image/*" multiple style="display:none">
+<input type="file" id="photo-cam" accept="image/*" capture="environment" style="display:none">
+<input type="file" id="fp-input" accept="image/*" multiple style="display:none">
+<input type="file" id="fp-cam" accept="image/*" capture="environment" style="display:none">
+<input type="file" id="map-input" accept="image/*" style="display:none">
+
+<script>
+// ══════════════════════════════════════════════════════
+//  項目定義（ここを増やすだけで入力画面とPDFの両方に反映される）
+//  type: radio / check / text / num / dim / textarea
+//  showIf: {対象フィールドid:[表示する値,...]}
+// ══════════════════════════════════════════════════════
+const SCHEMA=[
+{id:'geo',title:'位置情報・アクセス',custom:'geo',fields:[
+  {id:'geo_mark',label:'目印・進入時の注意',type:'textarea',wide:true,rows:3,ph:'例：セブンイレブンの先を右折、私道に入って3軒目'}
+]},
+
+{id:'park',title:'駐車場',fields:[
+  {id:'pk_ari',label:'駐車場',type:'select',opts:['敷地内に有','近隣に有','コインP','無'],em:true},
+  {id:'pk_num',label:'駐車可能台数',type:'num',unit:'台',showIf:{pk_ari:['敷地内に有','近隣に有','コインP']}},
+  {id:'pk_surface',label:'路面',type:'select',opts:['アスファルト','コンクリート','砂利','土・芝'],showIf:{pk_ari:['敷地内に有','近隣に有']}},
+  {id:'pk_height',label:'駐車スペースの高さ',type:'num',unit:'㎜',hint:'カーポート梁下・庇・電線・樹木など、最も低い位置で測定',em:true},
+  {id:'pk_dist',label:'駐車位置から現場まで',type:'num',unit:'m'},
+  {id:'pk_note',label:'駐車メモ',type:'textarea',wide:true,rows:2,ph:'例：施主駐車場の右側1台のみ使用可'}
+]},
+
+{id:'infra',title:'水道・電源・加工場所',fields:[
+  {id:'wt_ari',label:'水道',type:'radio',opts:['有','無'],em:true},
+  {id:'wt_type',label:'水栓の種類',type:'select',opts:['立水栓','散水栓','屋内のみ'],showIf:{wt_ari:['有']}},
+  {id:'wt_pos',label:'水道の位置',type:'text',showIf:{wt_ari:['有']},ph:'例：玄関左手 / 建物裏'},
+  {id:'wt_ok',label:'使用許可',type:'select',opts:['使用可','要確認','使用不可'],showIf:{wt_ari:['有']}},
+  {id:'el_ari',label:'電源',type:'radio',opts:['有','無'],em:true},
+  {id:'el_out',label:'電源の取り方',type:'select',opts:['屋外コンセント','屋内から延長','分電盤から仮設'],showIf:{el_ari:['有']}},
+  {id:'el_pos',label:'電源の位置',type:'text',showIf:{el_ari:['有']},ph:'例：勝手口横 外部コンセント'},
+  {id:'el_note',type:'note',text:'現場に電源が無いため、電動工具を使用する場合は発電機の持参が必要です。',showIf:{el_ari:['無']}},
+  {id:'wk_ari',label:'加工場所',type:'radio',opts:['有','無'],em:true},
+  {id:'wk_place',label:'加工場所の位置',type:'select',opts:['駐車場','庭','道路上','屋内','ガレージ内'],showIf:{wk_ari:['有']}},
+  {id:'wk_size',label:'加工スペース',type:'text',showIf:{wk_ari:['有']},ph:'例：3m×5m 程度'},
+  {id:'wk_roof',label:'雨天時',type:'select',opts:['屋根無','屋根有','別途確保要'],showIf:{wk_ari:['有']}},
+  {id:'wk_photo',label:'加工場所の写真',type:'photo',showIf:{wk_ari:['有']}},
+  {id:'toilet',label:'トイレ',type:'select',opts:['借用可','公衆トイレ・近隣コンビニ等']},
+  {id:'infra_note',label:'設備メモ',type:'textarea',wide:true,rows:2}
+]},
+
+{id:'road',title:'周辺道路',fields:[
+  {id:'rd_width',label:'前面道路 幅員',type:'num',unit:'m',em:true},
+  {id:'rd_size',label:'進入可能な車両',type:'select',opts:['4t車可','2t車まで','軽トラのみ','進入不可'],em:true},
+  {id:'rd_one',label:'一方通行',type:'radio',opts:['無','有']},
+  {id:'rd_traffic',label:'交通量',type:'select',opts:['少ない','普通','多い']},
+  {id:'rd_school',label:'通学路・時間帯規制',type:'radio',opts:['無','有']},
+  {id:'rd_school_time',label:'規制の時間帯',type:'text',showIf:{rd_school:['有']},ph:'例：7:30〜8:30 通行止 / 15:00〜16:00 徐行',em:true},
+  {id:'rd_park',label:'道路使用許可',type:'radio',opts:['不要','必要']},
+  {id:'rd_obst',label:'障害物・注意点',type:'textarea',wide:true,rows:2,ph:'例：電線が低い / 曲がり角が狭く長尺物は要切り返し'}
+]},
+
+{id:'carry',title:'搬入経路・室内',fields:[
+  {id:'cr_w',label:'最狭部 幅',type:'num',unit:'㎜',em:true},
+  {id:'cr_h',label:'最狭部 高さ',type:'num',unit:'㎜'},
+  {id:'cr_max',label:'搬入可能な最大長さ',type:'num',unit:'㎜',hint:'曲がり角・踊り場で振り回せる長さ',em:true},
+  {id:'cr_dist',label:'搬入距離',type:'num',unit:'m'},
+  {id:'cr_ashiba',label:'足場',type:'select',opts:['不要','必要（当社手配）','先方が設置','既設あり']},
+  {id:'cr_ashiba_note',label:'足場メモ',type:'text',showIf:{cr_ashiba:['必要（当社手配）','先方が設置','既設あり']},ph:'例：南面のみ / 搬入は足場経由'},
+  {id:'cr_indoor',label:'室内での作業',type:'radio',opts:['有','無'],em:true},
+  {id:'cr_hall_w',label:'廊下幅',type:'num',unit:'㎜',showIf:{cr_indoor:['有']},em:true},
+  {id:'cr_ceil',label:'室内天井高',type:'num',unit:'㎜',showIf:{cr_indoor:['有']}},
+  {id:'cr_door_w',label:'室内建具の開口幅',type:'num',unit:'㎜',showIf:{cr_indoor:['有']},hint:'経路上で最も狭い建具で測定'},
+  {id:'cr_room',label:'作業スペースの広さ',type:'text',showIf:{cr_indoor:['有']},ph:'例：6畳 / 家具の移動が必要'},
+  {id:'cr_step',label:'階段・段差',type:'radio',opts:['無','有']},
+  {id:'cr_stair_w',label:'階段幅',type:'num',unit:'㎜',showIf:{cr_step:['有']},em:true},
+  {id:'cr_stepn',label:'段数・回り階段',type:'text',showIf:{cr_step:['有']},ph:'例：13段 / 踊り場で180度反転'},
+  {id:'cr_land',label:'踊り場寸法',type:'dim',parts:['幅','奥行'],unit:'㎜',showIf:{cr_step:['有']}},
+  {id:'cr_ev',label:'エレベーター',type:'radio',opts:['無','有']},
+  {id:'cr_evdim',label:'EV内寸（かご内）',type:'dim',parts:['幅','奥行','高さ'],unit:'㎜',showIf:{cr_ev:['有']},em:true},
+  {id:'cr_evdoor',label:'EV扉 開口幅',type:'num',unit:'㎜',showIf:{cr_ev:['有']}},
+  {id:'cr_note',label:'搬入メモ',type:'textarea',wide:true,rows:3,ph:'搬入口（玄関 / 勝手口 / 掃き出し窓 など）、経路上の注意点'}
+]},
+
+{id:'cond',title:'現場条件・段取り',fields:[
+  {id:'bd_type',label:'建物種別',type:'select',opts:['戸建','アパート','マンション','店舗','その他']},
+  {id:'cd_home',label:'施工当日の在宅',type:'select',opts:['在宅','留守','要調整']},
+  {id:'cd_key',label:'鍵の受け渡し',type:'select',opts:['不要','手渡し','キーボックス']},
+  {id:'cd_keybox',label:'キーボックス番号・設置場所',type:'text',showIf:{cd_key:['キーボックス']},ph:'例：1234 / 玄関ポーチ 給湯器横',em:true},
+  {id:'cd_time',label:'作業時間の制限',type:'text',ph:'例：9:00〜17:00 / 昼休みは静かに'},
+  {id:'cd_pet',label:'ペット・小さなお子様',type:'radio',opts:['無','有']},
+  {id:'cd_waste',label:'残材置き場',type:'text',ph:'例：裏庭 物置横',em:true},
+  {id:'cd_waste_photo',label:'残材置き場の写真',type:'photo'},
+  {id:'cd_soil',label:'残土置き場',type:'text',ph:'例：北側 空地に敷き均し',em:true},
+  {id:'cd_soil_photo',label:'残土置き場の写真',type:'photo'},
+  {id:'cd_note',label:'段取りメモ',type:'textarea',wide:true,rows:2}
+]},
+
+{id:'photo',title:'写真',custom:'photo',fields:[]},
+
+{id:'memo',title:'総合メモ',fields:[
+  {id:'memo_all',label:'総合メモ',type:'textarea',wide:true,rows:7,ph:'全体を通しての気付き、次回持参するもの など'}
+]}
+];
+
+// 未入力チェックの対象（現場で最低限これは埋めたい項目）
+const REQUIRED=['pk_ari','wt_ari','el_ari','wk_ari','rd_width','rd_size','cr_w','cr_indoor'];
+
+// ══════════════════════════════════════════════════════
+//  状態
+// ══════════════════════════════════════════════════════
+const PDF_W=760;
+let curId=null;          // 現在編集中のレコードID
+let photos=[];           // [{id,data,cap}] 全体写真
+let fphotos={};          // {フィールドid:[{id,data,cap}]} 項目別写真
+let curPhotoField=null;
+let mapImg=null;         // 地図スクショ(dataURL)
+let geo={lat:'',lng:'',acc:'',at:''};
+let saveTimer=null, dirty=false;
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+
+let toastT;
+function toast(msg,err){
+  const e=$('toast');e.textContent=msg;e.style.background=err?'#a32d2d':'#1a1a1a';
+  e.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>e.classList.remove('show'),2600);
+}
+
+// ══════════════════════════════════════════════════════
+//  フォーム生成
+// ══════════════════════════════════════════════════════
+function fieldHTML(f){
+  if(f.type==='note'){
+    return '<div class="field note-box" id="wrap_'+f.id+'">⚠ '+esc(f.text)+'</div>';
+  }
+  let inner='';
+  if(f.type==='radio'){
+    inner='<div class="radio-group">'+f.opts.map(o=>
+      '<label><input type="radio" name="f_'+f.id+'" value="'+esc(o)+'"><span>'+esc(o)+'</span></label>').join('')+'</div>';
+  }else if(f.type==='check'){
+    inner='<div class="radio-group">'+f.opts.map(o=>
+      '<label><input type="checkbox" name="f_'+f.id+'" value="'+esc(o)+'"><span>'+esc(o)+'</span></label>').join('')+'</div>';
+  }else if(f.type==='select'){
+    inner='<select id="f_'+f.id+'"><option value="">— 選択してください —</option>'
+      +f.opts.map(o=>'<option value="'+esc(o)+'">'+esc(o)+'</option>').join('')+'</select>';
+  }else if(f.type==='photo'){
+    inner='<div class="photo-grid" id="fp_'+f.id+'"></div>';
+  }else if(f.type==='num'){
+    inner='<div class="num-row"><input type="text" id="f_'+f.id+'" inputmode="decimal" placeholder="'+esc(f.ph||'')+'"><span class="unit">'+esc(f.unit||'')+'</span></div>';
+  }else if(f.type==='dim'){
+    inner='<div class="dim-row">'+f.parts.map((p,i)=>
+      '<div class="dim-item"><span>'+esc(p)+'</span><input type="text" id="f_'+f.id+'_'+i+'" inputmode="decimal"></div>').join('')
+      +'<span class="unit">'+esc(f.unit||'')+'</span></div>';
+  }else if(f.type==='textarea'){
+    inner='<textarea id="f_'+f.id+'" rows="'+(f.rows||3)+'" placeholder="'+esc(f.ph||'')+'"></textarea>';
+  }else{
+    inner='<input type="text" id="f_'+f.id+'" placeholder="'+esc(f.ph||'')+'">';
+  }
+  return '<div class="field" id="wrap_'+f.id+'"><label class="lb">'+esc(f.label)+'</label>'+inner
+    +(f.hint?'<div class="hint">'+esc(f.hint)+'</div>':'')+'</div>';
+}
+
+function geoHTML(){
+  return '<div class="geo-box">'
+    +'<div class="geo-val" id="geo-val">座標 未取得</div>'
+    +'<div class="geo-acc" id="geo-acc"></div>'
+    +'<div class="geo-btns">'
+    +'<button class="go" onclick="getGeo()">📍 現在地を取得</button>'
+    +'<a id="geo-gmap" class="dis" target="_blank" rel="noopener">🗺 地図で開く</a>'
+    +'<a id="geo-nav" class="dis" target="_blank" rel="noopener">🚗 ナビ</a>'
+    +'<button onclick="copyGeo()">⧉ 座標コピー</button>'
+    +'<button onclick="manualGeo()">✎ 手入力</button>'
+    +'<button onclick="clearGeo()">✕ クリア</button>'
+    +'</div></div>'
+    +'<div class="field"><label class="lb">住所から地図を開く</label>'
+    +'<div class="geo-btns" style="margin-top:0"><a id="addr-gmap" class="dis" target="_blank" rel="noopener">🔎 住所でGoogleマップ検索</a></div></div>'
+    +'<div class="field"><label class="lb">地図スクリーンショット</label>'
+    +'<div class="geo-btns" style="margin-top:0"><button onclick="document.getElementById(\'map-input\').click()">🖼 地図画像を貼る</button>'
+    +'<button onclick="clearMap()">✕ 削除</button></div>'
+    +'<div class="map-thumb" id="map-thumb" style="display:none"><img id="map-img" alt="地図"></div>'
+    +'<div class="hint">マップアプリのスクショを添付するとPDFの先頭に載ります。</div></div>';
+}
+
+function photoHTML(){
+  return '<div class="photo-grid" id="photo-grid"></div>'
+    +'<div class="hint" style="margin-top:8px">写真は自動で縮小して保存されます。キャプションはPDFに印字されます。</div>';
+}
+
+function renderForm(){
+  const sa=$('scroll-area');
+  sa.innerHTML=SCHEMA.map(sec=>{
+    let body='';
+    if(sec.custom==='geo')body+=geoHTML();
+    if(sec.custom==='photo')body+=photoHTML();
+    body+=(sec.fields||[]).map(fieldHTML).join('');
+    return '<div class="section" id="sec_'+sec.id+'"><div class="sec-title">'+esc(sec.title)+'</div>'+body+'</div>';
+  }).join('');
+
+  const bar=$('tab-bar');
+  bar.innerHTML=SCHEMA.map((s,i)=>
+    '<button class="tab-btn'+(i===0?' active':'')+'" data-sec="'+s.id+'">'+esc(s.title)+'</button>').join('');
+  bar.querySelectorAll('.tab-btn').forEach(b=>{
+    b.onclick=()=>{
+      $('sec_'+b.dataset.sec).scrollIntoView({behavior:'smooth',block:'start'});
+      bar.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+    };
+  });
+
+  sa.addEventListener('input',onChange);
+  sa.addEventListener('change',()=>{applyConditions();onChange();});
+  ['m_date','m_site','m_addr','m_person','m_work'].forEach(id=>$(id).addEventListener('input',onChange));
+  document.querySelectorAll('input[name="m_attend"]').forEach(e=>e.addEventListener('change',onChange));
+  $('m_addr').addEventListener('input',updateAddrLink);
+  applyConditions();
+  syncRadioState();
+  setupSpy();
+}
+
+// スクロールに応じてタブを追従
+function setupSpy(){
+  const sa=$('scroll-area');
+  let t=null;
+  sa.addEventListener('scroll',()=>{
+    if(t)return;
+    t=setTimeout(()=>{
+      t=null;
+      const top=sa.getBoundingClientRect().top+40;
+      let cur=SCHEMA[0].id;
+      SCHEMA.forEach(s=>{const el=$('sec_'+s.id);if(el&&el.getBoundingClientRect().top<=top)cur=s.id;});
+      const bar=$('tab-bar');
+      const btn=bar.querySelector('[data-sec="'+cur+'"]');
+      if(btn&&!btn.classList.contains('active')){
+        bar.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
+        btn.classList.add('active');
+        btn.scrollIntoView({block:'nearest',inline:'nearest'});
+      }
+    },120);
+  });
+}
+
+function applyConditions(){
+  SCHEMA.forEach(sec=>(sec.fields||[]).forEach(f=>{
+    if(!f.showIf)return;
+    const ok=Object.entries(f.showIf).every(([k,vals])=>vals.indexOf(getVal(k))>=0);
+    const w=$('wrap_'+f.id);if(w)w.style.display=ok?(f.type==='note'?'block':'flex'):'none';
+  }));
+}
+
+// ── ラジオの再タップ解除 ─────────────────
+// ラジオは標準では一度選ぶと外せないため、直前の選択値を保持しておき
+// 同じ選択肢がもう一度押されたらチェックを外す。
+const radioState={};
+function syncRadioState(){
+  const names=new Set();
+  document.querySelectorAll('input[type=radio]').forEach(e=>names.add(e.name));
+  names.forEach(n=>{
+    const c=document.querySelector('input[name="'+n+'"]:checked');
+    radioState[n]=c?c.value:'';
+  });
+}
+document.addEventListener('click',e=>{
+  const t=e.target;
+  if(!t||t.tagName!=='INPUT'||t.type!=='radio')return;
+  if(radioState[t.name]===t.value){
+    t.checked=false;radioState[t.name]='';
+    applyConditions();onChange();
+  }else{
+    radioState[t.name]=t.value;
+  }
+});
+
+// ══════════════════════════════════════════════════════
+//  値の読み書き
+// ══════════════════════════════════════════════════════
+function findField(id){
+  for(const s of SCHEMA)for(const f of (s.fields||[]))if(f.id===id)return f;
+  return null;
+}
+function getVal(id){
+  const f=findField(id);if(!f)return '';
+  if(f.type==='note'||f.type==='photo')return '';
+  if(f.type==='radio'){const e=document.querySelector('input[name="f_'+id+'"]:checked');return e?e.value:'';}
+  if(f.type==='check'){return [...document.querySelectorAll('input[name="f_'+id+'"]:checked')].map(e=>e.value).join('・');}
+  if(f.type==='dim'){return f.parts.map((p,i)=>{const e=$('f_'+id+'_'+i);return e?e.value.trim():'';}).join('×');}
+  const e=$('f_'+id);return e?e.value.trim():'';
+}
+function setVal(id,v){
+  const f=findField(id);if(!f)return;
+  if(f.type==='note'||f.type==='photo')return;
+  v=v==null?'':String(v);
+  if(f.type==='radio'){
+    document.querySelectorAll('input[name="f_'+id+'"]').forEach(e=>e.checked=(e.value===v));
+  }else if(f.type==='check'){
+    const arr=v?v.split('・'):[];
+    document.querySelectorAll('input[name="f_'+id+'"]').forEach(e=>e.checked=arr.indexOf(e.value)>=0);
+  }else if(f.type==='dim'){
+    const arr=v.split('×');
+    f.parts.forEach((p,i)=>{const e=$('f_'+id+'_'+i);if(e)e.value=arr[i]||'';});
+  }else{
+    const e=$('f_'+id);if(e)e.value=v;
+  }
+}
+// 表示用（単位付き）
+function dispVal(f){
+  let v=getVal(f.id);
+  if(f.type==='dim'&&v.replace(/×/g,'')==='')v='';
+  if(!v)return '—';
+  if(f.unit&&(f.type==='num'||f.type==='dim'))v+=' '+f.unit;
+  return v;
+}
+
+function collect(){
+  const fields={};
+  SCHEMA.forEach(s=>(s.fields||[]).forEach(f=>{fields[f.id]=getVal(f.id);}));
+  return{
+    id:curId,
+    meta:{date:$('m_date').value,site:$('m_site').value,addr:$('m_addr').value,
+      attend:(document.querySelector('input[name="m_attend"]:checked')||{}).value||'',
+      person:$('m_person').value,work:$('m_work').value},
+    geo:geo,fields:fields,photos:photos,fphotos:fphotos,mapImg:mapImg,updated:Date.now()
+  };
+}
+function restore(r){
+  curId=r.id;
+  const m=r.meta||{};
+  $('m_date').value=m.date||'';$('m_site').value=m.site||'';$('m_addr').value=m.addr||'';
+  $('m_person').value=m.person||'';$('m_work').value=m.work||'';
+  document.querySelectorAll('input[name="m_attend"]').forEach(e=>e.checked=(e.value===(m.attend||'')));
+  geo=r.geo||{lat:'',lng:'',acc:'',at:''};
+  photos=r.photos||[];fphotos=r.fphotos||{};mapImg=r.mapImg||null;
+  SCHEMA.forEach(s=>(s.fields||[]).forEach(f=>setVal(f.id,(r.fields||{})[f.id])));
+  applyConditions();syncRadioState();renderGeo();renderPhotos();renderAllFieldPhotos();renderMap();updateAddrLink();
+  $('scroll-area').scrollTo(0,0);
+}
+
+// ══════════════════════════════════════════════════════
+//  位置情報
+// ══════════════════════════════════════════════════════
+function renderGeo(){
+  const v=$('geo-val'),a=$('geo-acc'),g=$('geo-gmap'),n=$('geo-nav');
+  if(!v)return;
+  if(geo.lat&&geo.lng){
+    v.textContent=geo.lat+', '+geo.lng;
+    a.textContent=(geo.acc?'精度 約'+geo.acc+'m':'')+(geo.at?'　取得 '+geo.at:'');
+    const q=geo.lat+','+geo.lng;
+    g.href='https://www.google.com/maps?q='+q;g.classList.remove('dis');
+    n.href='https://www.google.com/maps/dir/?api=1&destination='+q;n.classList.remove('dis');
+  }else{
+    v.textContent='座標 未取得';a.textContent='';
+    g.classList.add('dis');n.classList.add('dis');
+  }
+}
+function getGeo(){
+  if(!navigator.geolocation){toast('この端末では位置情報が使えません',1);return;}
+  toast('現在地を取得中…');
+  navigator.geolocation.getCurrentPosition(p=>{
+    geo={lat:p.coords.latitude.toFixed(6),lng:p.coords.longitude.toFixed(6),
+      acc:Math.round(p.coords.accuracy),at:new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})};
+    renderGeo();onChange();toast('座標を取得しました');
+  },e=>{
+    toast(e.code===1?'位置情報が許可されていません':'取得に失敗しました',1);
+  },{enableHighAccuracy:true,timeout:15000,maximumAge:0});
+}
+function manualGeo(){
+  const s=prompt('緯度,経度 を入力（例：36.648, 138.194）',geo.lat?geo.lat+','+geo.lng:'');
+  if(s===null)return;
+  const m=s.split(',').map(x=>parseFloat(x.trim()));
+  if(m.length<2||isNaN(m[0])||isNaN(m[1])){toast('形式が正しくありません',1);return;}
+  geo={lat:m[0].toFixed(6),lng:m[1].toFixed(6),acc:'',at:'手入力'};
+  renderGeo();onChange();
+}
+function copyGeo(){
+  if(!geo.lat){toast('座標がありません',1);return;}
+  const t=geo.lat+','+geo.lng;
+  if(navigator.clipboard)navigator.clipboard.writeText(t).then(()=>toast('コピーしました'),()=>toast('コピーに失敗',1));
+  else toast('コピーに対応していません',1);
+}
+function clearGeo(){geo={lat:'',lng:'',acc:'',at:''};renderGeo();onChange();}
+function updateAddrLink(){
+  const a=$('addr-gmap');if(!a)return;
+  const v=$('m_addr').value.trim();
+  if(v){a.href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(v);a.classList.remove('dis');}
+  else a.classList.add('dis');
+}
+
+// ══════════════════════════════════════════════════════
+//  画像（縮小して保持）
+// ══════════════════════════════════════════════════════
+function shrink(file,maxPx,q){
+  return new Promise((res,rej)=>{
+    const fr=new FileReader();
+    fr.onload=()=>{
+      const img=new Image();
+      img.onload=()=>{
+        let w=img.width,h=img.height;
+        const sc=Math.min(1,maxPx/Math.max(w,h));
+        w=Math.round(w*sc);h=Math.round(h*sc);
+        const c=document.createElement('canvas');c.width=w;c.height=h;
+        c.getContext('2d').drawImage(img,0,0,w,h);
+        res(c.toDataURL('image/jpeg',q));
+      };
+      img.onerror=rej;img.src=fr.result;
+    };
+    fr.onerror=rej;fr.readAsDataURL(file);
+  });
+}
+async function ingest(files,arr){
+  toast('写真を処理中…');
+  let ok=0;
+  for(const f of files){
+    try{arr.push({id:uid(),data:await shrink(f,1400,0.72),cap:''});ok++;}
+    catch(_){toast('読み込めない画像がありました',1);}
+  }
+  return ok;
+}
+['photo-input','photo-cam'].forEach(id=>{
+  $(id).addEventListener('change',async e=>{
+    const files=[...e.target.files];e.target.value='';
+    if(!files.length)return;
+    const n=await ingest(files,photos);
+    renderPhotos();onChange();if(n)toast(n+'枚追加しました');
+  });
+});
+$('map-input').addEventListener('change',async e=>{
+  const f=e.target.files[0];e.target.value='';
+  if(!f)return;
+  try{mapImg=await shrink(f,1400,0.75);renderMap();onChange();toast('地図画像を設定しました');}
+  catch(_){toast('読み込めませんでした',1);}
+});
+function renderPhotos(){
+  const g=$('photo-grid');if(!g)return;
+  g.innerHTML=photos.map((p,i)=>
+    '<div class="ph-card"><img src="'+p.data+'" alt="">'
+    +'<button class="ph-del" onclick="delPhoto('+i+')">✕</button>'
+    +'<input class="ph-cap" value="'+esc(p.cap)+'" placeholder="キャプション" oninput="setCap('+i+',this.value)">'
+    +'</div>').join('')
+    +'<button class="ph-add cam" onclick="document.getElementById(\'photo-cam\').click()"><span class="ic">📷</span><span>撮影</span></button>'
+    +'<button class="ph-add" onclick="document.getElementById(\'photo-input\').click()"><span class="ic">＋</span><span>写真を選択</span></button>';
+}
+function setCap(i,v){if(photos[i]){photos[i].cap=v;onChange();}}
+function delPhoto(i){if(!confirm('この写真を削除しますか？'))return;photos.splice(i,1);renderPhotos();onChange();}
+function renderMap(){
+  const t=$('map-thumb');if(!t)return;
+  if(mapImg){t.style.display='block';$('map-img').src=mapImg;}else t.style.display='none';
+}
+function clearMap(){mapImg=null;renderMap();onChange();}
+
+// ── 項目別写真 ─────────────────────────
+function pickFieldPhoto(fid,cam){curPhotoField=fid;$(cam?'fp-cam':'fp-input').click();}
+['fp-input','fp-cam'].forEach(id=>{
+  $(id).addEventListener('change',async e=>{
+    const files=[...e.target.files];e.target.value='';
+    const fid=curPhotoField;curPhotoField=null;
+    if(!files.length||!fid)return;
+    if(!fphotos[fid])fphotos[fid]=[];
+    const n=await ingest(files,fphotos[fid]);
+    renderFieldPhotos(fid);onChange();if(n)toast(n+'枚追加しました');
+  });
+});
+function renderFieldPhotos(fid){
+  const g=$('fp_'+fid);if(!g)return;
+  const arr=fphotos[fid]||[];
+  g.innerHTML=arr.map((p,i)=>
+    '<div class="ph-card"><img src="'+p.data+'" alt="">'
+    +'<button class="ph-del" onclick="delFPhoto(\''+fid+'\','+i+')">✕</button>'
+    +'<input class="ph-cap" value="'+esc(p.cap)+'" placeholder="キャプション" oninput="setFCap(\''+fid+'\','+i+',this.value)">'
+    +'</div>').join('')
+    +'<button class="ph-add cam" onclick="pickFieldPhoto(\''+fid+'\',1)"><span class="ic">📷</span><span>撮影</span></button>'
+    +'<button class="ph-add" onclick="pickFieldPhoto(\''+fid+'\')"><span class="ic">＋</span><span>写真を選択</span></button>';
+}
+function renderAllFieldPhotos(){
+  SCHEMA.forEach(s=>(s.fields||[]).forEach(f=>{if(f.type==='photo')renderFieldPhotos(f.id);}));
+}
+function setFCap(fid,i,v){if(fphotos[fid]&&fphotos[fid][i]){fphotos[fid][i].cap=v;onChange();}}
+function delFPhoto(fid,i){
+  if(!confirm('この写真を削除しますか？'))return;
+  fphotos[fid].splice(i,1);renderFieldPhotos(fid);onChange();
+}
+
+// クリップボード貼り付けで写真追加（PC）
+document.addEventListener('paste',async e=>{
+  const it=[...(e.clipboardData||{items:[]}).items||[]].find(i=>i.type.indexOf('image')===0);
+  if(!it)return;
+  const f=it.getAsFile();if(!f)return;
+  photos.push({id:uid(),data:await shrink(f,1400,0.72),cap:''});
+  renderPhotos();onChange();toast('貼り付けた画像を追加しました');
+});
+
+// ══════════════════════════════════════════════════════
+//  保存（IndexedDB）
+// ══════════════════════════════════════════════════════
+const DB_NAME='genba_check',STORE='records';
+function db(){
+  return new Promise((res,rej)=>{
+    const q=indexedDB.open(DB_NAME,1);
+    q.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains(STORE))d.createObjectStore(STORE,{keyPath:'id'});};
+    q.onsuccess=e=>res(e.target.result);
+    q.onerror=()=>rej(q.error);
+  });
+}
+function tx(mode,fn){
+  return db().then(d=>new Promise((res,rej)=>{
+    const t=d.transaction(STORE,mode),st=t.objectStore(STORE);
+    const r=fn(st);
+    t.oncomplete=()=>res(r instanceof IDBRequest?r.result:r);
+    t.onerror=()=>rej(t.error);
+  }));
+}
+const dbPut=r=>tx('readwrite',s=>s.put(r));
+const dbAll=()=>tx('readonly',s=>s.getAll());
+const dbGet=id=>tx('readonly',s=>s.get(id));
+const dbDel=id=>tx('readwrite',s=>s.delete(id));
+
+function onChange(){
+  dirty=true;
+  $('save-ind').textContent='編集中…';
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>saveNow(0),1500);
+}
+async function saveNow(manual){
+  if(!curId)curId=uid();
+  const rec=collect();rec.id=curId;
+  try{
+    await dbPut(rec);
+    localStorage.setItem('genba_last',curId);
+    dirty=false;
+    const d=new Date();
+    $('save-ind').textContent='保存済み '+d.getHours()+':'+String(d.getMinutes()).padStart(2,'0');
+    if(manual)toast('保存しました');
+  }catch(e){
+    $('save-ind').textContent='保存失敗';
+    if(manual)toast('保存に失敗しました：'+e.message,1);
+  }
+}
+function newRecord(){
+  if(!confirm('新しい現場を作成します。現在の内容は保存済みです。よろしいですか？'))return;
+  saveNow(0).then(()=>{
+    curId=uid();
+    restore({id:curId,meta:{date:today()},fields:{},photos:[],mapImg:null,geo:null});
+    localStorage.setItem('genba_last',curId);
+    $('save-ind').textContent='新規';
+    toast('新しい現場を作成しました');
+  });
+}
+
+// ══════════════════════════════════════════════════════
+//  一覧シート
+// ══════════════════════════════════════════════════════
+function showSheet(title,desc,listHTML,footerHTML){
+  $('sheet-title').textContent=title;$('sheet-desc').textContent=desc;
+  $('sheet-list').innerHTML=listHTML;$('sheet-footer').innerHTML=footerHTML;
+  $('sheet-overlay').classList.add('show');
+}
+function closeSheet(e){
+  if(!e||e.target===$('sheet-overlay')||e===true)$('sheet-overlay').classList.remove('show');
+}
+function hideSheet(){$('sheet-overlay').classList.remove('show');}
+
+async function openRecords(){
+  await saveNow(0);
+  let recs=[];
+  try{recs=await dbAll();}catch(e){toast('読み込みに失敗しました',1);return;}
+  recs.sort((a,b)=>(b.updated||0)-(a.updated||0));
+  const html=recs.length?recs.map(r=>{
+    const nm=(r.meta&&r.meta.site)||'（現場名なし）';
+    const sub=[(r.meta&&r.meta.date)||'',(r.photos||[]).length+'枚',new Date(r.updated||0).toLocaleString('ja-JP',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})].filter(Boolean).join(' ・ ');
+    return '<div class="rec-item"><div class="rec-main" onclick="loadRecord(\''+r.id+'\')">'
+      +'<div class="rec-name">'+esc(nm)+(r.id===curId?' <span style="font-size:10px;color:#3b6db5">（編集中）</span>':'')+'</div>'
+      +'<div class="rec-sub">'+esc(sub)+'</div></div>'
+      +'<button class="rec-del" onclick="delRecord(\''+r.id+'\')">削除</button></div>';
+  }).join(''):'<div class="empty-msg">保存された現場がありません</div>';
+  showSheet('保存済み現場（'+recs.length+'件）','タップで読み込みます。','<div>'+html+'</div>',
+    '<button class="sh-btn" onclick="hideSheet()">閉じる</button><button class="sh-btn pr" onclick="hideSheet();newRecord()">✚ 新規作成</button>');
+}
+async function loadRecord(id){
+  try{
+    const r=await dbGet(id);
+    if(!r){toast('データが見つかりません',1);return;}
+    restore(r);localStorage.setItem('genba_last',id);
+    hideSheet();$('save-ind').textContent='読込済み';toast('読み込みました');
+  }catch(e){toast('読み込みに失敗しました',1);}
+}
+async function delRecord(id){
+  if(!confirm('この現場データを削除します。元に戻せません。よろしいですか？'))return;
+  await dbDel(id);
+  if(id===curId){curId=null;restore({id:null,meta:{date:today()},fields:{},photos:[],mapImg:null,geo:null});}
+  openRecords();toast('削除しました');
+}
+
+// ══════════════════════════════════════════════════════
+//  PDF
+// ══════════════════════════════════════════════════════
+function visibleFields(sec){
+  return (sec.fields||[]).filter(f=>{
+    if(!f.showIf)return true;
+    return Object.entries(f.showIf).every(([k,vals])=>vals.indexOf(getVal(k))>=0);
+  });
+}
+function secTable(sec){
+  const rows=[];let buf=[];
+  const flush=()=>{
+    if(!buf.length)return;
+    rows.push('<tr>'+buf.join('')+(buf.length===1?'<th></th><td></td>':'')+'</tr>');buf=[];
+  };
+  visibleFields(sec).forEach(f=>{
+    if(f.type==='photo')return;
+    if(f.type==='note'){
+      flush();
+      rows.push('<tr><th>注意</th><td colspan="3" class="warn">⚠ '+esc(f.text)+'</td></tr>');
+      return;
+    }
+    const v=dispVal(f);
+    if(f.wide||f.type==='textarea'){
+      flush();
+      rows.push('<tr><th>'+esc(f.label)+'</th><td colspan="3" class="pre">'+esc(v)+'</td></tr>');
+    }else{
+      buf.push('<th>'+esc(f.label)+'</th><td class="'+(f.em?'em':'')+'">'+esc(v)+'</td>');
+      if(buf.length===2)flush();
+    }
+  });
+  flush();
+  if(!rows.length)return '';
+  return '<div class="blk"><div class="bh">'+esc(sec.title)+'</div><table>'+rows.join('')+'</table></div>';
+}
+function reportHTML(){
+  const m={date:$('m_date').value||'—',site:$('m_site').value||'—',addr:$('m_addr').value||'—',
+    attend:(document.querySelector('input[name="m_attend"]:checked')||{}).value||'—',
+    person:$('m_person').value||'—',work:$('m_work').value||'—'};
+  let out='<div class="rh"><div class="rt">現場状況 調査シート</div>'
+    +'<div class="rm">現場名：'+esc(m.site)+'<br>調査日：'+esc(m.date)+'<br>工事：'+esc(m.work)+'</div></div>';
+
+  // 基本情報ブロック
+  out+='<div class="blk"><div class="bh">基本情報</div><table>'
+    +'<tr><th>現場名</th><td class="em">'+esc(m.site)+'</td><th>調査日</th><td>'+esc(m.date)+'</td></tr>'
+    +'<tr><th>住所</th><td colspan="3">'+esc(m.addr)+'</td></tr>'
+    +'<tr><th>立会</th><td class="em">'+esc(m.attend)+'</td><th>立会者・連絡先</th><td>'+esc(m.person)+'</td></tr>'
+    +'<tr><th>工事内容</th><td colspan="3">'+esc(m.work)+'</td></tr>'
+    +'<tr><th>座標</th><td colspan="3">'+(geo.lat?esc(geo.lat+', '+geo.lng)+'　（https://www.google.com/maps?q='+esc(geo.lat+','+geo.lng)+'）':'—')+'</td></tr>'
+    +'</table></div><div class="gap"></div>';
+
+  if(mapImg){
+    out+='<div class="blk map-box"><div class="bh">地図</div><img src="'+mapImg+'" alt="地図"></div><div class="gap"></div>';
+  }
+
+  SCHEMA.forEach(sec=>{
+    const t=secTable(sec);
+    if(t)out+=t+'<div class="gap"></div>';
+    visibleFields(sec).forEach(f=>{
+      if(f.type!=='photo')return;
+      const arr=fphotos[f.id]||[];
+      for(let i=0;i<arr.length;i+=2){
+        const pair=arr.slice(i,i+2);
+        out+='<div class="blk"><div class="bh">'+esc(f.label)+(arr.length>2?'（'+(i+1)+'〜）':'')+'</div><div class="ph-row">'
+          +pair.map(p=>'<div class="ph-box"><img src="'+p.data+'"><div class="cap">'+esc(p.cap||'　')+'</div></div>').join('')
+          +(pair.length===1?'<div style="flex:1"></div>':'')
+          +'</div></div><div class="gap"></div>';
+      }
+    });
+  });
+
+  if(photos.length){
+    for(let i=0;i<photos.length;i+=2){
+      const pair=photos.slice(i,i+2);
+      out+='<div class="blk"><div class="bh">写真 '+(i+1)+(pair.length>1?'・'+(i+2):'')+'</div><div class="ph-row">'
+        +pair.map(p=>'<div class="ph-box"><img src="'+p.data+'"><div class="cap">'+esc(p.cap||'　')+'</div></div>').join('')
+        +(pair.length===1?'<div style="flex:1"></div>':'')
+        +'</div></div><div class="gap"></div>';
+    }
+  }
+  return out;
+}
+
+function validateAll(){
+  const miss=[];
+  SCHEMA.forEach(sec=>{
+    const items=visibleFields(sec).filter(f=>f.type!=='photo'&&f.type!=='note'&&REQUIRED.indexOf(f.id)>=0&&!getVal(f.id)).map(f=>f.label);
+    if(items.length)miss.push({t:sec.title,items});
+  });
+  if(!$('m_site').value.trim())miss.unshift({t:'基本情報',items:['現場名']});
+  return miss;
+}
+
+function fitPreview(){
+  const body=$('pdf-body'),wrap=$('pdf-scale-wrap'),rep=$('pdf-report');
+  if(!body||!wrap||!rep)return;
+  const s=Math.min(1,(body.clientWidth-24)/PDF_W);
+  wrap.style.transform='scale('+s+')';
+  wrap.style.height=(rep.offsetHeight*s)+'px';
+}
+function showPdf(){
+  const html=reportHTML();
+  $('pdf-report').innerHTML=html;
+  $('pdf-stage-report').innerHTML=html;
+  const ov=$('pdf-overlay');ov.classList.add('show');
+  ov.querySelector('.pdf-body').scrollTop=0;
+  setTimeout(fitPreview,0);
+}
+function closePdf(){$('pdf-overlay').classList.remove('show');}
+window.addEventListener('resize',()=>{if($('pdf-overlay').classList.contains('show'))fitPreview();});
+
+function exportPDF(){
+  const miss=validateAll();
+  if(miss.length){
+    const list=miss.map(g=>'<div class="val-grp">'+esc(g.t)+'</div>'+g.items.map(i=>'<div class="val-item">'+esc(i)+'</div>').join('')).join('');
+    showSheet('⚠ 未入力の項目があります','このまま出力するか、入力に戻って確認してください。',list,
+      '<button class="sh-btn" onclick="hideSheet()">← 入力に戻る</button><button class="sh-btn pr" onclick="hideSheet();showPdf()">このままPDF</button>');
+    return;
+  }
+  showPdf();
+}
+
+async function sharePdf(){
+  if(!window.jspdf||!window.jspdf.jsPDF){toast('ライブラリ読み込み中です。少し待ってから再度お試しください',1);return;}
+  if(!window.html2canvas){toast('html2canvasが読み込まれていません',1);return;}
+  const {jsPDF}=window.jspdf;
+  const site=$('m_site').value.trim()||'無題';
+
+  showPdf();
+  toast('PDF生成中…');
+  await new Promise(r=>setTimeout(r,400));
+
+  const pageW=210,pageH=297,mgn=8;
+  const usableW=pageW-mgn*2;      // 194mm
+  const gap=2.5;
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+
+  const stage=$('pdf-stage');
+  const rep=$('pdf-stage-report');
+  const headerEl=rep.querySelector('.rh');
+  const blocks=[...rep.querySelectorAll('.blk')];
+  if(!blocks.length){toast('出力する内容がありません',1);return;}
+
+  stage.style.visibility='visible';
+  try{
+    const shot=async el=>{
+      const c=await html2canvas(el,{scale:2,useCORS:true,backgroundColor:'#ffffff',logging:false});
+      return{d:c.toDataURL('image/jpeg',0.92),r:c.height/c.width};
+    };
+    const hdr=await shot(headerEl);
+    const hdrH=Math.min(20,usableW*hdr.r);
+
+    let y=mgn;
+    doc.addImage(hdr.d,'JPEG',mgn,y,usableW,hdrH);
+    y+=hdrH+gap;
+
+    for(const b of blocks){
+      const s=await shot(b);
+      let w=usableW,h=usableW*s.r;
+      const limit=pageH-mgn-y;
+      const pageLimit=pageH-mgn*2-hdrH-gap;
+      if(h>pageLimit){ // 1ページに収まらない巨大ブロックは縮小
+        h=pageLimit;w=h/s.r;
+      }
+      if(h>limit){
+        doc.addPage();y=mgn;
+        doc.addImage(hdr.d,'JPEG',mgn,y,usableW,hdrH);
+        y+=hdrH+gap;
+      }
+      doc.addImage(s.d,'JPEG',mgn,y,w,h);
+      y+=h+gap;
+    }
+
+    const blob=doc.output('blob');
+    const name='現場状況調査_'+site+'.pdf';
+    const file=new File([blob],name,{type:'application/pdf'});
+    if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+      try{await navigator.share({files:[file],title:'現場状況 調査シート - '+site});}
+      catch(e){if(e.name!=='AbortError')toast('共有に失敗しました',1);}
+    }else{
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');a.href=url;a.download=name;a.click();
+      setTimeout(()=>URL.revokeObjectURL(url),5000);
+      toast('PDFをダウンロードしました');
+    }
+  }catch(e){
+    console.error(e);toast('PDF生成に失敗しました：'+e.message,1);
+  }finally{
+    stage.style.visibility='hidden';
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  初期化
+// ══════════════════════════════════════════════════════
+function today(){
+  const d=new Date();
+  return d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0');
+}
+function forceReload(){
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister()));
+  }
+  if(window.caches){caches.keys().then(ks=>Promise.all(ks.map(k=>caches.delete(k)))).then(go);}
+  else go();
+  function go(){location.href=location.href.split('?')[0]+'?v='+Date.now();}
+}
+window.addEventListener('beforeunload',e=>{if(dirty){saveNow(0);}});
+
+(async function init(){
+  renderForm();
+  const last=localStorage.getItem('genba_last');
+  let loaded=false;
+  if(last){
+    try{const r=await dbGet(last);if(r){restore(r);$('save-ind').textContent='前回の続き';loaded=true;}}catch(_){}
+  }
+  if(!loaded){
+    curId=uid();
+    restore({id:curId,meta:{date:today()},fields:{},photos:[],mapImg:null,geo:null});
+    $('save-ind').textContent='新規';
+  }
+  if(!$('m_date').value)$('m_date').value=today();
+})();
+</script>
+</body>
+</html>
