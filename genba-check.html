@@ -188,7 +188,15 @@ select:focus{outline:none;border-color:var(--accent)}
     </div>
     <div class="field"><label class="lb">立会者・連絡先</label><input type="text" id="m_person" placeholder="施主 / 担当者"></div>
   </div>
-  <div class="field"><label class="lb">工事内容</label><input type="text" id="m_work" placeholder="内窓 / ドアリモ など"></div>
+  <div class="grid2">
+    <div class="field"><label class="lb">区分</label>
+      <div class="radio-group">
+        <label><input type="radio" name="m_kind" value="リフォーム"><span>リフォーム</span></label>
+        <label><input type="radio" name="m_kind" value="新築"><span>新築</span></label>
+      </div>
+    </div>
+    <div class="field"><label class="lb">工事内容</label><input type="text" id="m_work" placeholder="内窓 / ドアリモ など"></div>
+  </div>
 </div>
 
 <div class="tab-bar-wrap"><div class="tab-bar" id="tab-bar"></div></div>
@@ -238,7 +246,6 @@ const SCHEMA=[
 {id:'park',title:'駐車場',fields:[
   {id:'pk_ari',label:'駐車場',type:'select',opts:['敷地内に有','近隣に有','コインP','無'],em:true},
   {id:'pk_num',label:'駐車可能台数',type:'num',unit:'台',showIf:{pk_ari:['敷地内に有','近隣に有','コインP']}},
-  {id:'pk_surface',label:'路面',type:'select',opts:['アスファルト','コンクリート','砂利','土・芝'],showIf:{pk_ari:['敷地内に有','近隣に有']}},
   {id:'pk_height',label:'駐車スペースの高さ',type:'num',unit:'㎜',hint:'カーポート梁下・庇・電線・樹木など、最も低い位置で測定',em:true},
   {id:'pk_dist',label:'駐車位置から現場まで',type:'num',unit:'m'},
   {id:'pk_note',label:'駐車メモ',type:'textarea',wide:true,rows:2,ph:'例：施主駐車場の右側1台のみ使用可'}
@@ -246,7 +253,6 @@ const SCHEMA=[
 
 {id:'infra',title:'水道・電源・加工場所',fields:[
   {id:'wt_ari',label:'水道',type:'radio',opts:['有','無'],em:true},
-  {id:'wt_type',label:'水栓の種類',type:'select',opts:['立水栓','散水栓','屋内のみ'],showIf:{wt_ari:['有']}},
   {id:'wt_pos',label:'水道の位置',type:'text',showIf:{wt_ari:['有']},ph:'例：玄関左手 / 建物裏'},
   {id:'wt_ok',label:'使用許可',type:'select',opts:['使用可','要確認','使用不可'],showIf:{wt_ari:['有']}},
   {id:'el_ari',label:'電源',type:'radio',opts:['有','無'],em:true},
@@ -425,7 +431,7 @@ function renderForm(){
   sa.addEventListener('input',onChange);
   sa.addEventListener('change',()=>{applyConditions();onChange();});
   ['m_date','m_site','m_addr','m_person','m_work'].forEach(id=>$(id).addEventListener('input',onChange));
-  document.querySelectorAll('input[name="m_attend"]').forEach(e=>e.addEventListener('change',onChange));
+  document.querySelectorAll('input[name="m_attend"],input[name="m_kind"]').forEach(e=>e.addEventListener('change',onChange));
   $('m_addr').addEventListener('input',updateAddrLink);
   applyConditions();
   syncRadioState();
@@ -532,6 +538,7 @@ function collect(){
     id:curId,
     meta:{date:$('m_date').value,site:$('m_site').value,addr:$('m_addr').value,
       attend:(document.querySelector('input[name="m_attend"]:checked')||{}).value||'',
+      kind:(document.querySelector('input[name="m_kind"]:checked')||{}).value||'',
       person:$('m_person').value,work:$('m_work').value},
     geo:geo,fields:fields,photos:photos,fphotos:fphotos,mapImg:mapImg,updated:Date.now()
   };
@@ -542,6 +549,7 @@ function restore(r){
   $('m_date').value=m.date||'';$('m_site').value=m.site||'';$('m_addr').value=m.addr||'';
   $('m_person').value=m.person||'';$('m_work').value=m.work||'';
   document.querySelectorAll('input[name="m_attend"]').forEach(e=>e.checked=(e.value===(m.attend||'')));
+  document.querySelectorAll('input[name="m_kind"]').forEach(e=>e.checked=(e.value===(m.kind||'')));
   geo=r.geo||{lat:'',lng:'',acc:'',at:''};
   photos=r.photos||[];fphotos=r.fphotos||{};mapImg=r.mapImg||null;
   SCHEMA.forEach(s=>(s.fields||[]).forEach(f=>setVal(f.id,(r.fields||{})[f.id])));
@@ -841,16 +849,17 @@ function secTable(sec){
 function reportHTML(){
   const m={date:$('m_date').value||'—',site:$('m_site').value||'—',addr:$('m_addr').value||'—',
     attend:(document.querySelector('input[name="m_attend"]:checked')||{}).value||'—',
+    kind:(document.querySelector('input[name="m_kind"]:checked')||{}).value||'—',
     person:$('m_person').value||'—',work:$('m_work').value||'—'};
   let out='<div class="rh"><div class="rt">現場状況 調査シート</div>'
-    +'<div class="rm">現場名：'+esc(m.site)+'<br>調査日：'+esc(m.date)+'<br>工事：'+esc(m.work)+'</div></div>';
+    +'<div class="rm">現場名：'+esc(m.site)+'<br>調査日：'+esc(m.date)+'<br>'+esc(m.kind)+'：'+esc(m.work)+'</div></div>';
 
   // 基本情報ブロック
   out+='<div class="blk"><div class="bh">基本情報</div><table>'
     +'<tr><th>現場名</th><td class="em">'+esc(m.site)+'</td><th>調査日</th><td>'+esc(m.date)+'</td></tr>'
     +'<tr><th>住所</th><td colspan="3">'+esc(m.addr)+'</td></tr>'
     +'<tr><th>立会</th><td class="em">'+esc(m.attend)+'</td><th>立会者・連絡先</th><td>'+esc(m.person)+'</td></tr>'
-    +'<tr><th>工事内容</th><td colspan="3">'+esc(m.work)+'</td></tr>'
+    +'<tr><th>区分</th><td class="em">'+esc(m.kind)+'</td><th>工事内容</th><td>'+esc(m.work)+'</td></tr>'
     +'<tr><th>座標</th><td colspan="3">'+(geo.lat?esc(geo.lat+', '+geo.lng)+'　（https://www.google.com/maps?q='+esc(geo.lat+','+geo.lng)+'）':'—')+'</td></tr>'
     +'</table></div><div class="gap"></div>';
 
