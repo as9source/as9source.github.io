@@ -750,6 +750,14 @@ main{max-width:940px;padding:24px 20px 12px}
 
 </main>
 
+<!-- 採寸ヘルプ -->
+<div class="modal-overlay" id="modal-help" onclick="closeHelp(event)">
+  <div class="modal">
+    <div class="modal-title"><span id="help-title">採寸ヘルプ</span><button class="modal-close" onclick="closeHelpDirect()">×</button></div>
+    <div class="help-content" id="help-content"></div>
+  </div>
+</div>
+
 <!-- Summary Modal -->
 <div class="modal-overlay" id="modal-summary" onclick="closeSummary(event)">
   <div class="modal">
@@ -1324,6 +1332,27 @@ BACKDOOR_IDS.forEach(id=>document.getElementById(id).addEventListener('input',()
 SLIDING_IDS.forEach(id=>document.getElementById(id).addEventListener('input',()=>document.getElementById('save-status').textContent='未保存'));
 
 // ======= Helpers =======
+const HELP_LINKS={
+  manual:'https://inter-webcat.ykkap.co.jp/iportal/CatalogDetail.do?catalogID=12872420000&categoryID=4146210000&designID=pro&method=initial_screen&position=455&sortKey=CatalogMain1410000&sortOrder=ASC&type=c&volumeID=YKKAPDC1',
+  door:'https://webcat-inner.ykkap.co.jp/iportal/CatalogDetail.do?catalogID=13156030000&categoryID=1610000&method=initial_screen&position=20&sortKey=CatalogMain1410000&sortOrder=ASC&type=mc&volumeID=YKKAPDC1',
+  sliding:'https://inter-webcat.ykkap.co.jp/iportal/CatalogDetail.do?catalogID=13156040000&designID=pro&method=initial_screen&type=clcsr&volumeID=YKKAPDC1',
+  backdoor:'https://webcatalog.ykkap.co.jp/iportal/CatalogDetail.do?catalogID=12941820000&categoryID=8491270000&designID=spuser&method=initial_screen&position=34&searchMode=&sortKey=CatalogMain2210000&sortOrder=ASC&type=c&volumeID=YKKAPDC1'
+};
+function helpGuide(topic){
+  const type=currentType||'door',series=val('meeting-series');
+  if(topic==='meeting'){
+    if(type==='sliding')return{title:'玄関引戸の商品選択',page:'業務用カタログ P.8～21（デザイン・カラー）、P.140～143（オプション・網戸）',body:'建て方を選んでから、デザイン、カラー、ハンドル、錠、網戸を確認します。',url:HELP_LINKS.sliding,label:'玄関引戸 公式WEBカタログを開く'};
+    if(type==='backdoor')return{title:'勝手口の商品選択',page:'商品・業務用カタログ P.14～15、P.22～23',body:'納まり、枠タイプ、デザイン、内外色、シリンダー、サムターンの順に確認します。',url:HELP_LINKS.backdoor,label:'勝手口 公式WEBカタログを開く'};
+    return{title:'玄関ドアの商品選択',page:'業務用カタログ P.18～29（色・ハンドル）、各デザイン掲載ページ',body:'商品シリーズとデザインを先に決めると、対応するカラー、鍵、電源、ハンドル、子扉だけが表示されます。',url:HELP_LINKS.door,label:'玄関ドア 公式WEBカタログを開く'};
+  }
+  if(type==='sliding')return{title:topic==='frame'?'玄関引戸・額縁の測り方':'玄関引戸・開口の測り方',page:'現場調査マニュアル P.161～216／玄関引戸業務用カタログ P.184～203',body:'既設枠の内側で、開口幅KWは上・中・下、開口高KHは左・中央・右を測ります。額縁は干渉物と見込み寸法も確認してください。',url:HELP_LINKS.manual,label:'公式 現場調査マニュアルを開く'};
+  if(type==='backdoor')return{title:topic==='frame'?'勝手口・額縁の測り方':'勝手口・開口の測り方',page:'現場調査マニュアル P.271～313',body:'既設枠の開口幅・開口高を3点ずつ測り、床納まり／土間納まり、外壁や内装との干渉を確認します。',url:HELP_LINKS.manual,label:'公式 現場調査マニュアルを開く'};
+  const doorPage=series.startsWith('D50')?'P.14～35':series.includes('防火')?'P.138～159':'P.96～117';
+  return{title:topic==='frame'?'玄関ドア・額縁の測り方':topic==='basic'?'玄関ドア・最初の確認':'玄関ドア・開口の測り方',page:`現場調査マニュアル ${doorPage}`,body:'既設枠の内側で、開口幅KWは上・中・下、開口高KHは左・中央・右を測ります。最小値を基準にし、下枠・額縁・丁番・外壁との干渉も確認してください。',url:HELP_LINKS.manual,label:'公式 現場調査マニュアルを開く'};
+}
+function openHelp(topic){const g=helpGuide(topic);document.getElementById('help-title').textContent=g.title;document.getElementById('help-content').innerHTML=`<p>${g.body}</p><div class="help-page">参照ページ：${g.page}</div><div class="help-links"><a href="${g.url}" target="_blank" rel="noopener">${g.label} ↗</a></div><p class="meeting-hint" style="margin-top:12px">WEBカタログを開いた後、上記ページ番号へ移動してください。通信環境が必要です。</p>`;document.getElementById('modal-help').classList.add('show');}
+function closeHelp(e){if(e.target===document.getElementById('modal-help'))closeHelpDirect();}
+function closeHelpDirect(){document.getElementById('modal-help').classList.remove('show');}
 function val(id) { const el = document.getElementById(id); return el ? el.value : ''; }
 function setVal(id, v) { const el = document.getElementById(id); if (el) el.value = v; }
 function dv(v) { return v === '80thin' ? '80（薄）' : v; }
