@@ -1747,6 +1747,14 @@ async function shareSheet(btn) {
     await document.fonts.ready;
     await new Promise(r => setTimeout(r, 200));
 
+    // 見出し・入力ブロック・写真カードの開始位置を改ページ候補として記録する。
+    const sheetRect = sheet.getBoundingClientRect();
+    const topLevelBlocks = sheet.firstElementChild ? [...sheet.firstElementChild.children] : [];
+    const protectedBlocks = [...sheet.querySelectorAll('[style*="break-inside:avoid"]')];
+    const cssBreakPoints = [...new Set([...topLevelBlocks, ...protectedBlocks]
+      .map(el => Math.max(0, el.getBoundingClientRect().top - sheetRect.top))
+      .filter(y => y > 20))].sort((a,b) => a-b);
+
     const canvas = await html2canvas(sheet, {
       scale: 2, useCORS: true, backgroundColor: '#ffffff',
       width: 794, windowWidth: 794
@@ -1755,13 +1763,31 @@ async function shareSheet(btn) {
 
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    const pageW = 210, pageH = 297;
-    const imgW  = pageW;
-    const imgH  = (canvas.height / canvas.width) * imgW;
-    const pagesNeeded = Math.ceil(imgH / pageH);
-    for (let i = 0; i < pagesNeeded; i++) {
-      if (i > 0) pdf.addPage();
-      pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, -i * pageH, imgW, imgH);
+    // A4縦で、まとまりの途中を避けながらページ分割する。
+    const pageW = 210, pageH = 297, margin = 5;
+    const maxW = pageW - margin * 2, maxH = pageH - margin * 2;
+    const cssToCanvas = canvas.width / sheetRect.width;
+    const breakPoints = cssBreakPoints.map(y => Math.round(y * cssToCanvas));
+    const maxSliceH = Math.floor(canvas.width * (maxH / maxW));
+    let sliceTop = 0, pageIndex = 0;
+    while (sliceTop < canvas.height) {
+      const naturalEnd = Math.min(canvas.height, sliceTop + maxSliceH);
+      let sliceEnd = naturalEnd;
+      if (naturalEnd < canvas.height) {
+        // ページの60%以降にある最後のブロック境界で区切る。
+        const minUsefulEnd = sliceTop + maxSliceH * 0.60;
+        const candidates = breakPoints.filter(y => y >= minUsefulEnd && y <= naturalEnd);
+        if (candidates.length) sliceEnd = candidates[candidates.length - 1];
+      }
+      if (sliceEnd <= sliceTop + 40) sliceEnd = naturalEnd;
+      const sliceH = Math.max(1, sliceEnd - sliceTop);
+      const pageCanvas = document.createElement('canvas');
+      pageCanvas.width = canvas.width; pageCanvas.height = sliceH;
+      pageCanvas.getContext('2d').drawImage(canvas, 0, sliceTop, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+      const imgW = maxW, imgH = sliceH / canvas.width * imgW;
+      if (pageIndex > 0) pdf.addPage('a4','portrait');
+      pdf.addImage(pageCanvas.toDataURL('image/jpeg', 0.94), 'JPEG', margin, margin, imgW, imgH);
+      sliceTop = sliceEnd; pageIndex++;
     }
 
     const pdfTitle = getPdfTitle().replace(/\s/g,'_');
