@@ -14,10 +14,23 @@
     ========================================
     躯体採寸システム
     ========================================
-    バージョン: 1.43.0
+    バージョン: 1.43.3
     最終更新: 2026-08-09
     
     [更新履歴]
+    v1.43.3 (2026-08-10) - PDFファイル名を現場情報へ変更
+    - PDF名を「現場名_色_日付.pdf」に変更
+    - 日本語を保持し、使用できない記号だけを自動置換
+
+    v1.43.2 (2026-08-10) - PDF表題を現場情報へ簡素化
+    - PDFの「躯体採寸システム」表題を削除
+    - 1ページ目の先頭を現場名・サッシ色・日付だけに変更
+
+    v1.43.1 (2026-08-09) - PDFのページ構成を再調整
+    - 1ページ目は表題・現場情報・測定図を必ず一緒に配置
+    - 少しだけページを超える場合は、そのページだけ軽く縮小して収める
+    - 採寸結果も15%以内の超過なら1ページへ縮小し、不要な追加ページを防止
+
     v1.43.0 (2026-08-09) - PDFを読みやすい複数ページ出力へ変更
     - 1ページへの強制縮小と末尾の切り捨てを廃止
     - 測定図と採寸結果を読みやすい大きさのまま自動改ページ
@@ -1435,7 +1448,7 @@
             </section>
 
             <footer class="home-footer">
-                <span>躯体採寸システム v1.43.0</span>
+                <span>躯体採寸システム v1.43.3</span>
                 <span>最終更新 2026-08-09</span>
             </footer>
         </div>
@@ -7828,8 +7841,26 @@
         }
         
         function getFilename() {
-            const date = new Date().toISOString().slice(0, 10);
+            const now = new Date();
+            const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
             return `kutai-keisoku_${date}`;
+        }
+
+        function sanitizeFilenamePart(value, fallback = '') {
+            const cleaned = String(value || '')
+                .normalize('NFC')
+                .replace(/[\\/:*?"<>|\x00-\x1F]/g, '_')
+                .replace(/[. ]+$/g, '')
+                .trim();
+            return cleaned || fallback;
+        }
+
+        function getPdfFilename(siteName, sashColor) {
+            const now = new Date();
+            const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            const safeSiteName = sanitizeFilenamePart(siteName, '躯体採寸');
+            const safeColor = sanitizeFilenamePart(sashColor);
+            return `${safeSiteName}${safeColor ? `_${safeColor}` : ''}_${date}.pdf`;
         }
         
         
@@ -7913,10 +7944,12 @@
                 
                 // ヘッダー
                 resultDiv.innerHTML = `
-                    <div style="text-align: center; margin-bottom: 20px; border-bottom: 3px solid #2563eb; padding-bottom: 15px;">
-                        <h1 style="font-size: 28px; color: #1e40af; margin: 0 0 10px 0;">躯体採寸システム</h1>
-                        ${siteName || sashColor ? `<h2 style="font-size: 18px; color: #374151; margin: 0 0 10px 0;">📍 ${siteName}${sashColor ? ` ／ 🎨 ${sashColor}` : ''}</h2>` : ''}
-                        <p style="font-size: 14px; color: #6b7280; margin: 0;">${new Date().toLocaleDateString('ja-JP', {year: 'numeric', month: 'long', day: 'numeric'})}</p>
+                    <div style="text-align:center;margin-bottom:12px;border-bottom:3px solid #2563eb;padding-bottom:10px;">
+                        <h1 style="font-size:26px;color:#1f2937;margin:0 0 8px 0;">📍 ${siteName}</h1>
+                        <div style="display:flex;justify-content:center;gap:22px;align-items:center;color:#475569;font-size:14px;font-weight:700;">
+                            <span>🎨 ${sashColor}</span>
+                            <span>${new Date().toLocaleDateString('ja-JP', {year:'numeric', month:'long', day:'numeric'})}</span>
+                        </div>
                     </div>
                 `;
                 
@@ -8002,22 +8035,55 @@
                     }
                 };
 
+                const renderPdfBlock = block => html2canvas(block, {
+                    scale: 2,
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                    useCORS: true
+                });
+
+                const addFittedPageCanvas = blockCanvas => {
+                    if (pageHasContent) addPage();
+                    const widthScale = contentWidth / blockCanvas.width;
+                    const heightAtFullWidth = blockCanvas.height * widthScale;
+                    const scaleToUse = heightAtFullWidth > contentHeight
+                        ? contentHeight / blockCanvas.height
+                        : widthScale;
+                    const drawWidth = blockCanvas.width * scaleToUse;
+                    const drawHeight = blockCanvas.height * scaleToUse;
+                    const drawX = (pageWidth - drawWidth) / 2;
+                    pdf.addImage(blockCanvas.toDataURL('image/png'), 'PNG', drawX, margin, drawWidth, drawHeight);
+                    cursorY = margin + drawHeight + blockGap;
+                    pageHasContent = true;
+                };
+
                 const headerBlock = resultDiv.firstElementChild;
                 const diagramBlock = resultDiv.querySelector('.pdf-diagram-block');
-                const resultsHeading = resultsDiv.querySelector('h3');
-                const resultCards = [...resultsDiv.querySelectorAll('.pdf-result-card')];
-                const pdfBlocks = [headerBlock, diagramBlock, resultsHeading, ...resultCards].filter(Boolean);
+                const coverBlock = document.createElement('div');
+                coverBlock.style.cssText = 'width:100%;background:#ffffff;';
+                if (headerBlock) coverBlock.appendChild(headerBlock);
+                if (diagramBlock) coverBlock.appendChild(diagramBlock);
+                resultDiv.insertBefore(coverBlock, resultsDiv);
 
-                for (const block of pdfBlocks) {
-                    const blockCanvas = await html2canvas(block, {
-                        scale: 2,
-                        backgroundColor: '#ffffff',
-                        logging: false,
-                        useCORS: true
-                    });
-                    addBlockCanvas(blockCanvas);
-                    // 測定図の後は必ず改ページし、採寸結果を見やすく分離する。
-                    if (block === diagramBlock && block !== pdfBlocks[pdfBlocks.length - 1]) addPage();
+                // 1ページ目：表題・現場情報・測定図をひとまとまりで配置。
+                const coverCanvas = await renderPdfBlock(coverBlock);
+                addFittedPageCanvas(coverCanvas);
+
+                // 2ページ目以降：採寸結果。15%以内の超過なら軽く縮小し、1ページへ収める。
+                if (resultsDiv) {
+                    const completeResultsCanvas = await renderPdfBlock(resultsDiv);
+                    const resultsHeightAtFullWidth = completeResultsCanvas.height * (contentWidth / completeResultsCanvas.width);
+                    if (resultsHeightAtFullWidth <= contentHeight * 1.15) {
+                        addFittedPageCanvas(completeResultsCanvas);
+                    } else {
+                        addPage();
+                        const resultsHeading = resultsDiv.querySelector('h3');
+                        const resultCards = [...resultsDiv.querySelectorAll('.pdf-result-card')];
+                        const resultBlocks = [resultsHeading, ...resultCards].filter(Boolean);
+                        for (const block of resultBlocks) {
+                            addBlockCanvas(await renderPdfBlock(block));
+                        }
+                    }
                 }
 
                 const totalPages = pdf.getNumberOfPages();
@@ -8030,7 +8096,7 @@
 
                 document.body.removeChild(resultDiv);
                 
-                const filename = (siteName ? siteName + '_' : '') + getFilename() + '.pdf';
+                const filename = getPdfFilename(siteName, sashColor);
                 pdf.save(filename);
                 
             } catch (error) {
