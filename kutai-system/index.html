@@ -14,10 +14,16 @@
     ========================================
     躯体採寸システム
     ========================================
-    バージョン: 1.42.2
+    バージョン: 1.43.0
     最終更新: 2026-08-09
     
     [更新履歴]
+    v1.43.0 (2026-08-09) - PDFを読みやすい複数ページ出力へ変更
+    - 1ページへの強制縮小と末尾の切り捨てを廃止
+    - 測定図と採寸結果を読みやすい大きさのまま自動改ページ
+    - 結果カードの途中でページが切れないようブロック単位で配置
+    - 全ページへページ番号を追加
+
     v1.42.2 (2026-08-09) - 高さ確認欄を強調
     - 躯体高さと1100-20／30計算を紫色の太枠で区別
     - 完成ファイル名をindex.htmlへ統一
@@ -1429,7 +1435,7 @@
             </section>
 
             <footer class="home-footer">
-                <span>躯体採寸システム v1.42.2</span>
+                <span>躯体採寸システム v1.43.0</span>
                 <span>最終更新 2026-08-09</span>
             </footer>
         </div>
@@ -7838,7 +7844,7 @@
                     ? `<div style="color:#1e3a8a;font-size:10px;font-weight:700;line-height:1.55;margin-top:7px;padding:7px;background:#eff6ff;border:1px solid #93c5fd;border-radius:4px;">${row.pillarCenters.map(item => `柱内法（${item.side}）: ${item.innerResult}mm<br>柱芯寸法（${item.side}）: ${item.centerResult}mm<br>柱芯計算: ${item.formula}`).join('<br>')}</div>`
                     : '';
                 resultsHTML += `
-                    <div style="padding: 10px 12px; background: white; border-radius: 6px; border: 1px solid #e5e7eb;">
+                    <div class="pdf-result-card" style="padding: 10px 12px; background: white; border-radius: 6px; border: 1px solid #e5e7eb;">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 4px;">
                             <span style="color: #374151; font-weight: 700; font-size: 12px; line-height: 1.4;">${row.name}</span>
                             <strong style="color: #1e40af; font-size: 20px; white-space: nowrap;">${row.result} mm</strong>
@@ -7851,7 +7857,7 @@
 
             stepResultRows.forEach(step => {
                 resultsHTML += `
-                    <div style="padding:10px 12px;background:#fff7f7;border-radius:6px;border:1px solid #fca5a5;">
+                    <div class="pdf-result-card" style="padding:10px 12px;background:#fff7f7;border-radius:6px;border:1px solid #fca5a5;">
                         <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;">
                             <span style="color:#991b1b;font-weight:700;font-size:12px;">${step.name} 段差寸法</span>
                             <strong style="color:#dc2626;font-size:20px;white-space:nowrap;">${step.depth} mm</strong>
@@ -7865,7 +7871,7 @@
             // 躯体高さと現地調査用の1100mm基準確認値。
             if (commonHeight) {
                 resultsHTML += `
-                    <div style="margin-top:12px;padding:10px;background:#f5f3ff;border-radius:6px;border:3px solid #7c3aed;">
+                    <div class="pdf-result-card" style="margin-top:12px;padding:10px;background:#f5f3ff;border-radius:6px;border:3px solid #7c3aed;">
                         <div style="color:#6d28d9;font-weight:800;font-size:12px;margin-bottom:4px;">
                             📏 躯体高さ: ${commonHeight}mm
                         </div>
@@ -7903,7 +7909,7 @@
                 
                 //計算結果部分のHTMLを作成
                 const resultDiv = document.createElement('div');
-                resultDiv.style.cssText = 'width: 800px; padding: 30px; background: white; font-family: sans-serif;';
+                resultDiv.style.cssText = 'position:fixed;left:-10000px;top:0;width:800px;padding:30px;background:white;font-family:sans-serif;z-index:-1;';
                 
                 // ヘッダー
                 resultDiv.innerHTML = `
@@ -7918,6 +7924,7 @@
                 const resultCanvas = document.getElementById('result-canvas');
                 if (resultCanvas) {
                     const canvasDiv = document.createElement('div');
+                    canvasDiv.className = 'pdf-diagram-block';
                     canvasDiv.style.cssText = 'margin-bottom: 20px; padding: 20px; background: #f0f9ff; border-radius: 10px;';
                     canvasDiv.innerHTML = '<h3 style="font-size: 18px; color: #1e40af; margin: 0 0 15px 0;">📐 測定図</h3>';
                     
@@ -7940,32 +7947,88 @@
                 // 一時的にbodyに追加
                 document.body.appendChild(resultDiv);
                 
-                // html2canvasでキャプチャ
-                const canvas = await html2canvas(resultDiv, {
-                    scale: 2,
-                    backgroundColor: '#ffffff',
-                    logging: false
-                });
-                
-                // 削除
-                document.body.removeChild(resultDiv);
-                
-                // PDF作成
+                // PDF作成。図・見出し・結果カードを別々に描画し、カード途中で改ページしない。
                 const { jsPDF } = window.jspdf;
                 const pdf = new jsPDF({
                     orientation: 'portrait',
                     unit: 'mm',
                     format: 'a4'
                 });
-                
-                const imgData = canvas.toDataURL('image/png');
                 const pageWidth = 210;
                 const pageHeight = 297;
                 const margin = 10;
-                const imgWidth = pageWidth - margin * 2;
-                const imgHeight = (canvas.height * imgWidth) / canvas.width;
-                
-                pdf.addImage(imgData, 'PNG', margin, margin, imgWidth, Math.min(imgHeight, pageHeight - margin * 2));
+                const footerHeight = 8;
+                const contentWidth = pageWidth - margin * 2;
+                const contentBottom = pageHeight - margin - footerHeight;
+                const contentHeight = contentBottom - margin;
+                const blockGap = 4;
+                let cursorY = margin;
+                let pageHasContent = false;
+
+                const addPage = () => {
+                    pdf.addPage();
+                    cursorY = margin;
+                    pageHasContent = false;
+                };
+
+                const addBlockCanvas = blockCanvas => {
+                    const pixelsPerMm = blockCanvas.width / contentWidth;
+                    const fullHeightMm = blockCanvas.height / pixelsPerMm;
+                    if (fullHeightMm <= contentHeight) {
+                        if (pageHasContent && cursorY + fullHeightMm > contentBottom) addPage();
+                        pdf.addImage(blockCanvas.toDataURL('image/png'), 'PNG', margin, cursorY, contentWidth, fullHeightMm);
+                        cursorY += fullHeightMm + blockGap;
+                        pageHasContent = true;
+                        return;
+                    }
+
+                    // 単独ブロックが1ページより長い場合も、縮小・切り捨てせず全高を分割する。
+                    if (pageHasContent) addPage();
+                    const sliceHeightPx = Math.max(1, Math.floor(contentHeight * pixelsPerMm));
+                    for (let sourceY = 0; sourceY < blockCanvas.height; sourceY += sliceHeightPx) {
+                        if (sourceY > 0) addPage();
+                        const currentSliceHeight = Math.min(sliceHeightPx, blockCanvas.height - sourceY);
+                        const sliceCanvas = document.createElement('canvas');
+                        sliceCanvas.width = blockCanvas.width;
+                        sliceCanvas.height = currentSliceHeight;
+                        const sliceCtx = sliceCanvas.getContext('2d');
+                        sliceCtx.fillStyle = '#ffffff';
+                        sliceCtx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
+                        sliceCtx.drawImage(blockCanvas, 0, sourceY, blockCanvas.width, currentSliceHeight, 0, 0, blockCanvas.width, currentSliceHeight);
+                        const sliceHeightMm = currentSliceHeight / pixelsPerMm;
+                        pdf.addImage(sliceCanvas.toDataURL('image/png'), 'PNG', margin, margin, contentWidth, sliceHeightMm);
+                        cursorY = margin + sliceHeightMm + blockGap;
+                        pageHasContent = true;
+                    }
+                };
+
+                const headerBlock = resultDiv.firstElementChild;
+                const diagramBlock = resultDiv.querySelector('.pdf-diagram-block');
+                const resultsHeading = resultsDiv.querySelector('h3');
+                const resultCards = [...resultsDiv.querySelectorAll('.pdf-result-card')];
+                const pdfBlocks = [headerBlock, diagramBlock, resultsHeading, ...resultCards].filter(Boolean);
+
+                for (const block of pdfBlocks) {
+                    const blockCanvas = await html2canvas(block, {
+                        scale: 2,
+                        backgroundColor: '#ffffff',
+                        logging: false,
+                        useCORS: true
+                    });
+                    addBlockCanvas(blockCanvas);
+                    // 測定図の後は必ず改ページし、採寸結果を見やすく分離する。
+                    if (block === diagramBlock && block !== pdfBlocks[pdfBlocks.length - 1]) addPage();
+                }
+
+                const totalPages = pdf.getNumberOfPages();
+                for (let pageNumber = 1; pageNumber <= totalPages; pageNumber++) {
+                    pdf.setPage(pageNumber);
+                    pdf.setFontSize(9);
+                    pdf.setTextColor(100, 116, 139);
+                    pdf.text(`${pageNumber} / ${totalPages}`, pageWidth / 2, pageHeight - 6, { align: 'center' });
+                }
+
+                document.body.removeChild(resultDiv);
                 
                 const filename = (siteName ? siteName + '_' : '') + getFilename() + '.pdf';
                 pdf.save(filename);
