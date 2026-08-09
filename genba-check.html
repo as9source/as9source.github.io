@@ -21,8 +21,8 @@
   --safe-top: env(safe-area-inset-top);
   --safe-bottom: env(safe-area-inset-bottom);
 }
-html,body{min-height:100%;overflow-x:hidden;overflow-y:auto}
-body{font-family:'Hiragino Sans','Meiryo',sans-serif;background:var(--bg2);display:block;color:var(--text)}
+html{min-height:100%;overflow-x:hidden;overflow-y:auto}
+body{min-height:100%;overflow:visible;font-family:'Hiragino Sans','Meiryo',sans-serif;background:var(--bg2);display:block;color:var(--text)}
 
 .header{background:var(--accent);color:#fff;padding:calc(10px + var(--safe-top)) 16px 10px;flex-shrink:0}
 .header h1{font-size:15px;font-weight:500;letter-spacing:.03em}
