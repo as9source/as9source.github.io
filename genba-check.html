@@ -21,8 +21,8 @@
   --safe-top: env(safe-area-inset-top);
   --safe-bottom: env(safe-area-inset-bottom);
 }
-html,body{height:100%;overflow:hidden}
-body{font-family:'Hiragino Sans','Meiryo',sans-serif;background:var(--bg2);display:flex;flex-direction:column;color:var(--text)}
+html,body{min-height:100%;overflow-x:hidden;overflow-y:auto}
+body{font-family:'Hiragino Sans','Meiryo',sans-serif;background:var(--bg2);display:block;color:var(--text)}
 
 .header{background:var(--accent);color:#fff;padding:calc(10px + var(--safe-top)) 16px 10px;flex-shrink:0}
 .header h1{font-size:15px;font-weight:500;letter-spacing:.03em}
@@ -49,7 +49,7 @@ body{font-family:'Hiragino Sans','Meiryo',sans-serif;background:var(--bg2);displ
 .tab-btn{flex-shrink:0;display:flex;align-items:center;gap:5px;padding:10px 13px;font-size:12px;font-weight:500;color:var(--text2);border:none;border-bottom:2px solid transparent;background:none;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent;font-family:inherit}
 .tab-btn.active{color:var(--accent);background:var(--bg);border-bottom-color:var(--accent)}
 
-.scroll-area{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(60px + var(--safe-bottom));scroll-behavior:smooth}
+.scroll-area{overflow:visible;padding-bottom:calc(60px + var(--safe-bottom));scroll-behavior:smooth}
 
 .section{padding:15px 16px 18px;background:var(--bg);border-bottom:0.5px solid var(--bd);margin-bottom:10px;scroll-margin-top:0}
 .sec-title{font-size:11px;font-weight:500;color:var(--tag);letter-spacing:.06em;margin-bottom:15px;display:flex;align-items:center;gap:6px}
@@ -489,11 +489,11 @@ function renderForm(){
 function setupSpy(){
   const sa=$('scroll-area');
   let t=null;
-  sa.addEventListener('scroll',()=>{
+  window.addEventListener('scroll',()=>{
     if(t)return;
     t=setTimeout(()=>{
       t=null;
-      const top=sa.getBoundingClientRect().top+40;
+      const top=24;
       let cur=SCHEMA[0].id;
       SCHEMA.forEach(s=>{const el=$('sec_'+s.id);if(el&&el.getBoundingClientRect().top<=top)cur=s.id;});
       const bar=$('tab-bar');
@@ -601,7 +601,7 @@ function restore(r){
   photos=r.photos||[];fphotos=r.fphotos||{};mapImg=r.mapImg||null;
   SCHEMA.forEach(s=>(s.fields||[]).forEach(f=>setVal(f.id,(r.fields||{})[f.id])));
   applyConditions();syncRadioState();renderGeo();renderPhotos();renderAllFieldPhotos();renderMap();updateAddrLink();
-  $('scroll-area').scrollTo(0,0);
+  window.scrollTo(0,0);
 }
 
 // ══════════════════════════════════════════════════════
