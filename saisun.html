@@ -413,6 +413,7 @@ main{max-width:940px;padding:24px 20px 12px}
       <div class="chip-row">
         <button class="chip" data-group="katachi" data-val="single" onclick="selectChip(this)">片開き</button>
         <button class="chip" data-group="katachi" data-val="oyako" onclick="selectChip(this)">親子ドア</button>
+        <button class="chip" data-group="katachi" data-val="sode_oyako" onclick="selectChip(this)">袖付き親子</button>
         <button class="chip" data-group="katachi" data-val="sode" onclick="selectChip(this)">片袖fix</button>
         <button class="chip" data-group="katachi" data-val="ryosode" onclick="selectChip(this)">両袖fix</button>
       </div>
@@ -500,6 +501,75 @@ main{max-width:940px;padding:24px 20px 12px}
       <span class="check-row-label">下枠フラット材 必要</span>
       <span class="check-row-sub">+6mm マイナス</span>
     </label>
+  </div>
+
+  <!-- ランマ採寸フィールド（ランマ付き時） -->
+  <div id="ranma-parts" style="display:none; margin-bottom:20px; padding:12px; background:#f0f9ff; border-radius:6px;">
+    <div class="sec-header"><span>ランマ採寸（高さ方向）</span></div>
+    <table class="measure-table" style="width:100%;">
+      <tr><th></th><th>左</th><th>中</th><th>右</th></tr>
+      <tr>
+        <td class="row-label">ランマ上<br><span style="font-size:10px;color:#999">上部</span></td>
+        <td><input id="ranma_t_l" type="number" inputmode="decimal" oninput="calcRanmaKH()"> mm</td>
+        <td><input id="ranma_t_c" type="number" inputmode="decimal" oninput="calcRanmaKH()"> mm</td>
+        <td><input id="ranma_t_r" type="number" inputmode="decimal" oninput="calcRanmaKH()"> mm</td>
+      </tr>
+      <tr>
+        <td class="row-label">ランマ下<br><span style="font-size:10px;color:#999">下部</span></td>
+        <td><input id="ranma_b_l" type="number" inputmode="decimal" oninput="calcRanmaKH()"> mm</td>
+        <td><input id="ranma_b_c" type="number" inputmode="decimal" oninput="calcRanmaKH()"> mm</td>
+        <td><input id="ranma_b_r" type="number" inputmode="decimal" oninput="calcRanmaKH()"> mm</td>
+      </tr>
+    </table>
+    <div class="measure-note">※ ランマ上＋ランマ下 が各方向の KH になります</div>
+  </div>
+
+  <!-- 袖採寸フィールド（袖付き時） -->
+  <div id="sode-parts-ryosode" style="display:none; margin-bottom:20px; padding:12px; background:#f0f9ff; border-radius:6px;">
+    <div class="sec-header"><span>袖採寸（幅方向・両袖）</span></div>
+    <table class="measure-table" style="width:100%;">
+      <tr><th></th><th>上</th><th>中</th><th>下</th></tr>
+      <tr>
+        <td class="row-label">左袖<br><span style="font-size:10px;color:#999">左側</span></td>
+        <td><input id="sode_l_t" type="number" inputmode="decimal" oninput="calcSodeKW()"> mm</td>
+        <td><input id="sode_l_c" type="number" inputmode="decimal" oninput="calcSodeKW()"> mm</td>
+        <td><input id="sode_l_b" type="number" inputmode="decimal" oninput="calcSodeKW()"> mm</td>
+      </tr>
+      <tr>
+        <td class="row-label">開口<br><span style="font-size:10px;color:#999">中央</span></td>
+        <td><input id="sode_k_t" type="number" inputmode="decimal" oninput="calcSodeKW()"> mm</td>
+        <td><input id="sode_k_c" type="number" inputmode="decimal" oninput="calcSodeKW()"> mm</td>
+        <td><input id="sode_k_b" type="number" inputmode="decimal" oninput="calcSodeKW()"> mm</td>
+      </tr>
+      <tr>
+        <td class="row-label">右袖<br><span style="font-size:10px;color:#999">右側</span></td>
+        <td><input id="sode_r_t" type="number" inputmode="decimal" oninput="calcSodeKW()"> mm</td>
+        <td><input id="sode_r_c" type="number" inputmode="decimal" oninput="calcSodeKW()"> mm</td>
+        <td><input id="sode_r_b" type="number" inputmode="decimal" oninput="calcSodeKW()"> mm</td>
+      </tr>
+    </table>
+    <div class="measure-note">※ 左袖＋開口＋右袖 が各方向の KW になります</div>
+  </div>
+
+  <!-- 袖採寸フィールド（片袖・親子） -->
+  <div id="sode-parts-single" style="display:none; margin-bottom:20px; padding:12px; background:#f0f9ff; border-radius:6px;">
+    <div class="sec-header"><span>袖採寸（幅方向）</span></div>
+    <table class="measure-table" style="width:100%;">
+      <tr><th></th><th>上</th><th>中</th><th>下</th></tr>
+      <tr>
+        <td class="row-label">袖<br><span style="font-size:10px;color:#999">袖側</span></td>
+        <td><input id="sode_s_t" type="number" inputmode="decimal" oninput="calcSodeKW()"> mm</td>
+        <td><input id="sode_s_c" type="number" inputmode="decimal" oninput="calcSodeKW()"> mm</td>
+        <td><input id="sode_s_b" type="number" inputmode="decimal" oninput="calcSodeKW()"> mm</td>
+      </tr>
+      <tr>
+        <td class="row-label">開口<br><span style="font-size:10px;color:#999">ドア側</span></td>
+        <td><input id="sode_d_t" type="number" inputmode="decimal" oninput="calcSodeKW()"> mm</td>
+        <td><input id="sode_d_c" type="number" inputmode="decimal" oninput="calcSodeKW()"> mm</td>
+        <td><input id="sode_d_b" type="number" inputmode="decimal" oninput="calcSodeKW()"> mm</td>
+      </tr>
+    </table>
+    <div class="measure-note">※ 袖＋開口 が各方向の KW になります</div>
   </div>
 
   <!-- KW / KH テーブル -->
@@ -827,9 +897,9 @@ function selectChip(el) {
   document.querySelectorAll(`.chip[data-group="${group}"]`).forEach(c => c.classList.remove('selected'));
   if (wasSelected) delete chipState[group];
   else { el.classList.add('selected'); chipState[group] = el.dataset.val; }
-  if (group === 'katachi') { updateKouchiVisibility(); updateChildDoorVisibility(); updateDoorDesignRules(); }
+  if (group === 'katachi') { updateKouchiVisibility(); updateChildDoorVisibility(); updateDoorDesignRules(); updatePartsSectionsVisibility(); }
   if (group === 'backFloor') setVal('back-floor', chipState[group]==='floor'?'フロア納まり':chipState[group]==='doma'?'土間納まり':'');
-  if (group === 'ranmaS') updateSlidingCombinationRules(true);
+  if (group === 'ranma' || group === 'ranmaS') { updatePartsSectionsVisibility(); updateSlidingCombinationRules(true); }
 }
 
 function updateKouchiVisibility() {
@@ -865,6 +935,93 @@ function syncKWmin() {
   }
   checkWarn('kw', ['kw_t','kw_c','kw_b']);
   recalc();
+}
+
+// ======= 部分採寸セクション表示制御 =======
+function updatePartsSectionsVisibility() {
+  // ランマセクション（ドア・引戸のランマ付き）
+  const doorRanma = chipState['ranma'] === 'yes';
+  const slidingRanma = chipState['ranmaS'] === 'yes';
+  document.getElementById('ranma-parts').style.display = (doorRanma || slidingRanma) ? '' : 'none';
+
+  // 袖セクション
+  const katachi = chipState['katachi'];
+  const ryosode = katachi === 'ryosode';
+  const sode = katachi === 'sode' || katachi === 'sode_oyako';
+  
+  document.getElementById('sode-parts-ryosode').style.display = ryosode ? '' : 'none';
+  document.getElementById('sode-parts-single').style.display = sode ? '' : 'none';
+}
+
+// ======= ランマ採寸計算 =======
+function calcRanmaKH() {
+  const t_l = parseFloat(val('ranma_t_l'));
+  const b_l = parseFloat(val('ranma_b_l'));
+  const t_c = parseFloat(val('ranma_t_c'));
+  const b_c = parseFloat(val('ranma_b_c'));
+  const t_r = parseFloat(val('ranma_t_r'));
+  const b_r = parseFloat(val('ranma_b_r'));
+  
+  // 各方向を計算して KH の3点フィールドに代入
+  if (!isNaN(t_l) && !isNaN(b_l)) {
+    document.getElementById('kh_l').value = t_l + b_l;
+  }
+  if (!isNaN(t_c) && !isNaN(b_c)) {
+    document.getElementById('kh_c').value = t_c + b_c;
+  }
+  if (!isNaN(t_r) && !isNaN(b_r)) {
+    document.getElementById('kh_r').value = t_r + b_r;
+  }
+  
+  syncKHmin();
+}
+
+// ======= 袖採寸計算 =======
+function calcSodeKW() {
+  const katachi = chipState['katachi'];
+  
+  if (katachi === 'ryosode') {
+    // 両袖：左袖 + 開口 + 右袖
+    const l_t = parseFloat(val('sode_l_t'));
+    const k_t = parseFloat(val('sode_k_t'));
+    const r_t = parseFloat(val('sode_r_t'));
+    const l_c = parseFloat(val('sode_l_c'));
+    const k_c = parseFloat(val('sode_k_c'));
+    const r_c = parseFloat(val('sode_r_c'));
+    const l_b = parseFloat(val('sode_l_b'));
+    const k_b = parseFloat(val('sode_k_b'));
+    const r_b = parseFloat(val('sode_r_b'));
+    
+    if (!isNaN(l_t) && !isNaN(k_t) && !isNaN(r_t)) {
+      document.getElementById('kw_t').value = l_t + k_t + r_t;
+    }
+    if (!isNaN(l_c) && !isNaN(k_c) && !isNaN(r_c)) {
+      document.getElementById('kw_c').value = l_c + k_c + r_c;
+    }
+    if (!isNaN(l_b) && !isNaN(k_b) && !isNaN(r_b)) {
+      document.getElementById('kw_b').value = l_b + k_b + r_b;
+    }
+  } else if (katachi === 'sode' || katachi === 'sode_oyako') {
+    // 片袖 / 袖付き親子：袖 + 開口
+    const s_t = parseFloat(val('sode_s_t'));
+    const d_t = parseFloat(val('sode_d_t'));
+    const s_c = parseFloat(val('sode_s_c'));
+    const d_c = parseFloat(val('sode_d_c'));
+    const s_b = parseFloat(val('sode_s_b'));
+    const d_b = parseFloat(val('sode_d_b'));
+    
+    if (!isNaN(s_t) && !isNaN(d_t)) {
+      document.getElementById('kw_t').value = s_t + d_t;
+    }
+    if (!isNaN(s_c) && !isNaN(d_c)) {
+      document.getElementById('kw_c').value = s_c + d_c;
+    }
+    if (!isNaN(s_b) && !isNaN(d_b)) {
+      document.getElementById('kw_b').value = s_b + d_b;
+    }
+  }
+  
+  syncKWmin();
 }
 
 function checkWarn(key, ids) {
