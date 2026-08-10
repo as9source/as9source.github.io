@@ -14,10 +14,44 @@
     ========================================
     躯体採寸システム
     ========================================
-    バージョン: 1.45.1
+    バージョン: 1.50.0
     最終更新: 2026-08-09
     
     [更新履歴]
+    v1.50.0 (2026-08-10) - 斜めコーナーの躯体芯計算を角度対応
+    - 90度以外の控除を「躯体幅÷2÷sin角度」で算出
+    - 斜め辺は現場入力した芯寸法をそのまま使用
+    - 結果の計算式に角度とsin計算を明記
+
+    v1.49.0 (2026-08-10) - 高さ差の引っ張り線と斜め角度表示を改善
+    - 段差・堀込の線を寸法線と同じ二重描画で明瞭化
+    - 角度が90度でないコーナーを結果図へ表示
+    - 文字枠と引っ張り線の交差・重なり・近接を共通判定
+
+    v1.48.1 (2026-08-10) - マニュアルを現場操作中心に再編
+    - 図形の見た目を説明する不要な括弧書きを削除
+    - 部品配置、寸法入力、修正、結果確認の手順に整理
+
+    v1.48.0 (2026-08-10) - 段差・堀込の結果表示と必須判定を修正
+    - 低い側を起点にした引っ張り線へ統一
+    - 「段差▽-寸法mm」「堀込▽-寸法mm」の1表示に集約
+    - 堀込で不要な壁幅を求める必須判定を解消
+
+    v1.47.0 (2026-08-10) - 作図画面の情報ブロックを直接操作可能に変更
+    - 辺ブロックと低さ表示をドラッグ移動可能に変更
+    - 辺ブロックのクリックから寸法を直接入力可能
+    - 手動位置を現場保存データへ保持
+
+    v1.46.0 (2026-08-10) - 低い側のレベル差表示と辺名の可読性を改善
+    - 高低矢印を使わず、低い側だけに「▽ -寸法」を表示
+    - 辺名を壁・柱・接続部より後に描画するよう変更
+    - 壁・柱と重なる辺名を空いている位置へ自動退避
+
+    v1.45.2 (2026-08-10) - コーナー壁の重なり描画を修正
+    - コーナー壁で躯体二重線を消さないよう変更
+    - 白い塗りを廃止し、背景グリッドを保持
+    - 途中壁は従来どおり中央の不要線を消去
+
     v1.45.1 (2026-08-10) - パターン選択画面を目次デザインへ統一
     - パターン・操作ボタンの配置は維持
     - 青い全面背景、タイトルパネル、白いカードの質感を目次に合わせて調整
@@ -1848,7 +1882,7 @@
             </section>
 
             <footer class="home-footer">
-                <span>躯体採寸システム v1.45.1</span>
+                <span>躯体採寸システム v1.50.0</span>
                 <span>最終更新 2026-08-09</span>
             </footer>
         </div>
@@ -2008,77 +2042,38 @@
             
             <h1>📱 躯体採寸システム 使い方マニュアル</h1>
             
-            <h2>🎯 このシステムについて</h2>
-            <p><strong>取付け前の現地調査で、既存躯体を採寸・記録するためのシステムです。</strong></p>
-            <p>商品の選定や製品寸法の計算は行いません。現場の躯体形状、外法寸法、躯体幅、高さ、壁、柱、段差、T字を調査記録として残します。</p>
-            
-            <h2>📝 基本的な流れ</h2>
+            <h2>📝 採寸手順</h2>
             <ol>
-                <li><strong>パターンを選ぶ</strong> - I字、L字、コの字、または自由作図</li>
-                <li><strong>寸法を入力する</strong> - 外法寸法、躯体幅、躯体高さ</li>
-                <li><strong>採寸結果を確認する</strong> - 実測値と幾何的に算出した躯体芯寸法を確認する</li>
-                <li><strong>保存・共有する</strong> - PDF、画像、またはLINEなどで共有</li>
+                <li>現場の形に合うパターンを選びます</li>
+                <li>図の辺やコーナーを選択し、壁、柱、段差、T字、堀込を配置します</li>
+                <li><strong>配置を確定して寸法入力へ</strong>を押します</li>
+                <li>現場名、色、躯体幅、躯体高さ、各辺の実測寸法を入力します</li>
+                <li>採寸結果を確認し、現場保存、PDF保存、画像保存、共有を行います</li>
             </ol>
 
-            <h3>躯体高さの確認値</h3>
-            <p>躯体高さが1100mm以下の場合は、<strong>1100 - 20 - 躯体高さ</strong>と<strong>1100 - 30 - 躯体高さ</strong>を採寸結果に表示します。</p>
-            
-            <h2>📐 端部形状について（重要）</h2>
-            <p>躯体芯寸法の算出は、端部の実際の形状によって変わります。図面上の形状と現場の状態が一致していることを確認してください。</p>
-            
-            <h3>コーナー（二重線同士の接続）</h3>
+            <h2>📐 図面の編集</h2>
             <ul>
-                <li>2つの辺が接続する角</li>
-                <li><strong>両側の辺の幅の半分ずつを引く</strong></li>
-            </ul>
-            
-            <h3>エンド（コの字型）</h3>
-            <ul>
-                <li>辺の端点（壁なし）</li>
-                <li><strong>隣接する辺の幅を引かない</strong></li>
-            </ul>
-            
-            <h3>壁（直交線＋斜線）</h3>
-            <ul>
-                <li>壁や段差に接する点</li>
-                <li><strong>壁面までの実測値とし、躯体幅は引かない</strong></li>
+                <li>辺を選択すると、柱、壁、堀込、T字を配置できます</li>
+                <li>コーナーを選択すると、段差、柱、コーナー壁を配置できます</li>
+                <li>配置済みの部品を選択すると、寸法変更または削除ができます</li>
+                <li>配置を間違えたときは<strong>↶ 直前の部品配置を戻す</strong>を押します</li>
             </ul>
 
-            <h3>T字接続</h3>
+            <h2>📊 入力と結果</h2>
             <ul>
-                <li>本体の外側線は連続し、内側線は枝幅の部分だけ途切れる</li>
-                <li>枝側の二本線は本体内側線から開始する</li>
-                <li><strong>接続する躯体幅の半分を引く</strong></li>
+                <li>壁の寸法入力は不要です</li>
+                <li>柱は柱幅と柱奥行を入力します</li>
+                <li>段差と堀込は高さ差を入力します</li>
+                <li>斜め辺は現地で測定した芯寸法を入力します</li>
+                <li>90度でないコーナーは、躯体幅と入力角度から芯位置までの控除量を計算します</li>
+                <li>躯体高さが1100mm以下のときは、1100 - 20と1100 - 30の確認値を表示します</li>
+                <li>辺名ブロックを選択すると、その辺の寸法を入力できます</li>
+                <li>辺名ブロックと結果の情報箱はドラッグで移動できます</li>
+                <li>情報箱をダブルクリックまたはダブルタップすると自動配置に戻ります</li>
             </ul>
 
-            <h3>部品を間違えて配置した場合</h3>
-            <ul>
-                <li>図の下にある<strong>「↶ 直前の部品配置を戻す」</strong>を押してください</li>
-                <li>壁・柱・T字・段差・端部変更を直前から順に戻せます</li>
-                <li>配置済みの柱・壁・T字を図上で選択すると、変更・削除メニューが開きます</li>
-            </ul>
-
-            <h3>柱を配置した場合</h3>
-            <ul>
-                <li>柱幅と柱奥行を入力します</li>
-                <li>採寸結果には、柱面までの内法に柱幅の半分を加えた<strong>「柱芯まで」</strong>を表示します</li>
-            </ul>
-
-            <h3>採寸結果の文字が重なる場合</h3>
-            <ul>
-                <li>自動配置では情報箱に加え、引っ張り線同士の交差・重なり・近接も避けて配置します</li>
-                <li>平面図上の寸法の情報箱をマウスまたは指でドラッグしてください</li>
-                <li>引っ張り線は移動先へ自動で追従します</li>
-                <li>情報箱をダブルクリック／ダブルタップすると自動配置へ戻ります</li>
-            </ul>
-            
-            <h2>⚠️ よくある質問</h2>
-            
-            <h3>Q1: 端部の形状を変更したい</h3>
-            <p><strong>A:</strong> 図面上の辺・端部・コーナーを選択し、表示されたポップアップから変更してください。</p>
-            
-            <h3>Q2: 採寸結果が表示されない</h3>
-            <p><strong>A:</strong> 外法寸法、躯体幅、躯体高さがすべて入力されているか確認してください。</p>
+            <h2>⚠️ 結果が表示されないとき</h2>
+            <p>赤い案内に表示された項目を入力してください。堀込や段差を配置したときは、それぞれの高さ差も確認してください。</p>
             
             <hr style="margin: 30px 0; border: none; border-top: 2px solid #e5e7eb;">
             
@@ -2112,6 +2107,10 @@
         let resultLabelOffsets = {}; // 採寸結果の引っ張り表示の手動位置
         let resultLabelHitRegions = []; // 結果キャンバス上のドラッグ判定領域
         let resultLabelDrag = null;
+        let diagramLabelOffsets = {}; // 作図画面の辺名・低さ表示の手動位置
+        let diagramLabelHitRegions = []; // 作図画面の情報ブロック判定領域
+        let diagramLabelDrag = null;
+        let suppressDiagramClickUntil = 0;
         let isAfterCut = false;  // 縁切り直後フラグ（v1.17.2）
 
         function cloneComponentState() {
@@ -2281,6 +2280,7 @@
             pillars = [];
             wallFeatures = [];
             resultLabelOffsets = {};
+            diagramLabelOffsets = {};
             layoutConfirmed = false;
             componentHistory = [];
             updateComponentUndoButton();
@@ -2472,12 +2472,91 @@
             startPoint = null;
         }
 
+        function getMainCanvasPointer(event) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: (event.clientX - rect.left) * (canvas.width / Math.max(rect.width, 1)),
+                y: (event.clientY - rect.top) * (canvas.height / Math.max(rect.height, 1))
+            };
+        }
+
+        function findDiagramLabelRegion(x, y) {
+            for (let index = diagramLabelHitRegions.length - 1; index >= 0; index--) {
+                const region = diagramLabelHitRegions[index];
+                if (x >= region.rect.left && x <= region.rect.right &&
+                    y >= region.rect.top && y <= region.rect.bottom) return region;
+            }
+            return null;
+        }
+
+        function setupDiagramLabelDragging() {
+            if (canvas.dataset.diagramLabelDragReady === 'true') return;
+            canvas.dataset.diagramLabelDragReady = 'true';
+
+            canvas.addEventListener('pointerdown', event => {
+                if (drawingPoints.length > 0 || isDrawing) return;
+                const point = getMainCanvasPointer(event);
+                const region = findDiagramLabelRegion(point.x, point.y);
+                if (!region) return;
+                event.preventDefault();
+                event.stopPropagation();
+                diagramLabelDrag = {
+                    key: region.key,
+                    type: region.type,
+                    lineId: region.lineId || null,
+                    offsetX: point.x - region.x,
+                    offsetY: point.y - region.y,
+                    startX: point.x,
+                    startY: point.y,
+                    moved: false,
+                    pointerId: event.pointerId
+                };
+                if (canvas.setPointerCapture) canvas.setPointerCapture(event.pointerId);
+                canvas.style.cursor = 'grabbing';
+            });
+
+            canvas.addEventListener('pointermove', event => {
+                const point = getMainCanvasPointer(event);
+                if (!diagramLabelDrag) {
+                    canvas.style.cursor = findDiagramLabelRegion(point.x, point.y) ? 'grab' : 'pointer';
+                    return;
+                }
+                if (event.pointerId !== diagramLabelDrag.pointerId) return;
+                event.preventDefault();
+                if (Math.hypot(point.x - diagramLabelDrag.startX, point.y - diagramLabelDrag.startY) > 3) {
+                    diagramLabelDrag.moved = true;
+                }
+                diagramLabelOffsets[diagramLabelDrag.key] = {
+                    x: point.x - diagramLabelDrag.offsetX,
+                    y: point.y - diagramLabelDrag.offsetY
+                };
+                drawLines();
+            });
+
+            const finishDiagramLabelDrag = event => {
+                if (!diagramLabelDrag || event.pointerId !== diagramLabelDrag.pointerId) return;
+                const completed = diagramLabelDrag;
+                diagramLabelDrag = null;
+                suppressDiagramClickUntil = Date.now() + 350;
+                if (canvas.releasePointerCapture && canvas.hasPointerCapture?.(event.pointerId)) {
+                    canvas.releasePointerCapture(event.pointerId);
+                }
+                canvas.style.cursor = 'grab';
+                if (!completed.moved && completed.type === 'line' && completed.lineId) {
+                    editLineDimensionFromDiagram(completed.lineId);
+                }
+            };
+            canvas.addEventListener('pointerup', finishDiagramLabelDrag);
+            canvas.addEventListener('pointercancel', finishDiagramLabelDrag);
+        }
+
         function setupPointClickListener() {
             resetCanvasInteractionHandlers();
             canvas.removeEventListener('click', handlePointClick);
             canvas.removeEventListener('touchend', handlePointClickTouch);
             canvas.addEventListener('click', handlePointClick);
             canvas.addEventListener('touchend', handlePointClickTouch);
+            setupDiagramLabelDragging();
             canvas.style.cursor = 'pointer';
             const badge = document.getElementById('interaction-mode-badge');
             if (badge) {
@@ -2489,6 +2568,7 @@
         }
         
         function handlePointClickTouch(e) {
+            if (Date.now() < suppressDiagramClickUntil) return;
             if (isDrawing || isDragging) return;
             if (drawingPoints.length > 0) return;
             
@@ -2870,9 +2950,8 @@
                 const highNormal = { x: -highDir.y, y: highDir.x };
 
                 targetCtx.save();
-                // 先に通常の二重線を局所的に消し、承認図の段差形状で描き直す。
-                targetCtx.fillStyle = '#ffffff';
-                targetCtx.fillRect(c.x - local, c.y - local, local * 2, local * 2);
+                // 通常の二重線だけを消す。白塗りはせず、背景グリッドを残す。
+                targetCtx.clearRect(c.x - local, c.y - local, local * 2, local * 2);
                 targetCtx.strokeStyle = '#1f2937';
                 targetCtx.lineWidth = 2;
                 targetCtx.lineCap = 'butt';
@@ -2909,6 +2988,195 @@
             });
         }
 
+        // 高い側は基準高さとして無表示にし、低い側だけへレベル差を記す。
+        function drawLowLevelNotes(targetCtx, transformPoint, occupiedRects = [], layoutApi = null) {
+            const notes = [];
+            const addLineNote = (line, ref, value, key, label, distance = 48) => {
+                if (!line || !ref || !(Number(value) > 0)) return;
+                const data = endpointScreenData(line, ref, transformPoint);
+                const normalX = -data.uy;
+                const normalY = data.ux;
+                notes.push({
+                    key,
+                    text: `${label}▽-${Math.floor(Number(value))}mm`,
+                    anchor: {
+                        x: data.corner.x + data.ux * distance,
+                        y: data.corner.y + data.uy * distance
+                    },
+                    normalX,
+                    normalY,
+                    dirX: data.ux,
+                    dirY: data.uy,
+                    planWidth: data.half * 2
+                });
+            };
+
+            Object.values(corners || {}).forEach(corner => {
+                if (!corner?.hasStep || !(Number(corner.depth) > 0)) return;
+                if (corner.lines?.length === 2) {
+                    const lowRef = corner.lines.find(ref => ref.lineId === corner.lowerLineId) ||
+                        corner.lines.find(ref => ref.lineId !== corner.highLineId) || corner.lines[1];
+                    const key = `level:step:${corner.lines.map(ref => ref.lineId).sort().join('|')}`;
+                    addLineNote(lines.find(line => line.id === lowRef?.lineId), lowRef, corner.depth, key, '段差');
+                } else if (corner.lines?.length === 3) {
+                    const parts = getTeeParts(corner);
+                    const key = `level:step:${corner.lines.map(ref => ref.lineId).sort().join('|')}`;
+                    if (parts?.branch) addLineNote(parts.branch.line, parts.branch.ref, corner.depth, key, '段差', 44);
+                }
+            });
+
+            wallFeatures.filter(feature => feature.featureType === 'recess' && Number(feature.height) > 0).forEach(feature => {
+                const recess = lines.find(line => line.id === feature.recessLineId);
+                if (!recess) return;
+                const p1 = transformPoint(recess.x1, recess.y1);
+                const p2 = transformPoint(recess.x2, recess.y2);
+                const dx = p2.x - p1.x;
+                const dy = p2.y - p1.y;
+                const length = Math.max(1, Math.hypot(dx, dy));
+                notes.push({
+                    key: `level:recess:${feature.id}`,
+                    text: `堀込▽-${Math.floor(Number(feature.height))}mm`,
+                    anchor: { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 },
+                    normalX: -dy / length,
+                    normalY: dx / length,
+                    dirX: dx / length,
+                    dirY: dy / length,
+                    planWidth: getLinePlanWidth(recess)
+                });
+            });
+
+            const overlaps = (a, b, gap = 5) => !(
+                a.right + gap <= b.left || a.left >= b.right + gap ||
+                a.bottom + gap <= b.top || a.top >= b.bottom + gap
+            );
+            const placed = [...occupiedRects];
+            notes.forEach(note => {
+                targetCtx.save();
+                targetCtx.font = 'bold 12px sans-serif';
+                const width = targetCtx.measureText(note.text).width + 14;
+                const height = 24;
+                const base = note.planWidth / 2 + 21;
+                const candidates = [
+                    [note.normalX * base, note.normalY * base],
+                    [-note.normalX * base, -note.normalY * base],
+                    [note.normalX * (base + 27), note.normalY * (base + 27)],
+                    [-note.normalX * (base + 27), -note.normalY * (base + 27)]
+                ];
+                let chosen = layoutApi?.chooseLabelPosition
+                    ? layoutApi.chooseLabelPosition(
+                        note.anchor.x,
+                        note.anchor.y,
+                        note.dirX,
+                        note.dirY,
+                        note.normalX,
+                        note.normalY,
+                        width,
+                        height
+                    )
+                    : null;
+                if (!layoutApi?.chooseLabelPosition) {
+                    for (const [offsetX, offsetY] of candidates) {
+                        const x = Math.max(width / 2 + 6, Math.min((targetCtx.canvas?.width || 800) - width / 2 - 6, note.anchor.x + offsetX));
+                        const y = Math.max(height / 2 + 6, Math.min((targetCtx.canvas?.height || 600) - height / 2 - 6, note.anchor.y + offsetY));
+                        const rect = { left: x - width / 2, right: x + width / 2, top: y - height / 2, bottom: y + height / 2 };
+                        if (!placed.some(other => overlaps(rect, other))) {
+                            chosen = { x, y, rect };
+                            break;
+                        }
+                        chosen ||= { x, y, rect };
+                    }
+                }
+                const savedOffsets = targetCtx === ctx ? diagramLabelOffsets : resultLabelOffsets;
+                if (note.key && savedOffsets[note.key]) {
+                    const saved = savedOffsets[note.key];
+                    const x = Math.max(width / 2 + 6, Math.min((targetCtx.canvas?.width || 800) - width / 2 - 6, saved.x));
+                    const y = Math.max(height / 2 + 6, Math.min((targetCtx.canvas?.height || 600) - height / 2 - 6, saved.y));
+                    chosen = {
+                        x,
+                        y,
+                        rect: { left: x - width / 2, right: x + width / 2, top: y - height / 2, bottom: y + height / 2 }
+                    };
+                    savedOffsets[note.key] = { x, y };
+                }
+                if (chosen) {
+                    placed.push(chosen.rect);
+                    if (layoutApi?.placedLabelRects && !layoutApi.placedLabelRects.includes(chosen.rect)) {
+                        layoutApi.placedLabelRects.push(chosen.rect);
+                    }
+                    if (targetCtx === ctx && note.key) {
+                        diagramLabelHitRegions.push({
+                            key: note.key,
+                            type: 'level',
+                            x: chosen.x,
+                            y: chosen.y,
+                            rect: chosen.rect
+                        });
+                    } else if (note.key) {
+                        resultLabelHitRegions.push({
+                            key: note.key,
+                            x: chosen.x,
+                            y: chosen.y,
+                            width,
+                            height,
+                            rect: chosen.rect
+                        });
+                    }
+                    const dx = chosen.x - note.anchor.x;
+                    const dy = chosen.y - note.anchor.y;
+                    const safeDx = Math.abs(dx) < 0.001 ? (dx < 0 ? -0.001 : 0.001) : dx;
+                    const safeDy = Math.abs(dy) < 0.001 ? (dy < 0 ? -0.001 : 0.001) : dy;
+                    const tx = Math.abs(dx) > 0.001
+                        ? ((dx > 0 ? chosen.rect.left : chosen.rect.right) - note.anchor.x) / safeDx
+                        : Infinity;
+                    const ty = Math.abs(dy) > 0.001
+                        ? ((dy > 0 ? chosen.rect.top : chosen.rect.bottom) - note.anchor.y) / safeDy
+                        : Infinity;
+                    const edgeT = Math.max(0, Math.min(tx, ty, 1));
+                    const lineEnd = {
+                        x: note.anchor.x + dx * edgeT,
+                        y: note.anchor.y + dy * edgeT
+                    };
+                    // 引っ張り線は必ず低い側の躯体線から始め、文字枠の縁で止める。
+                    // 寸法の引っ張り線と同様に白い下地を入れ、図形と重なっても消えないようにする。
+                    targetCtx.strokeStyle = 'rgba(255,255,255,0.96)';
+                    targetCtx.lineWidth = 3.8;
+                    targetCtx.setLineDash([]);
+                    targetCtx.beginPath();
+                    targetCtx.moveTo(note.anchor.x, note.anchor.y);
+                    targetCtx.lineTo(lineEnd.x, lineEnd.y);
+                    targetCtx.stroke();
+                    targetCtx.strokeStyle = '#dc2626';
+                    targetCtx.lineWidth = 1.3;
+                    targetCtx.setLineDash([4, 3]);
+                    targetCtx.beginPath();
+                    targetCtx.moveTo(note.anchor.x, note.anchor.y);
+                    targetCtx.lineTo(lineEnd.x, lineEnd.y);
+                    targetCtx.stroke();
+                    targetCtx.setLineDash([]);
+                    if (layoutApi?.placedLeaderSegments) {
+                        layoutApi.placedLeaderSegments.push({
+                            key: note.key,
+                            x1: note.anchor.x,
+                            y1: note.anchor.y,
+                            x2: chosen.x,
+                            y2: chosen.y,
+                            rect: chosen.rect
+                        });
+                    }
+                    targetCtx.fillStyle = 'rgba(255,247,247,.97)';
+                    targetCtx.strokeStyle = '#f87171';
+                    targetCtx.lineWidth = 1.2;
+                    targetCtx.fillRect(chosen.rect.left, chosen.rect.top, width, height);
+                    targetCtx.strokeRect(chosen.rect.left, chosen.rect.top, width, height);
+                    targetCtx.fillStyle = '#b91c1c';
+                    targetCtx.textAlign = 'center';
+                    targetCtx.textBaseline = 'middle';
+                    targetCtx.fillText(note.text, chosen.x, chosen.y);
+                }
+                targetCtx.restore();
+            });
+        }
+
         function drawHatchedRect(targetCtx, cx, cy, width, depth, angle, label = '') {
             targetCtx.save();
             targetCtx.translate(cx, cy);
@@ -2937,21 +3205,25 @@
             }
         }
 
-        function drawInlineWall(targetCtx, cx, cy, alongWidth, planDepth, angle) {
-            // 壁の中央に分割前の躯体線を残さないよう、背後を完全に消去する。
-            targetCtx.save();
-            targetCtx.translate(cx, cy);
-            targetCtx.rotate(angle);
-            targetCtx.clearRect(-alongWidth / 2, -planDepth / 2 - 14, alongWidth, planDepth + 28);
-            targetCtx.restore();
+        function drawInlineWall(targetCtx, cx, cy, alongWidth, planDepth, angle, preserveBackground = false) {
+            // 途中壁だけは中央の不要線を消す。コーナー壁では躯体二重線とグリッドを保持する。
+            if (!preserveBackground) {
+                targetCtx.save();
+                targetCtx.translate(cx, cy);
+                targetCtx.rotate(angle);
+                targetCtx.clearRect(-alongWidth / 2, -planDepth / 2 - 14, alongWidth, planDepth + 28);
+                targetCtx.restore();
+            }
 
             targetCtx.save();
             targetCtx.translate(cx, cy);
             targetCtx.rotate(angle);
-            targetCtx.fillStyle = '#f8fafc';
             targetCtx.strokeStyle = '#334155';
             targetCtx.lineWidth = 1.5;
-            targetCtx.fillRect(-alongWidth / 2, -planDepth / 2, alongWidth, planDepth);
+            if (!preserveBackground) {
+                targetCtx.fillStyle = '#f8fafc';
+                targetCtx.fillRect(-alongWidth / 2, -planDepth / 2, alongWidth, planDepth);
+            }
             targetCtx.strokeRect(-alongWidth / 2, -planDepth / 2, alongWidth, planDepth);
             targetCtx.beginPath();
             targetCtx.rect(-alongWidth / 2, -planDepth / 2, alongWidth, planDepth);
@@ -3003,8 +3275,7 @@
 
             targetCtx.save();
             makePath();
-            targetCtx.fillStyle = '#f8fafc';
-            targetCtx.fill();
+            // 背景を塗らず、躯体二重線とグリッドの上へ斜線だけを重ねる。
             targetCtx.clip();
             targetCtx.strokeStyle = '#64748b';
             targetCtx.lineWidth = 1;
@@ -3072,7 +3343,8 @@
                     wallCenter.y,
                     totalLength,
                     wall.half * 2,
-                    Math.atan2(wall.direction.y, wall.direction.x)
+                    Math.atan2(wall.direction.y, wall.direction.x),
+                    true
                 );
             });
         }
@@ -3231,7 +3503,7 @@
                 if (wall.featureType === 'recess') {
                     drawInlineRecess(targetCtx, point.x, point.y, alongWidth, planDepth, wall.angle ?? angle);
                 } else {
-                    drawInlineWall(targetCtx, point.x, point.y, alongWidth, planDepth, wall.angle ?? angle);
+                    drawInlineWall(targetCtx, point.x, point.y, alongWidth, planDepth, wall.angle ?? angle, wall.kind !== 'middle');
                 }
             });
         }
@@ -3288,6 +3560,7 @@
         function drawLines() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             displayFeatureGeometry = new Map();
+            diagramLabelHitRegions = [];
             normalizeInlineWallGaps();
             
             detectCorners();
@@ -3343,6 +3616,8 @@
             ctx.lineCap = 'round';
 
             const mainLabelRects = [];
+            const mainLabelForbiddenRects = [];
+            const mainLabelRequests = [];
             const labelOverlaps = (a, b, gap = 5) => !(
                 a.right + gap <= b.left || a.left >= b.right + gap ||
                 a.bottom + gap <= b.top || a.top >= b.bottom + gap
@@ -3357,8 +3632,8 @@
                 const ny = ux;
                 const base = planWidth / 2 + 18;
                 const sides = index % 2 === 0 ? [-1, 1] : [1, -1];
-                const distances = [base, base + 23, base + 46, base + 72];
-                const shifts = [0, -36, 36, -72, 72];
+                const distances = [base, base + 23, base + 46, base + 72, base + 108, base + 146];
+                const shifts = [0, -36, 36, -72, 72, -110, 110, -156, 156];
                 let fallback = null;
                 for (const distance of distances) {
                     for (const shift of shifts) {
@@ -3369,7 +3644,9 @@
                             const y = Math.max(edge + height / 2, Math.min(canvas.height - edge - height / 2,
                                 midY + ny * distance * side + uy * shift));
                             const rect = { left: x - width / 2, right: x + width / 2, top: y - height / 2, bottom: y + height / 2 };
-                            if (!mainLabelRects.some(placed => labelOverlaps(rect, placed))) return { x, y, rect };
+                            if (![...mainLabelRects, ...mainLabelForbiddenRects].some(placed => labelOverlaps(rect, placed))) {
+                                return { x, y, rect };
+                            }
                             fallback ||= { x, y, rect };
                         }
                     }
@@ -3398,6 +3675,27 @@
                 const midX = (p1.x + p2.x) / 2;
                 const midY = (p1.y + p2.y) / 2;
                 
+                mainLabelRequests.push({ line, index, p1, p2, midX, midY, planWidth });
+            });
+
+            drawApprovedCornerJoins(ctx, transform);
+            drawTJunctions(ctx, transform);
+            drawSteppedJunctions(ctx, transform);
+            drawCornerEndpointWalls(ctx, transform);
+            lines.forEach(line => drawWallsOnLine(ctx, line, transform));
+            lines.forEach(line => drawPillarsOnLine(ctx, line, transform));
+
+            // 壁・柱の実際の占有範囲を避け、辺名を全部品より後に最前面へ描く。
+            displayFeatureGeometry.forEach(feature => {
+                const padding = 12;
+                mainLabelForbiddenRects.push({
+                    left: feature.x - feature.width / 2 - padding,
+                    right: feature.x + feature.width / 2 + padding,
+                    top: feature.y - feature.depth / 2 - padding,
+                    bottom: feature.y + feature.depth / 2 + padding
+                });
+            });
+            mainLabelRequests.forEach(({ line, index, p1, p2, midX, midY, planWidth }) => {
                 const dim = dimensions[line.id];
                 const dimensionText = dim?.length ? `${dim.length}mm` : '';
                 ctx.font = 'bold 14px sans-serif';
@@ -3407,33 +3705,47 @@
                 const dimensionWidth = dimensionText ? ctx.measureText(dimensionText).width : 0;
                 const bgWidth = Math.max(nameWidth, dimensionWidth) + paddingX * 2;
                 const bgHeight = dimensionText ? 39 : 25;
-                const label = chooseMainLabelPosition(midX, midY, p1, p2, bgWidth, bgHeight, planWidth, index);
-                if (label) {
-                    mainLabelRects.push(label.rect);
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.97)';
-                    ctx.fillRect(label.rect.left, label.rect.top, bgWidth, bgHeight);
-                    ctx.strokeStyle = '#cbd5e1';
-                    ctx.lineWidth = 1;
-                    ctx.strokeRect(label.rect.left, label.rect.top, bgWidth, bgHeight);
-                    ctx.fillStyle = '#1f2937';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.font = 'bold 14px sans-serif';
-                    ctx.fillText(line.name, label.x, dimensionText ? label.y - 8 : label.y);
-                    if (dimensionText) {
-                        ctx.font = '12px sans-serif';
-                        ctx.fillStyle = '#475569';
-                        ctx.fillText(dimensionText, label.x, label.y + 9);
-                    }
+                const labelKey = `line:${line.id}`;
+                let label = chooseMainLabelPosition(midX, midY, p1, p2, bgWidth, bgHeight, planWidth, index);
+                const saved = diagramLabelOffsets[labelKey];
+                if (saved) {
+                    const edge = 8;
+                    const x = Math.max(edge + bgWidth / 2, Math.min(canvas.width - edge - bgWidth / 2, saved.x));
+                    const y = Math.max(edge + bgHeight / 2, Math.min(canvas.height - edge - bgHeight / 2, saved.y));
+                    label = {
+                        x,
+                        y,
+                        rect: { left: x - bgWidth / 2, right: x + bgWidth / 2, top: y - bgHeight / 2, bottom: y + bgHeight / 2 }
+                    };
+                    diagramLabelOffsets[labelKey] = { x, y };
+                }
+                if (!label) return;
+                mainLabelRects.push(label.rect);
+                diagramLabelHitRegions.push({
+                    key: labelKey,
+                    type: 'line',
+                    lineId: line.id,
+                    x: label.x,
+                    y: label.y,
+                    rect: label.rect
+                });
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.97)';
+                ctx.fillRect(label.rect.left, label.rect.top, bgWidth, bgHeight);
+                ctx.strokeStyle = '#cbd5e1';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(label.rect.left, label.rect.top, bgWidth, bgHeight);
+                ctx.fillStyle = '#1f2937';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.font = 'bold 14px sans-serif';
+                ctx.fillText(line.name, label.x, dimensionText ? label.y - 8 : label.y);
+                if (dimensionText) {
+                    ctx.font = '12px sans-serif';
+                    ctx.fillStyle = '#475569';
+                    ctx.fillText(dimensionText, label.x, label.y + 9);
                 }
             });
-
-            drawApprovedCornerJoins(ctx, transform);
-            drawTJunctions(ctx, transform);
-            drawSteppedJunctions(ctx, transform);
-            drawCornerEndpointWalls(ctx, transform);
-            lines.forEach(line => drawWallsOnLine(ctx, line, transform));
-            lines.forEach(line => drawPillarsOnLine(ctx, line, transform));
+            drawLowLevelNotes(ctx, transform, [...mainLabelRects, ...mainLabelForbiddenRects]);
             drawDiagramSelection(ctx, transform);
             
             const drawnCorners = new Set();
@@ -3981,16 +4293,14 @@
                     for (let ref of startCorner.lines) {
                         if (ref.lineId !== line.id) {
                             const adjacentLine = lines.find(l => l.id === ref.lineId);
-                            if (adjacentLine && isDiagonalCorner(line, adjacentLine, 'start', ref.point)) {
-                                const cornerAngle = getCornerAngle(line, adjacentLine);
+                            if (isDiagonal && adjacentLine && isDiagonalCorner(line, adjacentLine, 'start', ref.point)) {
                                 diagonalCornerWarning += `
-                                    <div style="margin-top: 10px; padding: 12px; background: #fee; border: 2px solid #e74c3c; border-radius: 8px;">
-                                        <p style="margin: 0; color: #c0392b; font-weight: bold; font-size: 14px;">
-                                            ⚠️ 始点は斜めコーナーです（角度: ${cornerAngle.toFixed(1)}°）
+                                    <div style="margin-top:10px;padding:12px;background:#eff6ff;border:2px solid #60a5fa;border-radius:8px;">
+                                        <p style="margin:0;color:#1e40af;font-weight:bold;font-size:14px;">
+                                            📐 斜め辺は芯寸法を入力
                                         </p>
-                                        <p style="margin: 5px 0 0 0; color: #c0392b; font-size: 13px;">
-                                            外法寸法から芯寸法を計算できません。<br>
-                                            <strong>現地で芯寸法を直接測定してください。</strong>
+                                        <p style="margin:5px 0 0;color:#1e40af;font-size:13px;">
+                                            現地で芯寸法を直接測定し、コーナーの角度も入力してください。
                                         </p>
                                     </div>
                                 `;
@@ -4004,16 +4314,14 @@
                     for (let ref of endCorner.lines) {
                         if (ref.lineId !== line.id) {
                             const adjacentLine = lines.find(l => l.id === ref.lineId);
-                            if (adjacentLine && isDiagonalCorner(line, adjacentLine, 'end', ref.point)) {
-                                const cornerAngle = getCornerAngle(line, adjacentLine);
+                            if (isDiagonal && adjacentLine && isDiagonalCorner(line, adjacentLine, 'end', ref.point)) {
                                 diagonalCornerWarning += `
-                                    <div style="margin-top: 10px; padding: 12px; background: #fee; border: 2px solid #e74c3c; border-radius: 8px;">
-                                        <p style="margin: 0; color: #c0392b; font-weight: bold; font-size: 14px;">
-                                            ⚠️ 終点は斜めコーナーです（角度: ${cornerAngle.toFixed(1)}°）
+                                    <div style="margin-top:10px;padding:12px;background:#eff6ff;border:2px solid #60a5fa;border-radius:8px;">
+                                        <p style="margin:0;color:#1e40af;font-weight:bold;font-size:14px;">
+                                            📐 斜め辺は芯寸法を入力
                                         </p>
-                                        <p style="margin: 5px 0 0 0; color: #c0392b; font-size: 13px;">
-                                            外法寸法から芯寸法を計算できません。<br>
-                                            <strong>現地で芯寸法を直接測定してください。</strong>
+                                        <p style="margin:5px 0 0;color:#1e40af;font-size:13px;">
+                                            現地で芯寸法を直接測定し、コーナーの角度も入力してください。
                                         </p>
                                     </div>
                                 `;
@@ -4061,16 +4369,18 @@
                         // コーナーが90度かどうか判定
                         const connectedPoint = (Math.abs(connectedLine.x1 - line.x1) < 5 && Math.abs(connectedLine.y1 - line.y1) < 5) ? 'start' : 'end';
                         const is90 = is90Degrees(line, connectedLine, 'start', connectedPoint);
+                        const drawnCornerAngle = getCornerAngleFromRefs(line, 'start', connectedLine, connectedPoint);
+                        const needsAngleInput = !is90 && drawnCornerAngle > 1 && drawnCornerAngle < 179;
                         
                         const storedAngle = startCorner?.angle;
                         const angleValue = storedAngle !== undefined && storedAngle !== null ? storedAngle.toFixed(1) : '';
                         
-                        const angleInputSection = !is90 ? `
+                        const angleInputSection = needsAngleInput ? `
                             <div style="margin-bottom: 12px;">
                                 <label style="display: block; color: #2e7d32; font-weight: bold; margin-bottom: 5px; font-size: 13px;">
                                     📐 ${cornerLabel} コーナーの角度（度）
                                 </label>
-                                <input type="number" 
+                                <input type="number" min="1" max="179.9" step="0.1"
                                        id="corner-angle-${startKey}"
                                        placeholder="現場で測定した角度を入力" 
                                        value="${angleValue}"
@@ -4118,17 +4428,19 @@
                     
                     // コーナーが90度かどうか判定（NEW - v1.13.3）
                     const is90 = is90Degrees(line, nextLine, 'end', 'start');
+                    const drawnCornerAngle = getCornerAngleFromRefs(line, 'end', nextLine, 'start');
+                    const needsAngleInput = !is90 && drawnCornerAngle > 1 && drawnCornerAngle < 179;
                     
                     // 90度以外の場合のみ角度入力欄を表示（NEW - v1.13.3）
                     const storedAngle = corners[endKey]?.angle;
                     const angleValue = storedAngle !== undefined && storedAngle !== null ? storedAngle.toFixed(1) : '';
                     
-                    const angleInputSection = !is90 ? `
+                    const angleInputSection = needsAngleInput ? `
                         <div style="margin-bottom: 12px;">
                             <label style="display: block; color: #2e7d32; font-weight: bold; margin-bottom: 5px; font-size: 13px;">
                                 📐 ${cornerLabel} コーナーの角度（度）
                             </label>
-                            <input type="number" 
+                            <input type="number" min="1" max="179.9" step="0.1"
                                    id="corner-angle-${endKey}"
                                    placeholder="現場で測定した角度を入力" 
                                    value="${angleValue}"
@@ -4680,6 +4992,7 @@
                 pillars: JSON.parse(JSON.stringify(pillars || [])),
                 wallFeatures: JSON.parse(JSON.stringify(wallFeatures || [])),
                 resultLabelOffsets: JSON.parse(JSON.stringify(resultLabelOffsets || {})),
+                diagramLabelOffsets: JSON.parse(JSON.stringify(diagramLabelOffsets || {})),
                 layoutConfirmed: layoutConfirmed,
                 savedAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
@@ -4797,6 +5110,7 @@
             pillars = JSON.parse(JSON.stringify(data.pillars || []));
             wallFeatures = JSON.parse(JSON.stringify(data.wallFeatures || []));
             resultLabelOffsets = JSON.parse(JSON.stringify(data.resultLabelOffsets || {}));
+            diagramLabelOffsets = JSON.parse(JSON.stringify(data.diagramLabelOffsets || {}));
             layoutConfirmed = data.layoutConfirmed !== undefined ? data.layoutConfirmed : true;
             componentHistory = [];
             updateComponentUndoButton();
@@ -4974,6 +5288,11 @@
                 return { amount: 0, width: 0, reason: '段差エンド（控除なし）' };
             }
 
+            // 斜め辺の入力値は芯寸法そのもの。端点でさらに躯体幅を引かない。
+            if (isLineDiagonal(line)) {
+                return { amount: 0, width: 0, reason: '斜め辺は芯寸法を直接入力' };
+            }
+
             const currentDx = line.x2 - line.x1;
             const currentDy = line.y2 - line.y1;
             const currentLength = Math.hypot(currentDx, currentDy) || 1;
@@ -4986,14 +5305,32 @@
                 const dy = adjacent.y2 - adjacent.y1;
                 const length = Math.hypot(dx, dy) || 1;
                 const parallelScore = Math.abs((currentDx * dx + currentDy * dy) / (currentLength * length));
-                if (!best || parallelScore < best.parallelScore) best = { adjacent, parallelScore };
+                if (!best || parallelScore < best.parallelScore) best = { adjacent, ref, parallelScore };
             });
             if (!best) return { amount: 0, width: 0, reason: '控除なし' };
             const width = getMeasuredLineWidth(best.adjacent.id);
+            const currentRef = corner.lines.find(ref => ref.lineId === line.id);
+            const geometricAngle = currentRef
+                ? getCornerAngleFromRefs(line, currentRef.point, best.adjacent, best.ref.point)
+                : 90;
+            const parsedEnteredAngle = positiveNumberOrNull(corner.angle);
+            const enteredAngle = parsedEnteredAngle && parsedEnteredAngle < 180 ? parsedEnteredAngle : null;
+            const angle = corner.lines.length === 2 && enteredAngle ? enteredAngle : geometricAngle;
+            const sine = Math.abs(Math.sin(angle * Math.PI / 180));
+            const isAngledCorner = corner.lines.length === 2 && Math.abs(angle - 90) > 1 && sine > 0.01;
+            const rawAmount = isAngledCorner ? width / 2 / sine : width / 2;
+            // 現場寸法と結果の表示単位に合わせ、控除量を1mm単位で丸める。
+            const amount = Math.round(rawAmount);
+            const roundedAngle = Math.round(angle * 10) / 10;
             return {
-                amount: width / 2,
+                amount,
                 width,
-                reason: corner.lines.length === 3 ? 'T字接続' : 'コーナー'
+                angle: roundedAngle,
+                angled: isAngledCorner,
+                calculation: isAngledCorner
+                    ? `${width}mm ÷ 2 ÷ sin(${roundedAngle}°) = ${Math.floor(amount)}mm`
+                    : `${width}mm ÷ 2 = ${Math.floor(amount)}mm`,
+                reason: corner.lines.length === 3 ? 'T字接続' : isAngledCorner ? `斜めコーナー ${roundedAngle}°` : 'コーナー'
             };
         }
 
@@ -5057,12 +5394,12 @@
                 const startDeduction = getEndpointDeduction(line, 'start');
                 if (startDeduction.amount > 0) {
                     result -= startDeduction.amount;
-                    deductions.push(`始点側 ${startDeduction.reason}: ${startDeduction.width}mm ÷ 2 = ${Math.floor(startDeduction.amount)}mm`);
+                    deductions.push(`始点側 ${startDeduction.reason}: ${startDeduction.calculation}`);
                 }
                 const endDeduction = getEndpointDeduction(line, 'end');
                 if (endDeduction.amount > 0) {
                     result -= endDeduction.amount;
-                    deductions.push(`終点側 ${endDeduction.reason}: ${endDeduction.width}mm ÷ 2 = ${Math.floor(endDeduction.amount)}mm`);
+                    deductions.push(`終点側 ${endDeduction.reason}: ${endDeduction.calculation}`);
                 }
                 
                 const isDiagonal = isLineDiagonal(line);
@@ -5122,7 +5459,7 @@
                 const resultTotal = Math.floor(measuredTotal - deductionTotal);
                 const names = mainRows.map(row => row.name);
                 const combinedDeductions = outerDeductions.map(entry =>
-                    `${entry.item.line.name}外端 ${entry.deduction.reason}: ${entry.deduction.width}mm ÷ 2 = ${Math.floor(entry.deduction.amount)}mm`
+                    `${entry.item.line.name}外端 ${entry.deduction.reason}: ${entry.deduction.calculation}`
                 );
                 const combinedFormula = combinedDeductions.length
                     ? `${mainRows[0].baseLabel} ${measuredTotal}mm - ${combinedDeductions.join(' - ')}`
@@ -5189,6 +5526,32 @@
                 name: lines.find(line => line.id === feature.recessLineId)?.name || '堀込み部',
                 height: Number(feature.height)
             }));
+        }
+
+        function buildCornerAngleRows() {
+            detectCorners();
+            return Object.entries(corners || {}).map(([cornerKey, corner]) => {
+                if (!corner?.lines || corner.lines.length !== 2) return null;
+                const ref1 = corner.lines[0];
+                const ref2 = corner.lines[1];
+                const line1 = lines.find(line => line.id === ref1.lineId);
+                const line2 = lines.find(line => line.id === ref2.lineId);
+                if (!line1 || !line2) return null;
+                const drawnAngle = getCornerAngleFromRefs(line1, ref1.point, line2, ref2.point);
+                if (!Number.isFinite(drawnAngle) || drawnAngle <= 1 || drawnAngle >= 179 || Math.abs(drawnAngle - 90) <= 1) {
+                    return null;
+                }
+                const parsedAngle = positiveNumberOrNull(corner.angle);
+                const measuredAngle = parsedAngle && parsedAngle < 180 ? parsedAngle : null;
+                return {
+                    cornerKey,
+                    corner,
+                    line1,
+                    line2,
+                    name: `${line1.name}━${line2.name}`,
+                    angle: measuredAngle
+                };
+            }).filter(Boolean);
         }
 
         function positiveNumberOrNull(value) {
@@ -5273,7 +5636,7 @@
                 
                 if (!dim || !dim.length) {
                     hasAll = false;
-                    missingItems.push(`${line.name}の外法寸法`);
+                    missingItems.push(`${line.name}の${isLineDiagonal(line) ? '芯寸法' : '外法寸法'}`);
                 }
                 
                 const hasWidth = useIndividualWidth ? (dim && dim.width) : commonWidth;
@@ -5316,6 +5679,13 @@
                 }
             }
 
+            buildCornerAngleRows().forEach(angleRow => {
+                if (!angleRow.angle) {
+                    hasAll = false;
+                    missingItems.push(`${angleRow.name}の角度`);
+                }
+            });
+
             pillars.forEach(pillar => {
                 const line = lines.find(l => l.id === pillar.lineId);
                 const lineName = line ? line.name : '辺';
@@ -5336,9 +5706,9 @@
             wallFeatures.forEach(wall => {
                 const line = lines.find(l => l.id === wall.lineId);
                 const lineName = line ? line.name : '辺';
-                if (!wall.width) {
+                if (wall.featureType === 'recess' && !positiveNumberOrNull(wall.height)) {
                     hasAll = false;
-                    missingItems.push(`${lineName}の壁幅`);
+                    missingItems.push(`${lineName}の堀込高さ`);
                 }
                 if (wall.kind === 'middle' && !wall.split && (wall.position === null || wall.position === undefined || wall.position < 0)) {
                     hasAll = false;
@@ -6357,62 +6727,7 @@
                 drawPlanDimension(cornerPoint, stepEnd, `段差 ${corner.depth}mm`, 2, '#dc2626');
             });
 
-            // 段差は寸法線ではなく、対象コーナーから余白へ引っ張り線で表示する。
-            Object.entries(corners || {}).filter(([, corner]) => corner?.hasStep && Number(corner.depth) > 0).forEach(([cornerKey, corner]) => {
-                const anchor = resultTransform(corner.x, corner.y);
-                const text = `段差 ${corner.depth}mm`;
-                ctx.font = `bold ${resultCanvas.width < 400 ? 10 : 12}px sans-serif`;
-                const padding = 7;
-                const labelWidth = ctx.measureText(text).width + padding * 2;
-                const labelHeight = 24;
-                const resultLabelKey = `step:${cornerKey}`;
-                let position = chooseLabelPosition(anchor.x, anchor.y, 1, 0, 0, -1, labelWidth, labelHeight);
-                const savedLabelPosition = resultLabelOffsets[resultLabelKey];
-                if (savedLabelPosition) {
-                    const manual = clampLabelPosition(savedLabelPosition.x, savedLabelPosition.y, labelWidth, labelHeight);
-                    position = {
-                        x: manual.x,
-                        y: manual.y,
-                        rect: makeLabelRect(manual.x, manual.y, labelWidth, labelHeight)
-                    };
-                    resultLabelOffsets[resultLabelKey] = { x: manual.x, y: manual.y };
-                }
-                if (!position) return;
-                placedLabelRects.push(position.rect);
-                resultLabelHitRegions.push({
-                    key: resultLabelKey,
-                    x: position.x,
-                    y: position.y,
-                    width: labelWidth,
-                    height: labelHeight,
-                    rect: position.rect
-                });
-                placedLeaderSegments.push({
-                    key: resultLabelKey,
-                    x1: anchor.x,
-                    y1: anchor.y,
-                    x2: position.x,
-                    y2: position.y
-                });
-                ctx.save();
-                ctx.strokeStyle = '#dc2626';
-                ctx.lineWidth = 1.3;
-                ctx.setLineDash([4, 3]);
-                ctx.beginPath();
-                ctx.moveTo(anchor.x, anchor.y);
-                ctx.lineTo(position.x, position.y);
-                ctx.stroke();
-                ctx.setLineDash([]);
-                ctx.fillStyle = 'rgba(255,247,247,0.97)';
-                ctx.fillRect(position.rect.left, position.rect.top, labelWidth, labelHeight);
-                ctx.strokeStyle = '#f87171';
-                ctx.strokeRect(position.rect.left, position.rect.top, labelWidth, labelHeight);
-                ctx.fillStyle = '#b91c1c';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(text, position.x, position.y);
-                ctx.restore();
-            });
+            // 段差・堀込の高さ差は、最終描画で低い側起点の表示へ統合する。
             
             const drawnCorners = new Set();
             const coordMap = new Map();
@@ -6642,6 +6957,83 @@
                 ctx.fillText(item.label, legendX + 15, itemY + 4);
             });
             }
+            // PDF・PNGにも、低い側だけのレベル差を明瞭な引っ張り線で残す。
+            drawLowLevelNotes(ctx, resultTransform, placedLabelRects, {
+                chooseLabelPosition,
+                placedLabelRects,
+                placedLeaderSegments
+            });
+
+            // 90度でないコーナーは、現場入力した角度を図のコーナーから引っ張り表示する。
+            buildCornerAngleRows().filter(row => row.angle).forEach(angleRow => {
+                const anchor = resultTransform(angleRow.corner.x, angleRow.corner.y);
+                const roundedAngle = Math.round(angleRow.angle * 10) / 10;
+                const text = `角度 ${roundedAngle}°`;
+                ctx.save();
+                ctx.font = `bold ${resultCanvas.width < 400 ? 10 : 12}px sans-serif`;
+                const padding = 7;
+                const labelWidth = ctx.measureText(text).width + padding * 2;
+                const labelHeight = 24;
+                const key = `angle:${angleRow.cornerKey}`;
+                let position = chooseLabelPosition(anchor.x, anchor.y, 1, 0, 0, -1, labelWidth, labelHeight);
+                const saved = resultLabelOffsets[key];
+                if (saved) {
+                    const manual = clampLabelPosition(saved.x, saved.y, labelWidth, labelHeight);
+                    position = {
+                        x: manual.x,
+                        y: manual.y,
+                        rect: makeLabelRect(manual.x, manual.y, labelWidth, labelHeight)
+                    };
+                    resultLabelOffsets[key] = { x: manual.x, y: manual.y };
+                }
+                if (!position) {
+                    ctx.restore();
+                    return;
+                }
+                const lineEnd = leaderEndAtRect(anchor.x, anchor.y, position.x, position.y, position.rect);
+                placedLabelRects.push(position.rect);
+                placedLeaderSegments.push({
+                    key,
+                    x1: anchor.x,
+                    y1: anchor.y,
+                    x2: position.x,
+                    y2: position.y,
+                    rect: position.rect
+                });
+                resultLabelHitRegions.push({
+                    key,
+                    x: position.x,
+                    y: position.y,
+                    width: labelWidth,
+                    height: labelHeight,
+                    rect: position.rect
+                });
+                ctx.strokeStyle = 'rgba(255,255,255,0.96)';
+                ctx.lineWidth = 3.8;
+                ctx.setLineDash([]);
+                ctx.beginPath();
+                ctx.moveTo(anchor.x, anchor.y);
+                ctx.lineTo(lineEnd.x, lineEnd.y);
+                ctx.stroke();
+                ctx.strokeStyle = '#7c3aed';
+                ctx.lineWidth = 1.4;
+                ctx.setLineDash([4, 3]);
+                ctx.beginPath();
+                ctx.moveTo(anchor.x, anchor.y);
+                ctx.lineTo(lineEnd.x, lineEnd.y);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.fillStyle = 'rgba(250,245,255,0.97)';
+                ctx.fillRect(position.rect.left, position.rect.top, labelWidth, labelHeight);
+                ctx.strokeStyle = '#a78bfa';
+                ctx.lineWidth = 1.2;
+                ctx.strokeRect(position.rect.left, position.rect.top, labelWidth, labelHeight);
+                ctx.fillStyle = '#6d28d9';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(text, position.x, position.y);
+                ctx.restore();
+            });
         }
         
         function getPointLabel(state) {
@@ -7194,6 +7586,7 @@
         }
         
         function handlePointClick(e) {
+            if (Date.now() < suppressDiagramClickUntil) return;
             if (isDrawing || isDragging) return;
             if (drawingPoints.length > 0) return;
             
@@ -7655,8 +8048,27 @@
             const line = lines.find(l => l.id === lineId);
             if (!line) return;
             const current = dimensions[lineId]?.length || '';
-            const value = prompt(`${line.name}の${isLineDiagonal(line) ? '芯寸法' : '外法寸法'}(mm)`, current);
-            if (value === null) return;
+            const dimensionLabel = isLineDiagonal(line) ? '芯寸法' : '外法寸法';
+            document.getElementById('diagram-menu-title').textContent = `${line.name}の寸法入力`;
+            document.getElementById('diagram-menu-body').innerHTML = `
+                <p style="margin:10px 0 0;color:#64748b;font-size:13px;line-height:1.6;">図面上の辺ブロックから直接入力しています。</p>
+                <div style="margin-top:12px;padding:11px;background:#eff6ff;border:1px solid #93c5fd;border-radius:9px;">
+                    <label for="direct-line-dimension" style="display:block;margin-bottom:6px;color:#1e40af;font-size:13px;font-weight:800;">${dimensionLabel} (mm)</label>
+                    <input id="direct-line-dimension" type="number" min="1" value="${current}" placeholder="寸法を入力" inputmode="decimal" autofocus
+                           style="width:100%;padding:11px;border:2px solid #3b82f6;border-radius:7px;font-size:18px;font-weight:700;">
+                </div>
+                <div class="diagram-menu-actions">
+                    <button onclick="applyLineDimensionFromDiagram('${lineId}',document.getElementById('direct-line-dimension').value)">寸法を反映</button>
+                    <button onclick="closeDiagramMenu()">キャンセル</button>
+                </div>
+            `;
+            showDiagramMenu();
+            setTimeout(() => document.getElementById('direct-line-dimension')?.select(), 50);
+        }
+
+        function applyLineDimensionFromDiagram(lineId, value) {
+            const line = lines.find(l => l.id === lineId);
+            if (!line) return;
             const numeric = parseFloat(value);
             if (!Number.isFinite(numeric) || numeric <= 0) {
                 alert('正しい寸法を入力してください。');
@@ -8260,6 +8672,7 @@
                 dimensions: dimensions,
                 pillars: pillars,
                 wallFeatures: wallFeatures,
+                diagramLabelOffsets: diagramLabelOffsets,
                 layoutConfirmed: layoutConfirmed
             };
             localStorage.setItem('savedPatterns', JSON.stringify(savedPatterns));
@@ -8301,6 +8714,7 @@
             dimensions = pattern.dimensions || {};
             pillars = pattern.pillars || [];
             wallFeatures = pattern.wallFeatures || [];
+            diagramLabelOffsets = pattern.diagramLabelOffsets || {};
             layoutConfirmed = pattern.layoutConfirmed || false;
             componentHistory = [];
             updateComponentUndoButton();
@@ -8366,6 +8780,7 @@
             pillars = [];
             wallFeatures = [];
             resultLabelOffsets = {};
+            diagramLabelOffsets = {};
             layoutConfirmed = false;
             componentHistory = [];
             updateComponentUndoButton();
@@ -8416,6 +8831,7 @@
             pillars = [];
             wallFeatures = [];
             resultLabelOffsets = {};
+            diagramLabelOffsets = {};
             layoutConfirmed = false;
             componentHistory = [];
             updateComponentUndoButton();
