@@ -14,10 +14,24 @@
     ========================================
     躯体採寸システム
     ========================================
-    バージョン: 1.43.3
+    バージョン: 1.44.2
     最終更新: 2026-08-09
     
     [更新履歴]
+    v1.44.2 (2026-08-10) - 目次の説明文を明確化
+    - ハンドレールシリーズの躯体採寸であることが伝わる表現へ変更
+
+    v1.44.1 (2026-08-10) - 入力済み項目の誤判定を修正
+    - 再読み込み・フォーム復元後の画面値を計算データへ再同期
+    - 通常辺、段差T字の全長、個別躯体幅に対応
+
+    v1.44.0 (2026-08-10) - 堀込み部品を追加
+    - 辺の途中へ高さ必須の堀込みを配置可能
+    - 手前・堀込み部・奥をそれぞれ独立した辺として採寸
+    - 途中壁と同じ外形で斜線なしの平面図表現
+    - 配置後の高さ変更・削除・保存・結果表示に対応
+    - 点種別の表記を「エンド」に統一
+
     v1.43.3 (2026-08-10) - PDFファイル名を現場情報へ変更
     - PDF名を「現場名_色_日付.pdf」に変更
     - 日本語を保持し、使用できない記号だけを自動置換
@@ -1366,7 +1380,7 @@
             <header class="home-hero">
                 <div class="home-kicker">FIELD MEASUREMENT TOOL</div>
                 <h1 class="home-title">躯体採寸<br><span>システム</span></h1>
-                <p class="home-lead">取付け前の現地調査で、既存躯体の形状・壁・柱・段差・T字と実測寸法を正確に記録します。</p>
+                <p class="home-lead">ハンドレールシリーズの設置に必要な躯体形状と実測寸法を、現地で正確に採寸・記録します。</p>
             </header>
 
             <nav class="home-actions" aria-label="ホーム操作">
@@ -1448,7 +1462,7 @@
             </section>
 
             <footer class="home-footer">
-                <span>躯体採寸システム v1.43.3</span>
+                <span>躯体採寸システム v1.44.2</span>
                 <span>最終更新 2026-08-09</span>
             </footer>
         </div>
@@ -2140,7 +2154,7 @@
         }
 
         function normalizeInlineWallGaps() {
-            wallFeatures.filter(wall => wall.split && wall.kind === 'middle').forEach(wall => {
+            wallFeatures.filter(wall => wall.split && wall.kind === 'middle' && wall.featureType !== 'recess').forEach(wall => {
                 const { beforeId, afterId } = getSplitFeatureLineIds(wall);
                 const before = lines.find(line => line.id === beforeId);
                 const after = lines.find(line => line.id === afterId);
@@ -2562,6 +2576,20 @@
             targetCtx.restore();
         }
 
+        // 堀込みは途中壁と同じ外形で、壁を示す斜線だけを描かない。
+        function drawInlineRecess(targetCtx, cx, cy, alongWidth, planDepth, angle) {
+            targetCtx.save();
+            targetCtx.translate(cx, cy);
+            targetCtx.rotate(angle);
+            targetCtx.clearRect(-alongWidth / 2, -planDepth / 2 - 14, alongWidth, planDepth + 28);
+            targetCtx.fillStyle = '#ffffff';
+            targetCtx.strokeStyle = '#334155';
+            targetCtx.lineWidth = 1.5;
+            targetCtx.fillRect(-alongWidth / 2, -planDepth / 2, alongWidth, planDepth);
+            targetCtx.strokeRect(-alongWidth / 2, -planDepth / 2, alongWidth, planDepth);
+            targetCtx.restore();
+        }
+
         // コーナー壁①は2つの矩形を重ねず、一体のL字形として描く。
         // これにより壁内部へ内側線や矩形の継ぎ目が伸びない。
         function drawCornerWallL(targetCtx, corner, direction1, direction2, half, run) {
@@ -2714,6 +2742,11 @@
             } : null;
             return [...pillars, ...wallFeatures].some(feature => {
                 if (!feature.split) return false;
+                if (feature.featureType === 'recess') {
+                    return (feature.beforeLineId === lineId && point === 'end') ||
+                        (feature.recessLineId === lineId && (point === 'start' || point === 'end')) ||
+                        (feature.afterLineId === lineId && point === 'start');
+                }
                 const { beforeId, afterId } = getSplitFeatureLineIds(feature);
                 if ((beforeId === lineId && point === 'end') ||
                     (afterId === lineId && point === 'start')) return true;
@@ -2804,7 +2837,11 @@
                         return;
                     }
                 }
-                drawInlineWall(targetCtx, point.x, point.y, alongWidth, planDepth, wall.angle ?? angle);
+                if (wall.featureType === 'recess') {
+                    drawInlineRecess(targetCtx, point.x, point.y, alongWidth, planDepth, wall.angle ?? angle);
+                } else {
+                    drawInlineWall(targetCtx, point.x, point.y, alongWidth, planDepth, wall.angle ?? angle);
+                }
             });
         }
 
@@ -3488,6 +3525,7 @@
                     const widthValue = dimensions[line.id]?.width || commonWidth || '';
                     const widthInput = useIndividualWidth ? `
                         <input type="number" placeholder="躯体幅 (mm)"
+                               data-stepped-width-corner="${steppedTeeGroup.cornerKey}"
                                oninput="updateSteppedTeeMainWidth('${steppedTeeGroup.cornerKey}', this.value)"
                                value="${widthValue}"
                                style="padding:10px;border:2px solid #ddd;border-radius:6px;font-size:16px;">
@@ -3499,6 +3537,7 @@
                         </label>
                         <div class="dimension-row" style="display:grid;grid-template-columns:${useIndividualWidth ? '1fr 1fr' : '1fr'};gap:10px;">
                             <input type="number" placeholder="${steppedTeeGroup.name} 全長 (mm)"
+                                   data-stepped-corner="${steppedTeeGroup.cornerKey}"
                                    oninput="updateSteppedTeeMainDimension('${steppedTeeGroup.cornerKey}', this.value)"
                                    value="${steppedTeeGroup.corner.mainLength || ''}"
                                    style="padding:10px;border:2px solid #f59e0b;border-radius:6px;font-size:16px;">
@@ -3527,6 +3566,7 @@
                 
                 const widthInput = useIndividualWidth ? `
                     <input type="number" placeholder="躯体幅 (mm)" 
+                           data-dimension-line="${line.id}" data-dimension-type="width"
                            oninput="updateDimension('${line.id}', 'width', this.value)"
                            value="${dimensions[line.id]?.width || ''}"
                            style="padding: 10px; border: 2px solid #ddd; border-radius: 6px; font-size: 16px;">
@@ -3600,6 +3640,7 @@
                     ${diagonalCornerWarning}
                     <div class="dimension-row" style="display: grid; grid-template-columns: ${useIndividualWidth ? '1fr 1fr' : '1fr'}; gap: 10px;">
                         <input type="number" placeholder="${isDiagonal ? '芯寸法 (mm)' : '外法寸法 (mm)'}" 
+                               data-dimension-line="${line.id}" data-dimension-type="length"
                                oninput="updateDimension('${line.id}', 'length', this.value)"
                                value="${dimensions[line.id]?.length || ''}"
                                style="padding: 10px; border: 2px solid #ddd; border-radius: 6px; font-size: 16px;">
@@ -4029,12 +4070,12 @@
             });
         }
 
-        function splitLineWithFeature(lineId, featureType, selectedRatio = 0.5, popupWidth = null, popupDepth = null) {
+        function splitLineWithFeature(lineId, featureType, selectedRatio = 0.5, popupWidth = null, popupDepth = null, popupHeight = null) {
             const lineIndex = lines.findIndex(line => line.id === lineId);
             if (lineIndex < 0) return;
             const line = lines[lineIndex];
             const dim = dimensions[lineId] || { length: null, width: commonWidth };
-            const typeLabel = featureType === 'pillar' ? '柱' : '壁';
+            const typeLabel = featureType === 'pillar' ? '柱' : featureType === 'recess' ? '堀込み' : '壁';
             let featureWidth = 0;
             if (featureType === 'pillar') {
                 const widthValue = popupWidth !== null ? popupWidth : prompt('柱の幅(mm)を入力してください', '300');
@@ -4046,6 +4087,14 @@
                 const depthValue = popupDepth !== null ? popupDepth : prompt('柱の奥行(mm)を入力してください', String(featureWidth));
                 if (depthValue === null) return;
                 featureDepth = parseFloat(depthValue);
+            }
+            let featureHeight = null;
+            if (featureType === 'recess') {
+                featureHeight = parseFloat(popupHeight);
+                if (!Number.isFinite(featureHeight) || featureHeight <= 0) {
+                    alert('堀込みの高さを正しい数値で入力してください。');
+                    return;
+                }
             }
             if ((featureType === 'pillar' && (!Number.isFinite(featureWidth) || featureWidth <= 0 || !Number.isFinite(featureDepth) || featureDepth <= 0)) ||
                 (featureType !== 'pillar' && (!Number.isFinite(featureWidth) || featureWidth < 0))) {
@@ -4078,22 +4127,30 @@
             const centerY = line.y1 + dy * centerRatio;
             const firstId = makeSplitLineId(line.id, '1');
             const secondId = makeSplitLineId(line.id, '2');
+            const thirdId = featureType === 'recess' ? makeSplitLineId(line.id, '3') : null;
             // 壁へ接する側は必ず「壁」。柱は柱面接続として別扱いにする。
             const featureSideState = featureType === 'wall' ? 'wall' : 'attached';
             const firstLine = { ...line, id: firstId, x2: startX, y2: startY, end: featureSideState };
-            const secondLine = { ...line, id: secondId, x1: endX, y1: endY, start: featureSideState };
+            const secondLine = featureType === 'recess'
+                ? { ...line, id: secondId, x1: startX, y1: startY, x2: endX, y2: endY, start: 'attached', end: 'attached' }
+                : { ...line, id: secondId, x1: endX, y1: endY, start: featureSideState };
+            const thirdLine = featureType === 'recess'
+                ? { ...line, id: thirdId, x1: endX, y1: endY, start: 'attached' }
+                : null;
 
-            lines.splice(lineIndex, 1, firstLine, secondLine);
+            lines.splice(lineIndex, 1, ...([firstLine, secondLine, thirdLine].filter(Boolean)));
             renumberLineNames();
             delete dimensions[lineId];
             dimensions[firstId] = { length: null, width: dim.width || commonWidth };
             dimensions[secondId] = { length: null, width: dim.width || commonWidth };
+            if (thirdId) dimensions[thirdId] = { length: null, width: dim.width || commonWidth };
 
             const feature = {
                 id: `${featureType}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-                lineId: firstId,
+                lineId: featureType === 'recess' ? secondId : firstId,
                 beforeLineId: firstId,
-                afterLineId: secondId,
+                recessLineId: featureType === 'recess' ? secondId : null,
+                afterLineId: featureType === 'recess' ? thirdId : secondId,
                 kind: 'middle',
                 split: true,
                 position: null,
@@ -4107,6 +4164,8 @@
                 feature.depth = featureDepth;
                 pillars.push(feature);
             } else {
+                feature.featureType = featureType;
+                if (featureType === 'recess') feature.height = featureHeight;
                 wallFeatures.push(feature);
             }
             layoutConfirmed = false;
@@ -4115,7 +4174,10 @@
             createInputs();
             drawLines();
             calculate();
-            showAlert(`${typeLabel}の手前を辺${lineLetter(lineIndex)}、奥を辺${lineLetter(lineIndex + 1)}に分割しました。続けて各辺の寸法を入力してください。`, 'success');
+            const splitMessage = featureType === 'recess'
+                ? `${typeLabel}の手前・堀込み部分・奥を3つの辺に分割しました。続けて各辺の現地寸法を入力してください。`
+                : `${typeLabel}の手前を辺${lineLetter(lineIndex)}、奥を辺${lineLetter(lineIndex + 1)}に分割しました。続けて各辺の寸法を入力してください。`;
+            showAlert(splitMessage, 'success');
         }
 
         function updatePillar(id, field, value) {
@@ -4138,14 +4200,17 @@
         function renderWallInputs(lineId) {
             const items = wallFeatures.filter(w => w.lineId === lineId);
             if (!items.length) return '<div style="margin-top:8px;color:#94a3b8;font-size:12px;">壁は登録されていません</div>';
-            return items.map(w => `
-                <div class="pillar-entry">
-                    <div style="font-size:12px;font-weight:700;color:#475569;">${w.kind === 'start' ? '始点部' : w.kind === 'end' ? '終点部' : '途中壁'}</div>
-                    ${w.kind === 'middle' ? (w.split ? `<div style="font-size:11px;color:#475569;">元の始点から ${w.position}mm<br>辺を分割済み</div>` : `<input type="number" min="0" value="${w.position || ''}" placeholder="始点からmm" aria-label="壁の位置" oninput="updateWallFeature('${w.id}','position',this.value)">`) : '<div></div>'}
-                    <div style="font-size:11px;color:#64748b;">壁寸法の入力不要</div>
-                    <button type="button" onclick="removeWallFeature('${w.id}')" style="padding:7px;border:0;border-radius:6px;background:#dc2626;color:white;cursor:pointer;">削除</button>
-                </div>
-            `).join('');
+            return items.map(w => {
+                const isRecess = w.featureType === 'recess';
+                return `
+                    <div class="pillar-entry">
+                        <div style="font-size:12px;font-weight:700;color:#475569;">${isRecess ? '堀込み' : (w.kind === 'start' ? '始点部' : w.kind === 'end' ? '終点部' : '途中壁')}</div>
+                        ${w.kind === 'middle' ? (w.split ? `<div style="font-size:11px;color:#475569;">${isRecess ? '堀込み部分を含む3辺へ分割済み' : '辺を分割済み'}</div>` : `<input type="number" min="0" value="${w.position || ''}" placeholder="始点からmm" aria-label="壁の位置" oninput="updateWallFeature('${w.id}','position',this.value)">`) : '<div></div>'}
+                        <div style="font-size:11px;color:#64748b;">${isRecess ? `堀込み高さ ${w.height}mm` : '壁寸法の入力不要'}</div>
+                        <button type="button" onclick="${w.split ? `deletePlacedFeature('wall','${w.id}')` : `removeWallFeature('${w.id}')`}" style="padding:7px;border:0;border-radius:6px;background:#dc2626;color:white;cursor:pointer;">削除</button>
+                    </div>
+                `;
+            }).join('');
         }
 
         function addWallFeature(lineId, kind) {
@@ -4724,6 +4789,64 @@
                 };
             });
         }
+
+        function buildRecessResultRows() {
+            return wallFeatures.filter(feature =>
+                feature.featureType === 'recess' && Number(feature.height) > 0
+            ).map(feature => ({
+                id: feature.id,
+                name: lines.find(line => line.id === feature.recessLineId)?.name || '堀込み部',
+                height: Number(feature.height)
+            }));
+        }
+
+        function positiveNumberOrNull(value) {
+            if (value === null || value === undefined || String(value).trim() === '') return null;
+            const parsed = Number(value);
+            return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+        }
+
+        // ブラウザが再読み込み時に入力欄だけを復元した場合も、計算データと必ず同期する。
+        function syncMeasurementStateFromVisibleInputs() {
+            if (!document || typeof document.querySelectorAll !== 'function') return;
+
+            const commonWidthInput = document.getElementById('common-width');
+            const commonHeightInput = document.getElementById('common-height');
+            if (commonWidthInput) commonWidth = positiveNumberOrNull(commonWidthInput.value);
+            if (commonHeightInput) commonHeight = positiveNumberOrNull(commonHeightInput.value);
+
+            document.querySelectorAll('[data-dimension-line][data-dimension-type]').forEach(input => {
+                const lineId = input.dataset.dimensionLine;
+                const type = input.dataset.dimensionType;
+                if (!lineId || !type || !lines.some(line => line.id === lineId)) return;
+                if (!dimensions[lineId]) dimensions[lineId] = { length: null, width: null };
+                dimensions[lineId][type] = positiveNumberOrNull(input.value);
+            });
+
+            document.querySelectorAll('[data-stepped-corner]').forEach(input => {
+                const cornerKey = input.dataset.steppedCorner;
+                const corner = corners?.[cornerKey];
+                const parts = getTeeParts(corner);
+                if (!corner || !parts) return;
+                const parsed = positiveNumberOrNull(input.value);
+                corner.mainLength = parsed;
+                parts.mains.forEach(({ line }) => {
+                    if (!dimensions[line.id]) dimensions[line.id] = { length: null, width: commonWidth };
+                    dimensions[line.id].length = parsed;
+                });
+            });
+
+            document.querySelectorAll('[data-stepped-width-corner]').forEach(input => {
+                const cornerKey = input.dataset.steppedWidthCorner;
+                const parts = getTeeParts(corners?.[cornerKey]);
+                if (!parts) return;
+                const parsed = positiveNumberOrNull(input.value);
+                parts.mains.forEach(({ line }) => {
+                    if (!dimensions[line.id]) dimensions[line.id] = { length: null, width: null };
+                    dimensions[line.id].width = parsed;
+                });
+            });
+        }
         
         function calculate() {
             const resultsContent = document.getElementById('results-content');
@@ -4733,6 +4856,7 @@
                 return;
             }
             updateWorkflowStage(2);
+            syncMeasurementStateFromVisibleInputs();
             let html = '';
             let hasAll = true;
             let missingItems = [];
@@ -4835,6 +4959,7 @@
                 updateWorkflowStage(3);
                 const resultRows = buildResultRows();
                 const stepResultRows = buildStepResultRows();
+                const recessResultRows = buildRecessResultRows();
                 const heightDetail = commonHeight <= 1100
                     ? `<div class="result-row-detail">1100 - 20 - ${commonHeight} = ${1100 - 20 - commonHeight}mm ／ 1100 - 30 - ${commonHeight} = ${1100 - 30 - commonHeight}mm</div>`
                     : '<div class="result-row-detail">現場実測値</div>';
@@ -4885,6 +5010,20 @@
                                     <div class="result-row-detail">現場入力値</div>
                                 </div>
                                 <div class="result-row-value" style="color:#dc2626;">${step.depth}<span class="unit">mm</span></div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                recessResultRows.forEach(recess => {
+                    html += `
+                        <div class="result-row-enhanced" style="border-color:#67e8f9;background:#ecfeff;">
+                            <div class="result-row-main">
+                                <div>
+                                    <div class="result-row-title" style="color:#155e75;">${recess.name} 堀込み高さ</div>
+                                    <div class="result-row-detail">現場入力値</div>
+                                </div>
+                                <div class="result-row-value" style="color:#0891b2;">${recess.height}<span class="unit">mm</span></div>
                             </div>
                         </div>
                     `;
@@ -6781,13 +6920,28 @@
             } else {
                 const wall = wallFeatures.find(item => item.id === featureId);
                 if (!wall) return;
-                document.getElementById('diagram-menu-title').textContent = '配置済みの壁を編集';
-                document.getElementById('diagram-menu-body').innerHTML = `
-                    <p style="margin:10px 0 0;color:#64748b;font-size:13px;">壁には寸法入力はありません。不要な場合は削除できます。</p>
-                    <div class="diagram-menu-actions">
-                        <button onclick="deletePlacedFeature('wall','${featureId}')" style="background:#dc2626;color:white;">壁を削除</button>
-                    </div>
-                `;
+                if (wall.featureType === 'recess') {
+                    document.getElementById('diagram-menu-title').textContent = '配置済みの堀込みを編集';
+                    document.getElementById('diagram-menu-body').innerHTML = `
+                        <p style="margin:10px 0 0;color:#64748b;font-size:13px;">堀込み高さを変更するか、堀込みを削除できます。</p>
+                        <div style="margin-top:12px;padding:11px;background:#ecfeff;border:1px solid #67e8f9;border-radius:9px;">
+                            <label for="edit-recess-height" style="display:block;margin-bottom:5px;color:#155e75;font-size:13px;font-weight:800;">堀込み高さ (mm)</label>
+                            <input id="edit-recess-height" type="number" min="1" value="${wall.height || ''}" inputmode="decimal" style="width:100%;padding:10px;border:2px solid #0891b2;border-radius:7px;font-size:16px;">
+                        </div>
+                        <div class="diagram-menu-actions">
+                            <button onclick="updatePlacedRecess('${featureId}',document.getElementById('edit-recess-height').value)">高さを変更</button>
+                            <button onclick="deletePlacedFeature('wall','${featureId}')" style="background:#dc2626;color:white;">堀込みを削除</button>
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('diagram-menu-title').textContent = '配置済みの壁を編集';
+                    document.getElementById('diagram-menu-body').innerHTML = `
+                        <p style="margin:10px 0 0;color:#64748b;font-size:13px;">壁には寸法入力はありません。不要な場合は削除できます。</p>
+                        <div class="diagram-menu-actions">
+                            <button onclick="deletePlacedFeature('wall','${featureId}')" style="background:#dc2626;color:white;">壁を削除</button>
+                        </div>
+                    `;
+                }
             }
             showDiagramMenu();
         }
@@ -6804,6 +6958,41 @@
             pillar.width = width;
             pillar.depth = depth;
             refreshAfterComponentChange('柱寸法を変更しました。');
+        }
+
+        function updatePlacedRecess(featureId, heightValue) {
+            const recess = wallFeatures.find(item => item.id === featureId && item.featureType === 'recess');
+            const height = parseFloat(heightValue);
+            if (!recess || !Number.isFinite(height) || height <= 0) {
+                alert('堀込みの高さを正しい数値で入力してください。');
+                return;
+            }
+            rememberComponentState();
+            recess.height = height;
+            refreshAfterComponentChange('堀込み高さを変更しました。');
+        }
+
+        function mergeSplitRecessLines(feature) {
+            const ids = [feature.beforeLineId, feature.recessLineId, feature.afterLineId];
+            const parts = ids.map(id => lines.find(line => line.id === id));
+            if (parts.some(part => !part)) return;
+            const indices = ids.map(id => lines.findIndex(line => line.id === id));
+            const merged = { ...parts[0], x2: parts[2].x2, y2: parts[2].y2, end: parts[2].end };
+            const insertIndex = Math.min(...indices);
+            lines = lines.filter(line => !ids.includes(line.id));
+            lines.splice(insertIndex, 0, merged);
+            dimensions[feature.beforeLineId] = {
+                length: null,
+                width: dimensions[feature.beforeLineId]?.width || dimensions[feature.recessLineId]?.width || dimensions[feature.afterLineId]?.width || commonWidth
+            };
+            delete dimensions[feature.recessLineId];
+            delete dimensions[feature.afterLineId];
+            [...pillars, ...wallFeatures].forEach(item => {
+                if (item.id === feature.id) return;
+                if (ids.slice(1).includes(item.lineId)) item.lineId = feature.beforeLineId;
+                if (ids.slice(1).includes(item.beforeLineId)) item.beforeLineId = feature.beforeLineId;
+                if (ids.slice(1).includes(item.afterLineId)) item.afterLineId = feature.beforeLineId;
+            });
         }
 
         function mergeSplitFeatureLines(feature) {
@@ -6839,7 +7028,10 @@
             const feature = collection.find(item => item.id === featureId);
             if (!feature) return;
             rememberComponentState();
-            if (feature.split) mergeSplitFeatureLines(feature);
+            if (feature.split) {
+                if (feature.featureType === 'recess') mergeSplitRecessLines(feature);
+                else mergeSplitFeatureLines(feature);
+            }
             if (type === 'pillar') {
                 pillars = pillars.filter(item => item.id !== featureId);
                 if (!feature.split) {
@@ -6862,7 +7054,8 @@
                 }
             }
             renumberLineNames();
-            refreshAfterComponentChange(`${type === 'pillar' ? '柱' : '壁'}を削除しました。`);
+            const deletedLabel = type === 'pillar' ? '柱' : feature.featureType === 'recess' ? '堀込み' : '壁';
+            refreshAfterComponentChange(`${deletedLabel}を削除しました。`);
         }
 
         function openLineDiagramMenu(lineId, selectedRatio = 0.5) {
@@ -6878,6 +7071,7 @@
                     <button onclick="editLineDimensionFromDiagram('${line.id}')">寸法を入力</button>
                     <button onclick="openLinePillarMenu('${line.id}',${selectedRatio})">この位置に柱</button>
                     <button onclick="closeDiagramMenu(); splitLineWithFeature('${line.id}','wall',${selectedRatio})">この位置に壁</button>
+                    <button onclick="openLineRecessMenu('${line.id}',${selectedRatio})">この位置に堀込み</button>
                     <button onclick="openTeeDirectionMenu('${line.id}',${selectedRatio},false)">この位置にT字</button>
                     <button onclick="openTeeDirectionMenu('${line.id}',${selectedRatio},true)">この位置に段差T字</button>
                     <button onclick="closeDiagramMenu(); scrollToInput('${line.id}')">詳細入力を開く</button>
@@ -6887,6 +7081,7 @@
                 <div class="diagram-menu-actions">
                     <button onclick="openLinePillarMenu('${line.id}',${selectedRatio})">この位置に柱</button>
                     <button onclick="closeDiagramMenu(); splitLineWithFeature('${line.id}','wall',${selectedRatio})">この位置に壁</button>
+                    <button onclick="openLineRecessMenu('${line.id}',${selectedRatio})">この位置に堀込み</button>
                     <button onclick="openTeeDirectionMenu('${line.id}',${selectedRatio},false)">この位置にT字</button>
                     <button onclick="openTeeDirectionMenu('${line.id}',${selectedRatio},true)">この位置に段差T字</button>
                 </div>
@@ -6936,6 +7131,24 @@
                 ${pillarDimensionFields('line-pillar')}
                 <div class="diagram-menu-actions">
                     <button onclick="splitLineWithFeature('${lineId}','pillar',${selectedRatio},document.getElementById('line-pillar-width').value,document.getElementById('line-pillar-depth').value)">柱を配置</button>
+                    <button onclick="openLineDiagramMenu('${lineId}',${selectedRatio})">← 部品選択へ戻る</button>
+                </div>
+            `;
+            showDiagramMenu();
+        }
+
+        function openLineRecessMenu(lineId, selectedRatio) {
+            const line = lines.find(item => item.id === lineId);
+            if (!line) return;
+            document.getElementById('diagram-menu-title').textContent = `${line.name}に堀込みを配置`;
+            document.getElementById('diagram-menu-body').innerHTML = `
+                <p style="margin:10px 0 0;color:#64748b;font-size:13px;line-height:1.6;">堀込み高さを入力してから配置してください。堀込み部分も独立した辺になります。</p>
+                <div style="margin-top:12px;padding:11px;background:#ecfeff;border:1px solid #67e8f9;border-radius:9px;">
+                    <label for="line-recess-height" style="display:block;margin-bottom:5px;color:#155e75;font-size:13px;font-weight:800;">堀込み高さ (mm)</label>
+                    <input id="line-recess-height" type="number" min="1" value="" placeholder="高さを入力" inputmode="decimal" autofocus style="width:100%;padding:10px;border:2px solid #0891b2;border-radius:7px;font-size:16px;">
+                </div>
+                <div class="diagram-menu-actions">
+                    <button onclick="splitLineWithFeature('${lineId}','recess',${selectedRatio},null,null,document.getElementById('line-recess-height').value)">堀込みを配置</button>
                     <button onclick="openLineDiagramMenu('${lineId}',${selectedRatio})">← 部品選択へ戻る</button>
                 </div>
             `;
@@ -7088,7 +7301,7 @@
                 <p style="margin:10px 0 0;color:#64748b;font-size:13px;">図面上の端部形状を選択してください。</p>
                 <div class="diagram-menu-actions">
                     <button onclick="setPointStateFromDiagram('${line.id}','${point}','corner')">コーナー</button>
-                    <button onclick="setPointStateFromDiagram('${line.id}','${point}','end')">エンド（コの字）</button>
+                    <button onclick="setPointStateFromDiagram('${line.id}','${point}','end')">エンド</button>
                     <button onclick="setPointStateFromDiagram('${line.id}','${point}','wall')">壁</button>
                     <button onclick="openEndpointPillarMenu('${line.id}','${point}')">柱</button>
                 </div>
@@ -7868,6 +8081,7 @@
         function generateResultsHTML() {
             const resultRows = buildResultRows();
             const stepResultRows = buildStepResultRows();
+            const recessResultRows = buildRecessResultRows();
             let resultsHTML = '<div style="display: flex; flex-direction: column; gap: 8px;">';
             
             resultRows.forEach(row => {
@@ -7892,6 +8106,17 @@
                         <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;">
                             <span style="color:#991b1b;font-weight:700;font-size:12px;">${step.name} 段差寸法</span>
                             <strong style="color:#dc2626;font-size:20px;white-space:nowrap;">${step.depth} mm</strong>
+                        </div>
+                    </div>
+                `;
+            });
+
+            recessResultRows.forEach(recess => {
+                resultsHTML += `
+                    <div class="pdf-result-card" style="padding:10px 12px;background:#ecfeff;border-radius:6px;border:1px solid #67e8f9;">
+                        <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;">
+                            <span style="color:#155e75;font-weight:700;font-size:12px;">${recess.name} 堀込み高さ</span>
+                            <strong style="color:#0891b2;font-size:20px;white-space:nowrap;">${recess.height} mm</strong>
                         </div>
                     </div>
                 `;
