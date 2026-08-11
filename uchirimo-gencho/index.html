@@ -46,6 +46,7 @@ body{font-family:'Hiragino Sans','Meiryo',sans-serif;background:var(--bg2);displ
 基本情報 */
 .top-section{padding:12px 16px;background:var(--bg);border-bottom:0.5px solid var(--bd);flex-shrink:0}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .field{display:flex;flex-direction:column;gap:3px;margin-bottom:8px}
 .field:last-child{margin-bottom:0}
 .field label{font-size:11px;color:var(--text2)}
@@ -54,11 +55,20 @@ body{font-family:'Hiragino Sans','Meiryo',sans-serif;background:var(--bg2);displ
 .tab-bar-wrap{flex-shrink:0;background:var(--bg2);border-bottom:0.5px solid var(--bd)}
 .tab-bar{display:flex;overflow-x:auto;scrollbar-width:none}
 .tab-bar::-webkit-scrollbar{display:none}
+.tab-item{flex-shrink:0;display:flex;align-items:stretch;background:var(--bg2)}
+.tab-select{display:flex;align-items:center;gap:4px;padding:0 0 0 9px;font-size:11px;color:var(--text2);font-weight:600;white-space:nowrap}
+.tab-select input{width:18px;height:18px;accent-color:var(--accent)}
 .tab-btn{flex-shrink:0;display:flex;align-items:center;gap:6px;padding:10px 14px;font-size:12px;font-weight:500;color:var(--text2);border:none;border-bottom:2px solid transparent;background:none;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent}
 .tab-btn.active{color:var(--accent);background:var(--bg);border-bottom-color:var(--accent)}
 .tab-btn .del-btn{display:flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;border:none;cursor:pointer;font-size:11px;color:var(--text2);background:var(--bg3);padding:0}
 .tab-btn.active .del-btn{background:var(--danger2);color:var(--danger)}
 .add-tab-btn{flex-shrink:0;padding:10px 14px;font-size:12px;color:var(--accent);border:none;background:none;cursor:pointer;font-weight:500;white-space:nowrap}
+.bulk-section{flex-shrink:0;padding:12px 16px;background:var(--accent2);border-bottom:1px solid #c9d9e9}
+.bulk-section.hidden{display:none}
+.bulk-title{font-size:13px;font-weight:700;color:var(--accent);margin-bottom:8px}
+.bulk-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end}
+.bulk-row .field{margin:0}
+.bulk-apply{min-height:48px;padding:10px 16px;border:0;border-radius:9px;background:var(--accent);color:#fff;font:inherit;font-weight:700;cursor:pointer}
 
 /* スクロールエリア */
 .scroll-area{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(16px + var(--safe-bottom))}
@@ -213,7 +223,7 @@ input[type=text]:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 
 .val-header h3{font-size:18px;font-weight:700}.val-header p{font-size:13px}.val-item{font-size:14px;padding:6px 0}
 .val-btn-back,.val-btn-go{min-height:48px;font-size:15px;font-weight:700}
 @media(max-width:560px){
-  .grid2{grid-template-columns:1fr}.section{margin:8px 8px 0;padding:18px 15px}.header h1{font-size:19px}
+  .grid2,.grid3{grid-template-columns:1fr}.section{margin:8px 8px 0;padding:18px 15px}.header h1{font-size:19px}
   .toolbar{padding:9px 10px}.tbtn{padding:9px 11px}.kw-table{table-layout:fixed;width:100%}
   .kw-table th,.kw-table td{padding:7px 3px}.kw-table td.rh{width:46px}.kw-inp{gap:2px}.kw-inp input{width:60px;min-width:0;padding:8px 3px}.kw-unit{font-size:10px}
   .pdf-toolbar{gap:6px}
@@ -247,6 +257,14 @@ input[type=text]:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 
 
 <div class="tab-bar-wrap">
   <div class="tab-bar" id="tab-bar"></div>
+</div>
+
+<div class="bulk-section hidden" id="bulk-section">
+  <div class="bulk-title" id="bulk-count">選択中: 0窓</div>
+  <div class="bulk-row">
+    <div class="field"><label>選択した窓の商品色</label><select id="bulk-color"><option value="">色を選択</option><option value="cb">カームブラック</option><option value="gr">グレージュ</option><option value="cl">クリア</option><option value="na">ナチュラル</option><option value="db">ダークブラウン</option><option value="mo">ミディアムオーク</option><option value="wh">ホワイト</option></select></div>
+    <button class="bulk-apply" onclick="applyBulkColor()">選択窓に反映</button>
+  </div>
 </div>
 
 <div class="scroll-area" id="scroll-area">
@@ -292,6 +310,7 @@ input[type=text]:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 
 <script>
 // ─── 状態 ───────────────────────────────
 let wins=[], activeId=null, ctr=0;
+let bulkSelected=new Set();
 
 // レポートのレイアウト基準幅（px）。画面サイズに関わらずこの幅で組む
 const PDF_W=760;
@@ -318,6 +337,7 @@ const LBL={
   mochidashi:{n:'無',y:'有'}
 };
 const lb=(m,v)=>m[v]||v||'—';
+const locationName=w=>[w.floor,w.roomType,w.roomDetail].filter(Boolean).join('・')||(w.location||'');
 
 // ─── トースト ────────────────────────────
 let toastT;
@@ -391,10 +411,11 @@ function getWinData(n){
   const p=document.getElementById('panel-'+n);if(!p)return null;
   const r=name=>{const e=p.querySelector(`input[name="${name}"]:checked`);return e?e.value:'';};
   const t=id=>{const e=document.getElementById(id);return e?e.value.trim():'';};
+  const floor=t('floor-'+n),roomType=t('room-'+n),roomDetail=t('loc-detail-'+n);
   return{
     id:n,label:(wins.find(w=>w.id===n)||{}).label||'窓'+n,
     windowType:r('wintype'+n),
-    location:t('loc-'+n),shoji:r('shoji'+n),color:r('color'+n),dimA:t('dima-'+n),mochidashi:r('mochidashi'+n),
+    floor,roomType,roomDetail,location:locationName({floor,roomType,roomDetail}),shoji:r('shoji'+n),color:r('color'+n),dimA:t('dima-'+n),mochidashi:r('mochidashi'+n),
     kw:[...document.querySelectorAll(`#kw-row-${n} input`)].map(i=>i.value.trim()),
     kh:[...document.querySelectorAll(`#kh-row-${n} input`)].map(i=>i.value.trim()),
     series:r('series'+n),glassType:r('type1_'+n),glassType2:r('type2_'+n),spacer:r('sp'+n),gas:r('gas'+n),
@@ -436,7 +457,7 @@ function loadData(){
 }
 
 function restoreAll(data){
-  wins=[];activeId=null;ctr=data.ctr||0;
+  wins=[];activeId=null;ctr=data.ctr||0;bulkSelected.clear();updateBulkPanel();
   document.getElementById('survey-date').value=data.surveyDate||'';
   document.getElementById('site-name').value=data.siteName||'';
   const sa=document.getElementById('scroll-area');sa.innerHTML='';
@@ -451,7 +472,9 @@ function restoreAll(data){
 function restoreWin(wd){
   const n=wd.id,p=document.getElementById('panel-'+n);if(!p)return;
   const si=(id,v)=>{const e=document.getElementById(id);if(e)e.value=v||'';};
-  si('loc-'+n,wd.location);si('dima-'+n,wd.dimA);si('memo-'+n,wd.memo);
+  const hasStructured=wd.floor!=null||wd.roomType!=null||wd.roomDetail!=null;
+  si('floor-'+n,wd.floor);si('room-'+n,wd.roomType);si('loc-detail-'+n,hasStructured?wd.roomDetail:wd.location);
+  si('dima-'+n,wd.dimA);si('memo-'+n,wd.memo);
   si('crespos-'+n,wd.cresPos);si('hikitepos-'+n,wd.hikitePos);si('nakazanpos-'+n,wd.nakazanPos);
   if(wd.taikaku){si('taik1-'+n,wd.taikaku[0]);si('taik2-'+n,wd.taikaku[1]);}
   const kwR=document.getElementById('kw-row-'+n),khR=document.getElementById('kh-row-'+n);
@@ -751,6 +774,7 @@ function deleteWindow(id,e){
   const lbl=(wins.find(w=>w.id===id)||{}).label||'この窓';
   if(!confirm(lbl+'を削除しますか？'))return;
   const idx=wins.findIndex(w=>w.id===id);wins=wins.filter(w=>w.id!==id);
+  bulkSelected.delete(id);updateBulkPanel();
   document.getElementById('panel-'+id)?.remove();
   // 削除後に番号を詰め直す
   wins.forEach((w,i)=>{
@@ -774,12 +798,41 @@ function setActive(id){
 function renderTabs(){
   const bar=document.getElementById('tab-bar');bar.innerHTML='';
   wins.forEach(w=>{
+    const wrap=document.createElement('div');wrap.className='tab-item';
+    const select=document.createElement('label');select.className='tab-select';
+    select.innerHTML=`<input type="checkbox" ${bulkSelected.has(w.id)?'checked':''}>選択`;
+    const checkbox=select.querySelector('input');
+    checkbox.addEventListener('click',e=>e.stopPropagation());
+    checkbox.addEventListener('change',()=>toggleBulk(w.id,checkbox.checked));
     const btn=document.createElement('button');
     btn.className='tab-btn'+(w.id===activeId?' active':'');
     btn.innerHTML=`<span>${w.label}</span><button class="del-btn" onclick="deleteWindow(${w.id},event)">✕</button>`;
-    btn.addEventListener('click',()=>setActive(w.id));bar.appendChild(btn);
+    btn.addEventListener('click',()=>setActive(w.id));wrap.append(select,btn);bar.appendChild(wrap);
   });
   const add=document.createElement('button');add.className='add-tab-btn';add.textContent='＋ 追加';add.onclick=addWindow;bar.appendChild(add);
+  updateBulkPanel();
+}
+
+function toggleBulk(id,checked){
+  if(checked)bulkSelected.add(id);else bulkSelected.delete(id);
+  updateBulkPanel();
+}
+function updateBulkPanel(){
+  bulkSelected=new Set([...bulkSelected].filter(id=>wins.some(w=>w.id===id)));
+  const section=document.getElementById('bulk-section');if(!section)return;
+  section.classList.toggle('hidden',bulkSelected.size===0);
+  document.getElementById('bulk-count').textContent='選択中: '+bulkSelected.size+'窓';
+}
+function applyBulkColor(){
+  const color=document.getElementById('bulk-color').value;
+  if(!color){toast('変更する商品色を選択してください',1);return;}
+  let changed=0;
+  bulkSelected.forEach(id=>{
+    const input=document.querySelector(`input[name="color${id}"][value="${color}"]`);
+    if(input){input.checked=true;changed++;}
+  });
+  document.getElementById('save-ind').textContent='未保存';
+  toast(changed+'窓の商品色を変更しました');
 }
 
 // ─── トグル ──────────────────────────────
@@ -854,7 +907,11 @@ function makePanel(n){
   div.innerHTML=`
 <div class="section">
   <div class="sec-title">設置・基本情報</div>
-  <div class="field"><label>設置場所</label><input type="text" id="loc-${n}" placeholder="例：リビング南"></div>
+  <div class="grid3">
+    <div class="field"><label>階</label><select id="floor-${n}"><option value="">未選択</option><option>1階</option><option>2階</option><option>3階</option><option>その他</option></select></div>
+    <div class="field"><label>部屋</label><select id="room-${n}"><option value="">未選択</option><option>トイレ</option><option>浴室</option><option>洗面脱衣</option><option>リビング</option><option>居間</option><option>寝室</option><option>子供室</option><option>キッチン</option><option>和室</option><option>玄関</option><option>廊下</option><option>納戸</option><option>その他</option></select></div>
+    <div class="field"><label>方角・特徴</label><input type="text" id="loc-detail-${n}" placeholder="例：南・掃き出し・道路側"></div>
+  </div>
   <div class="field"><label>窓種</label><div class="radio-group">
     <label><input type="radio" name="wintype${n}" value="hiki" onchange="toggleWindowType(${n})"><span>引き違い</span></label>
     <label><input type="radio" name="wintype${n}" value="fix" onchange="toggleWindowType(${n})"><span>FIX窓</span></label>
@@ -1148,19 +1205,10 @@ document.getElementById('survey-date').value=(()=>{
 
 // ─── クリック時全選択機能（Disto対応） ──────────────────────────────────────────
 function initAutoSelect() {
-  // 全数値入力欄にクリック時全選択イベントを追加
-  const selectors = [
-    'input[type="text"]',
-    '.kw-inp input',
-    'select'
-  ];
-  
-  selectors.forEach(selector => {
-    document.querySelectorAll(selector).forEach(el => {
-      el.addEventListener('click', function() {
-        this.select();
-      });
-    });
+  // 後から追加した窓を含め、文字・数値入力欄をクリック時に全選択する
+  document.addEventListener('click', event => {
+    const el=event.target;
+    if(el.matches&&el.matches('input[type="text"],.kw-inp input')&&typeof el.select==='function')el.select();
   });
 }
 
