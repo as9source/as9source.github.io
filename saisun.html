@@ -368,6 +368,7 @@ main{max-width:940px;padding:24px 20px 12px}
   <div class="toolbar-right">
     <button class="tool-btn" onclick="openRecords()">📂 読込</button>
     <button class="tool-btn" onclick="saveRecord()">💾 保存</button>
+    <button class="tool-btn" onclick="exportYkkTransfer()">🔗 リモNAVi転記</button>
     <button class="tool-btn primary" id="share-btn" onclick="shareSheet(this)">📄 PDF</button>
     <button class="tool-btn" onclick="clearAll()">🔄</button>
   </div>
@@ -452,9 +453,9 @@ main{max-width:940px;padding:24px 20px 12px}
     </div>
   </div>
 
-  <!-- 取付方法 -->
+  <!-- 既設枠の種類 -->
   <div class="field-row" id="card-tsuke">
-    <div class="field-label">取付方法</div>
+    <div class="field-label">既設枠の種類</div>
     <div class="chip-row">
       <button class="chip" id="tsuke-hanzoto" onclick="selectTsuke('hanzoto')">半外付け</button>
       <button class="chip" id="tsuke-uchi" onclick="selectTsuke('uchi')">内付け</button>
@@ -710,20 +711,40 @@ main{max-width:940px;padding:24px 20px 12px}
     <div class="sec-header"><span>現地打ち合わせ内容</span><button type="button" class="help-btn" onclick="openHelp('meeting')" aria-label="商品選択のカタログヘルプ">?</button></div>
     <div class="meeting-card door-meeting-only">
       <div class="meeting-grid">
-        <div class="meeting-field"><label class="meeting-label" for="meeting-series">商品・仕様</label><select class="meeting-select" id="meeting-series"><option value="">選択してください</option><option>D50 高断熱ドア</option><option>D30 断熱ドア D2仕様</option><option>D30 断熱ドア D4仕様</option><option>D30 防火ドア D2仕様</option><option>D30 防火ドア D4仕様</option><option>アルミドア</option></select></div>
-        <div class="meeting-field"><label class="meeting-label" for="meeting-status">打ち合わせ状況</label><select class="meeting-select" id="meeting-status"><option value="">選択してください</option><option>決定</option><option>第一候補</option><option>比較検討中</option><option>見積後に決定</option><option>未定</option></select></div>
+        <div class="meeting-field"><label class="meeting-label" for="meeting-series">商品・仕様（候補1）</label><select class="meeting-select" id="meeting-series"><option value="">選択してください</option><option>D50 高断熱ドア</option><option>D30 断熱ドア D2仕様</option><option>D30 断熱ドア D4仕様</option><option>D30 防火ドア D2仕様</option><option>D30 防火ドア D4仕様</option><option>アルミドア</option></select></div>
+        <div class="meeting-field"><label class="meeting-label" for="meeting-status">打ち合わせ状況</label><select class="meeting-select" id="meeting-status"><option value="">選択してください</option><option>決定</option><option>第一候補</option><option>比較検討中</option><option>未定</option></select></div>
       </div>
       <div class="meeting-grid">
-        <div class="meeting-field"><label class="meeting-label" for="meeting-design">扉デザイン</label><select class="meeting-select" id="meeting-design"><option value="">選択してください</option><optgroup label="D50 高断熱"><option>N40N</option><option>N41N</option><option>N42N</option><option>N43N</option><option>F61N</option><option>F62N</option><option>F63N</option><option>F64N</option><option>C60N</option><option>C62N</option><option>C63N</option><option>C64N</option><option>C66N</option><option>C40N</option><option>E62N</option><option>E63N</option><option>E64N</option><option>E65N</option><option>E66N</option><option>E67N</option></optgroup><optgroup label="D30 ナチュラル"><option>N04H</option><option>N05T</option><option>N05N</option><option>N06K</option><option>N06H</option><option>N07T</option><option>N07N</option><option>N08N</option><option>N09N</option><option>N10N</option><option>N12N</option><option>N13N</option><option>N14N</option></optgroup><optgroup label="D30 シンプル"><option>F03T</option><option>F03N</option><option>F04H</option><option>F05K</option><option>F05H</option><option>F06K</option><option>F06H</option><option>F08H</option></optgroup><optgroup label="D30 シック"><option>C02N</option><option>C03N</option><option>C04T</option><option>C04N</option><option>C05N</option><option>C07T</option><option>C07N</option><option>C08K</option><option>C08H</option><option>C09T</option><option>C09N</option><option>C10N</option><option>C11T</option><option>C11N</option></optgroup><optgroup label="D30 エレガント"><option>E01N</option><option>E02N</option><option>E03N</option><option>E04N</option><option>E07N</option><option>E08N</option><option>E09T</option><option>E09N</option><option>E10N</option><option>E11N</option><option>E12N</option></optgroup><optgroup label="D30 ハイサイズ"><option>F03S</option><option>F03M</option><option>F04M</option><option>C07S</option><option>C07M</option><option>C09S</option><option>C09M</option><option>C10M</option></optgroup><optgroup label="アルミドア"><option>S01</option><option>S02</option><option>S03</option><option>S05</option><option>S06</option><option>S08</option><option>S11</option><option>S12</option><option>S50</option><option>S51</option><option>S52</option><option>G50</option><option>G51</option></optgroup><option>その他（備考へ記入）</option></select><div class="meeting-hint">公式掲載のデザインコードです。扉サイズにより意匠が多少変わる場合があります。</div></div>
+        <div class="meeting-field"><label class="meeting-label" for="meeting-new-shape">新設ドアの枠形式</label><select class="meeting-select" id="meeting-new-shape"><option value="">選択してください</option><option value="single">片開き</option><option value="oyako">親子ドア</option><option value="sode">片袖FIX</option><option value="sode_oyako">袖付親子</option><option value="ryosode">両袖FIX</option><option value="double">両開き</option></select><div class="meeting-hint" id="meeting-new-shape-hint">既設形式とは別に選択してください。既設が片開きの場合だけ、自動で片開きになります。</div></div>
+        <div class="meeting-field"><label class="meeting-label" for="meeting-new-upper">新設ドアの上部仕様</label><select class="meeting-select" id="meeting-new-upper"><option value="">商品・仕様を先に選択</option></select><div class="meeting-hint">D30はランマ付・中桟付・ハイサイズも選択できます。</div></div>
+      </div>
+      <div class="meeting-alert" id="meeting-range-warning">商品・デザイン・新設枠寸法を入力すると、製作範囲を確認します。</div>
+      <input type="hidden" id="meeting-range-result" value="">
+      <div class="meeting-grid">
+        <div class="meeting-field"><label class="meeting-label" for="meeting-design">扉デザイン（候補1）</label><select class="meeting-select" id="meeting-design"><option value="">選択してください</option></select><div class="meeting-hint">公式掲載のデザインコードです。扉サイズにより意匠が多少変わる場合があります。</div></div>
         <div class="meeting-field"><label class="meeting-label" for="meeting-color">扉カラー</label><select class="meeting-select" id="meeting-color"><option value="">選択してください</option><option>バニラウォールナット</option><option>ナチュラルオーク</option><option>マキアートパイン</option><option>ドライチーク</option><option>ダージリンウォールナット</option><option>ステインウォールナット</option><option>スモークエルム</option><option>ココナッツチェリー</option><option>アイスブルーノーチェ</option><option>プラチナステン</option><option>ブラウン</option><option>カームブラック</option><option>その他（備考へ記入）</option></select><div class="meeting-hint" id="meeting-color-hint">デザインを選ぶと、その品番に設定されたカラーだけを表示します。</div></div>
       </div>
-      <div class="meeting-preview" id="meeting-preview"><div class="meeting-preview-empty" id="meeting-preview-media">デザインを選択すると<br>公式意匠画像を表示します</div><div><div class="meeting-preview-title" id="meeting-preview-title">デザイン未選択</div><div class="meeting-hint">画像はYKK AP公式掲載画像です。実際の色・納まりは最新カタログで確認してください。</div><div class="meeting-links"><a href="https://www.ykkap.co.jp/consumer/products/door/doorremo-door/lineup" target="_blank" rel="noopener">公式デザイン一覧 ↗</a><a href="https://reforakunavi.ykkap.co.jp/" target="_blank" rel="noopener">かんたんリモNAVi ↗</a></div></div></div>
+      <div class="meeting-preview" id="meeting-preview"><div><div class="meeting-preview-title" id="meeting-preview-title">候補1：デザイン未選択</div><div class="meeting-hint">商品の詳細・設定可否はリンク先で確認できます。</div><div class="meeting-links"><a href="https://reforakunavi.ykkap.co.jp/" target="_blank" rel="noopener">かんたんリモNAVi ↗</a></div></div></div>
+      <div id="meeting-extra-candidates" style="display:none">
+      <div class="meeting-preview-title" style="font-size:16px;margin:16px 0 10px">追加の商品候補（任意）</div>
+      <div class="meeting-hint" style="margin-bottom:10px">候補1がリモNAVi自動転記の対象です。候補2・3は比較用として保存・PDF表示されます。</div>
+      <div class="meeting-grid">
+        <div class="meeting-field"><label class="meeting-label" for="meeting-series-2">商品・仕様（候補2）</label><select class="meeting-select" id="meeting-series-2"><option value="">候補なし</option><option>D50 高断熱ドア</option><option>D30 断熱ドア D2仕様</option><option>D30 断熱ドア D4仕様</option><option>D30 防火ドア D2仕様</option><option>D30 防火ドア D4仕様</option><option>アルミドア</option></select></div>
+        <div class="meeting-field"><label class="meeting-label" for="meeting-design-2">扉デザイン（候補2）</label><select class="meeting-select" id="meeting-design-2"><option value="">商品を先に選択</option></select></div>
+      </div>
+      <div class="meeting-field"><label class="meeting-label" for="meeting-color-2">扉カラー（候補2）</label><select class="meeting-select" id="meeting-color-2"><option value="">デザインを先に選択</option></select></div>
+      <div class="meeting-grid" style="margin-top:12px">
+        <div class="meeting-field"><label class="meeting-label" for="meeting-series-3">商品・仕様（候補3）</label><select class="meeting-select" id="meeting-series-3"><option value="">候補なし</option><option>D50 高断熱ドア</option><option>D30 断熱ドア D2仕様</option><option>D30 断熱ドア D4仕様</option><option>D30 防火ドア D2仕様</option><option>D30 防火ドア D4仕様</option><option>アルミドア</option></select></div>
+        <div class="meeting-field"><label class="meeting-label" for="meeting-design-3">扉デザイン（候補3）</label><select class="meeting-select" id="meeting-design-3"><option value="">商品を先に選択</option></select></div>
+      </div>
+      <div class="meeting-field"><label class="meeting-label" for="meeting-color-3">扉カラー（候補3）</label><select class="meeting-select" id="meeting-color-3"><option value="">デザインを先に選択</option></select></div>
+      </div>
       <div id="meeting-child-wrap" style="display:none;margin-top:14px">
         <div class="meeting-grid">
           <div class="meeting-field"><label class="meeting-label" for="meeting-child-type">子扉の種類</label><select class="meeting-select" id="meeting-child-type"><option value="">商品・仕様を先に選択</option></select></div>
-          <div class="meeting-field"><label class="meeting-label" for="meeting-child-door">子扉の品番</label><select class="meeting-select" id="meeting-child-door"><option value="">子扉の種類を先に選択</option></select></div>
+          <div class="meeting-field"><label class="meeting-label" for="meeting-child-door">自動判定された子扉</label><input class="meeting-select" id="meeting-child-door" type="text" readonly placeholder="デザインと子扉の種類から自動判定"></div>
         </div>
-        <div class="meeting-hint">「親子ドア」を選択した場合に、種類を選んでから品番を選択します。</div>
+        <div class="meeting-hint">親扉デザインと「無採光・採光・通風」から自動判定します。一意に決まらない場合は候補品番を表示します。</div>
       </div>
     </div>
     <div class="meeting-card door-meeting-only">
@@ -759,7 +780,7 @@ main{max-width:940px;padding:24px 20px 12px}
         <div class="meeting-preview-title" style="font-size:16px;margin-bottom:14px">玄関引戸 商品仕様</div>
         <div class="meeting-grid">
           <div class="meeting-field"><label class="meeting-label" for="sliding-series">商品・建て方</label><select class="meeting-select" id="sliding-series"><option value="">選択してください</option><option>袖付2枚連動引込み戸</option><option>2枚建 現代和風</option><option>2枚建 洋風ベーシック</option><option>2枚建 伝統和風</option><option>4枚建 伝統和風</option></select></div>
-          <div class="meeting-field"><label class="meeting-label" for="sliding-status">打ち合わせ状況</label><select class="meeting-select" id="sliding-status"><option value="">選択してください</option><option>決定</option><option>第一候補</option><option>比較検討中</option><option>見積後に決定</option><option>未定</option></select></div>
+          <div class="meeting-field"><label class="meeting-label" for="sliding-status">打ち合わせ状況</label><select class="meeting-select" id="sliding-status"><option value="">選択してください</option><option>決定</option><option>第一候補</option><option>比較検討中</option><option>未定</option></select></div>
         </div>
         <div class="meeting-grid">
           <div class="meeting-field"><label class="meeting-label" for="sliding-design">引戸デザイン</label><select class="meeting-select" id="sliding-design"><option value="">商品を先に選択</option></select></div>
@@ -865,6 +886,7 @@ main{max-width:940px;padding:24px 20px 12px}
 let currentType = '';
 let photoData = [];
 let tsukeMethod = '';
+let newShapeAutoFromSingle = false;
 const chipState = {};
 
 // ======= Type selection =======
@@ -897,7 +919,7 @@ function selectChip(el) {
   document.querySelectorAll(`.chip[data-group="${group}"]`).forEach(c => c.classList.remove('selected'));
   if (wasSelected) delete chipState[group];
   else { el.classList.add('selected'); chipState[group] = el.dataset.val; }
-  if (group === 'katachi') { updateKouchiVisibility(); updateChildDoorVisibility(); updateDoorDesignRules(); updatePartsSectionsVisibility(); }
+  if (group === 'katachi') { syncNewShapeFromExisting(); updateKouchiVisibility(); updateChildDoorVisibility(); updateDoorDesignRules(); updatePartsSectionsVisibility(); }
   if (group === 'backFloor') setVal('back-floor', chipState[group]==='floor'?'フロア納まり':chipState[group]==='doma'?'土間納まり':'');
   if (group === 'ranma' || group === 'ranmaS') { updatePartsSectionsVisibility(); updateSlidingCombinationRules(true); }
 }
@@ -1092,7 +1114,7 @@ function recalc() {
     hfEl.textContent = `${khMin} ＋ 15（はつり） = ${effH}`;
   } else if (!effectiveTsuke) {
     hEl.textContent = '―'; hEl.className = 'calc-val na';
-    hfEl.textContent = '取付方法を選択してください';
+    hfEl.textContent = '既設枠の種類を選択してください';
   } else {
     const baseH = effectiveTsuke === 'hanzoto' ? 10 : 5;
     const atH   = at ? 6 : 0;
@@ -1108,7 +1130,7 @@ function recalc() {
     wfEl.textContent = (tsuri || effectiveTsuke) ? 'KW を入力してください' : '';
   } else if (!tsuri && !effectiveTsuke) {
     wEl.textContent = '―'; wEl.className = 'calc-val na';
-    wfEl.textContent = '取付方法を選択してください';
+    wfEl.textContent = '既設枠の種類を選択してください';
   } else {
     const baseW = (!tsuri && effectiveTsuke === 'hanzoto') ? 20 : 10;
     const effW  = kw - baseW;
@@ -1133,11 +1155,13 @@ function recalc() {
     kouchiWEl.textContent = kouW + ' mm'; kouchiWEl.className = 'kouchi-val';
     kouchiWfEl.textContent = `${kw} − ${baseW} = ${kouW}`;
   }
+  updateManufacturingRangeWarning();
 }
 
 // ======= Labels & constants =======
 const KATTE_LABEL   = { right:'右勝手', left:'左勝手' };
-const KATACHI_LABEL = { single:'片開き', oyako:'親子ドア', sode:'片袖fix', ryosode:'両袖fix' };
+const KATACHI_LABEL = { single:'片開き', oyako:'親子ドア', sode_oyako:'袖付親子', sode:'片袖FIX', ryosode:'両袖FIX', double:'両開き' };
+const NEW_UPPER_LABEL = { no:'ランマ無', yes:'ランマ付', no_middle:'ランマ無（中桟付）', yes_middle:'ランマ付（中桟付）', high:'ハイサイズ' };
 const RANMA_LABEL   = { yes:'ランマあり', no:'ランマなし' };
 const POST_LABEL    = { yes:'ポストあり', no:'ポストなし' };
 const MAISUU_LABEL  = { '2':'2枚建て', '4':'4枚建て' };
@@ -1234,7 +1258,7 @@ document.getElementById('photo-library').addEventListener('change', async e => {
 renderPhotos();
 
 // ======= On-site meeting details =======
-const MEETING_IDS = ['meeting-series','meeting-status','meeting-design','meeting-color','meeting-child-type','meeting-child-door','meeting-lock','meeting-power','meeting-handle','meeting-handle-color','meeting-lower-type','meeting-lower-relief','meeting-lower-cover','meeting-lower-baseboard','meeting-lower-angle','meeting-lower-vertical','meeting-lower-wood-cover','meeting-notes'];
+const MEETING_IDS = ['meeting-series','meeting-status','meeting-new-shape','meeting-new-upper','meeting-range-result','meeting-design','meeting-color','meeting-series-2','meeting-design-2','meeting-color-2','meeting-series-3','meeting-design-3','meeting-color-3','meeting-child-type','meeting-child-door','meeting-lock','meeting-power','meeting-handle','meeting-handle-color','meeting-lower-type','meeting-lower-relief','meeting-lower-cover','meeting-lower-baseboard','meeting-lower-angle','meeting-lower-vertical','meeting-lower-wood-cover','meeting-notes'];
 const BACKDOOR_IDS = ['back-frame','back-floor','back-design','back-ranma','back-upper-panel','back-lower-panel','back-color-mode','back-outer-color','back-inner-color','back-cylinder','back-thumbturn'];
 const SLIDING_IDS = ['sliding-series','sliding-status','sliding-design','sliding-color','sliding-glass','sliding-handle','sliding-handle-color','sliding-lock','sliding-latch','sliding-screen','sliding-screen-type','sliding-screen-net','sliding-screen-color'];
 const SLIDING_STD_COLORS=['KG ナチュラルオーク','YF キャラメルチーク','YA ステインウォールナット','B1 ブラウン','B7 カームブラック','H2 プラチナステン'];
@@ -1328,9 +1352,29 @@ const DESIGN_IMAGES = {
   S50:'https://assets.ykkap.co.jp/uploads/tmg_block_page_image/file/22491/lineup_DDB11890BSC_80.jpg'
 };
 function fillSelect(id,items,placeholder='選択してください'){const el=document.getElementById(id),old=el.value;el.replaceChildren(new Option(placeholder,''),...items.map(x=>new Option(x,x)));if(items.includes(old))el.value=old;}
+function fillValueLabelSelect(id,items,placeholder='選択してください'){const el=document.getElementById(id),old=el.value;el.replaceChildren(new Option(placeholder,''),...items.map(x=>new Option(x.label,x.value)));if(items.some(x=>x.value===old))el.value=old;}
+function updateNewUpperOptions(preserve=true){
+  const series=val('meeting-series'),old=val('meeting-new-upper');
+  let values=[];
+  if(series.startsWith('D50'))values=['no'];
+  else if(series.startsWith('D30'))values=['no','yes','no_middle','yes_middle','high'];
+  else if(series==='アルミドア')values=['no','yes','no_middle','yes_middle'];
+  fillValueLabelSelect('meeting-new-upper',values.map(value=>({value,label:NEW_UPPER_LABEL[value]})),series?'選択してください':'商品・仕様を先に選択');
+  if(preserve&&values.includes(old))setVal('meeting-new-upper',old);else if(values.length===1)setVal('meeting-new-upper',values[0]);
+  updateNewShapeOptions(preserve);
+}
+function updateNewShapeOptions(preserve=true){
+  const series=val('meeting-series'),upper=val('meeting-new-upper'),old=val('meeting-new-shape');
+  let values=['single','oyako','sode','sode_oyako','ryosode','double'];
+  if(series.startsWith('D50'))values=['single','oyako','double'];
+  else if(upper==='high')values=['single','oyako','sode','ryosode'];
+  fillValueLabelSelect('meeting-new-shape',values.map(value=>({value,label:KATACHI_LABEL[value]})),'選択してください');
+  if(preserve&&values.includes(old))setVal('meeting-new-shape',old);
+  syncNewShapeFromExisting();
+}
 function updateProductOptions(preserve=true){
   const c=PRODUCT_CATALOG[val('meeting-series')];
-  const old={design:val('meeting-design'),color:val('meeting-color'),lock:val('meeting-lock'),childType:val('meeting-child-type'),child:val('meeting-child-door')};
+  const old={design:val('meeting-design'),color:val('meeting-color'),lock:val('meeting-lock'),childType:val('meeting-child-type')};
   fillSelect('meeting-design',c?.designs||[],c?'選択してください':'商品・仕様を先に選択');
   fillSelect('meeting-color',c?.colors||[],c?'デザインを先に選択':'商品・仕様を先に選択');
   fillSelect('meeting-lock',c?.locks||[],c?'選択してください':'商品・仕様を先に選択');
@@ -1339,12 +1383,80 @@ function updateProductOptions(preserve=true){
   if(preserve){setVal('meeting-design',old.design);setVal('meeting-lock',old.lock);setVal('meeting-child-type',old.childType);}
   updateDesignColorOptions(false);if(preserve)setVal('meeting-color',old.color);
   updateChildProductOptions(false);
-  if(preserve)setVal('meeting-child-door',old.child);
-  updateMeetingPreview();updateLockPower(false);updateChildDoorVisibility();
+  updateNewUpperOptions(preserve);updateMeetingPreview();updateLockPower(false);updateChildDoorVisibility();updateManufacturingRangeWarning();
+}
+
+function syncNewShapeFromExisting() {
+  const select=document.getElementById('meeting-new-shape'),hint=document.getElementById('meeting-new-shape-hint');
+  if(!select)return;
+  if(chipState.katachi==='single'){
+    select.value='single';select.disabled=true;newShapeAutoFromSingle=true;
+    if(hint)hint.textContent='既設が片開きのため、新設枠も片開きになります。';
+  }else{
+    select.disabled=false;
+    if(newShapeAutoFromSingle){select.value='';newShapeAutoFromSingle=false;}
+    if(hint)hint.textContent='既設形式とは連動しません。新設する枠形式を選択してください。';
+  }
+  updateChildDoorVisibility();updateDoorDesignRules();
 }
 function updateDesignColorOptions(preserve=true){const design=val('meeting-design'),old=val('meeting-color'),colors=DESIGN_COLORS[design]||[];fillSelect('meeting-color',colors,design?(colors.length?'選択してください':'カラー設定要確認'):'デザインを先に選択');if(preserve&&colors.includes(old))setVal('meeting-color',old);const hint=document.getElementById('meeting-color-hint');hint.textContent=colors.length?`${design}でカタログ掲載されている${colors.length}色を表示しています。`:'デザインを選ぶと、その品番に設定されたカラーだけを表示します。';updateCompatibilityStatus();}
-function updateChildProductOptions(preserve=true){const old=val('meeting-child-door'),map=CHILD_OPTIONS[val('meeting-series')],type=val('meeting-child-type'),items=map?.[type]||[];fillSelect('meeting-child-door',items,type?'選択してください':'子扉の種類を先に選択');if(preserve)setVal('meeting-child-door',old);}
-function updateChildDoorVisibility(){const el=document.getElementById('meeting-child-wrap');if(el)el.style.display=currentType==='door'&&chipState.katachi==='oyako'?'':'none';}
+function updateCandidateOptions(slot,preserve=true){
+  const seriesId=`meeting-series-${slot}`,designId=`meeting-design-${slot}`,colorId=`meeting-color-${slot}`;
+  const oldDesign=val(designId),oldColor=val(colorId),catalog=PRODUCT_CATALOG[val(seriesId)];
+  fillSelect(designId,catalog?.designs||[],catalog?'選択してください':'商品・仕様を先に選択');
+  if(preserve&&catalog?.designs.includes(oldDesign))setVal(designId,oldDesign);
+  updateCandidateColorOptions(slot,false);
+  if(preserve)setVal(colorId,oldColor);
+}
+function updateCandidateColorOptions(slot,preserve=true){
+  const designId=`meeting-design-${slot}`,colorId=`meeting-color-${slot}`,design=val(designId),old=val(colorId),colors=DESIGN_COLORS[design]||[];
+  fillSelect(colorId,colors,design?(colors.length?'選択してください':'カラー設定要確認'):'デザインを先に選択');
+  if(preserve&&colors.includes(old))setVal(colorId,old);
+}
+function updateChildProductOptions(){
+  const series=val('meeting-series'),design=val('meeting-design'),type=val('meeting-child-type'),map=CHILD_OPTIONS[series],items=map?.[type]||[];
+  let result='';
+  if(!type) result='';
+  else if(series==='D50 高断熱ドア'&&D50_CHILD_BY_DESIGN[design]){
+    const code=D50_CHILD_BY_DESIGN[design],matchedType=code==='K60N'?'無採光':'採光';
+    result=type===matchedType?code:`${design}は${matchedType}子扉 ${code}（選択条件を要確認）`;
+  }else if(items.length===1) result=items[0];
+  else if(items.length>1) result='候補：'+items.join('／');
+  else if(type) result='設定なし／カタログ確認';
+  setVal('meeting-child-door',result);
+}
+function getPreliminaryManufacturingRange(){
+  const series=val('meeting-series'),upper=val('meeting-new-upper');
+  if(!series||!upper)return null;
+  if(series.startsWith('D50'))return{h:[1819,2426],w:[873,1495],source:'D50 ランマ無'};
+  if(series.startsWith('D30')){
+    if(upper==='high')return{h:[2454,2572],w:[782,1466],source:'D30 ハイサイズ'};
+    if(upper==='yes'||upper==='yes_middle')return{h:[2023,2600],w:[782,1496],source:'D30 ランマ付'};
+    return{h:[1823,2453],w:[782,1496],source:'D30 ランマ無'};
+  }
+  if(series==='アルミドア'){
+    const withTransom=upper==='yes'||upper==='yes_middle';
+    return{h:withTransom?[2023,2600]:[1823,2453],w:[781,1496],source:`アルミドア ${withTransom?'ランマ付':'ランマ無'}`};
+  }
+  return null;
+}
+function updateManufacturingRangeWarning(){
+  const alert=document.getElementById('meeting-range-warning'),result=document.getElementById('meeting-range-result');
+  if(!alert||!result)return;
+  const range=getPreliminaryManufacturingRange(),h=parseFloat(document.getElementById('calc-h')?.textContent),w=parseFloat(document.getElementById('calc-w')?.textContent),design=val('meeting-design'),shape=val('meeting-new-shape'),upper=val('meeting-new-upper');
+  const neutral=message=>{alert.textContent=message;alert.style.background='#fff8df';alert.style.borderColor='#e3bd52';alert.style.color='#6b5200';result.value='';};
+  if(!range){neutral('商品と新設ドアの上部仕様を選択すると、ランマ仕様に対応した製作範囲を表示します。');return;}
+  const rangeText=`${range.source}の参考製作範囲：H ${range.h[0]}～${range.h[1]}mm／W ${range.w[0]}～${range.w[1]}mm`;
+  if(!design||!shape||!Number.isFinite(h)||!Number.isFinite(w)){neutral(`${rangeText}。デザイン・新設枠形式・新設枠寸法を入力すると範囲内か判定します。`);return;}
+  const errors=[];
+  if(h<range.h[0]||h>range.h[1])errors.push(`H ${h}mm（${range.h[0]}～${range.h[1]}mm）`);
+  if(w<range.w[0]||w>range.w[1])errors.push(`W ${w}mm（${range.w[0]}～${range.w[1]}mm）`);
+  if(errors.length){const message=`⚠ ${range.source}の製作範囲外の可能性：${errors.join('、')}`;alert.textContent=message;alert.style.background='#feecec';alert.style.borderColor='#df6b6b';alert.style.color='#8a2020';result.value=message;}
+  else{alert.textContent=`✓ ${rangeText}の範囲内です。デザイン別の正式範囲はリモNAVi転記時にも確認します。`;alert.style.background='#edf9f1';alert.style.borderColor='#6db787';alert.style.color='#23643a';result.value='';}
+}
+function updateChildDoorVisibility(){const el=document.getElementById('meeting-child-wrap'),shape=val('meeting-new-shape'),show=currentType==='door'&&(shape==='oyako'||shape==='sode_oyako');if(el)el.style.display=show?'':'none';if(!show){setVal('meeting-child-type','');setVal('meeting-child-door','');}}
+function clearExtraCandidates(){['series-2','design-2','color-2','series-3','design-3','color-3'].forEach(k=>setVal('meeting-'+k,''));updateCandidateOptions(2,false);updateCandidateOptions(3,false);}
+function updateCandidateVisibility(clearHidden=true){const show=val('meeting-status')==='比較検討中',wrap=document.getElementById('meeting-extra-candidates');if(wrap)wrap.style.display=show?'':'none';if(!show&&clearHidden)clearExtraCandidates();}
 function collectMeeting() { const data={}; MEETING_IDS.forEach(id=>data[id.replace('meeting-','')]=val(id)); return data; }
 function collectBackdoor(){const data={};BACKDOOR_IDS.forEach(id=>data[id.replace('back-','')]=val(id));return data;}
 function collectSliding(){const data={};SLIDING_IDS.forEach(id=>data[id.replace('sliding-','')]=val(id));return data;}
@@ -1377,16 +1489,26 @@ function updateSlidingScreenOptions(preserve=true){
   else if(xma)advice.textContent='横引き収納網戸XMAのネットはブラックです。内外バーハンドルの場合は三方枠用補助枠セットも必要です。';
   else advice.textContent='スライド網戸XMEは中桟なし・中桟付・格子付から選択できます。ネットはブラック・クリア・ステンレスから選べます。';
 }
-function restoreMeeting(data={}) { setVal('meeting-series',data.series||''); updateProductOptions(false); MEETING_IDS.filter(id=>id!=='meeting-series').forEach(id=>setVal(id,data[id.replace('meeting-','')]||'')); updateDesignColorOptions(true); updateChildProductOptions(true); updateMeetingPreview(); updateLockPower(false); updateChildDoorVisibility(); updateDoorDesignRules(); if(data['lower-type'])syncLowerFrameToCalc(false); updateLowerFrameAdvice(); }
+function restoreMeeting(data={}) {
+  setVal('meeting-series',data.series||'');updateProductOptions(false);
+  setVal('meeting-new-upper',data['new-upper']||val('meeting-new-upper'));updateNewShapeOptions(false);setVal('meeting-new-shape',data['new-shape']||'');
+  setVal('meeting-design',data.design||'');updateDesignColorOptions(false);setVal('meeting-color',data.color||'');
+  setVal('meeting-status',data.status||'');updateCandidateVisibility(false);
+  if(data.status==='比較検討中'){
+    setVal('meeting-series-2',data['series-2']||'');updateCandidateOptions(2,false);setVal('meeting-design-2',data['design-2']||'');updateCandidateColorOptions(2,false);setVal('meeting-color-2',data['color-2']||'');
+    setVal('meeting-series-3',data['series-3']||'');updateCandidateOptions(3,false);setVal('meeting-design-3',data['design-3']||'');updateCandidateColorOptions(3,false);setVal('meeting-color-3',data['color-3']||'');
+  }else clearExtraCandidates();
+  const handled=['meeting-series','meeting-status','meeting-new-shape','meeting-new-upper','meeting-range-result','meeting-design','meeting-color','meeting-series-2','meeting-design-2','meeting-color-2','meeting-series-3','meeting-design-3','meeting-color-3','meeting-child-door'];
+  MEETING_IDS.filter(id=>!handled.includes(id)).forEach(id=>setVal(id,data[id.replace('meeting-','')]||''));
+  updateChildProductOptions();updateMeetingPreview();updateLockPower(false);updateCandidateVisibility(false);updateChildDoorVisibility();updateDoorDesignRules();updateManufacturingRangeWarning();
+  if(data['lower-type'])syncLowerFrameToCalc(false);updateLowerFrameAdvice();
+}
 function restoreBackdoor(data={}){BACKDOOR_IDS.forEach(id=>setVal(id,data[id.replace('back-','')]||''));updateBackdoorColors(true);}
 function restoreSliding(data={}){setVal('sliding-series',data.series||'');updateSlidingOptions(false);SLIDING_IDS.filter(id=>id!=='sliding-series').forEach(id=>setVal(id,data[id.replace('sliding-','')]||''));updateSlidingCombinationRules(true);}
-function clearMeeting() { MEETING_IDS.forEach(id=>setVal(id,'')); BACKDOOR_IDS.forEach(id=>setVal(id,'')); SLIDING_IDS.forEach(id=>setVal(id,'')); updateProductOptions(false); updateSlidingOptions(false); updateMeetingPreview(); updateLockPower(false); updateChildDoorVisibility(); updateBackdoorColors(false); }
+function clearMeeting() { MEETING_IDS.forEach(id=>setVal(id,'')); BACKDOOR_IDS.forEach(id=>setVal(id,'')); SLIDING_IDS.forEach(id=>setVal(id,'')); updateProductOptions(false);updateCandidateOptions(2,false);updateCandidateOptions(3,false);updateCandidateVisibility(false); updateSlidingOptions(false); updateMeetingPreview(); updateLockPower(false); updateChildDoorVisibility(); updateBackdoorColors(false); }
 function updateMeetingPreview() {
-  const design=val('meeting-design'), media=document.getElementById('meeting-preview-media'), title=document.getElementById('meeting-preview-title');
-  title.textContent=design||'デザイン未選択';
-  const src=DESIGN_IMAGES[design];
-  if(src){const img=document.createElement('img');img.src=src;img.alt=`YKK AP ドアデザイン ${design}`;img.referrerPolicy='no-referrer';img.onerror=()=>{media.className='meeting-preview-empty';media.innerHTML='画像を表示できません<br>公式デザイン一覧で確認してください'};media.className='';media.replaceChildren(img)}
-  else{media.className='meeting-preview-empty';media.innerHTML=design?'このデザインは<br>公式一覧で確認してください':'デザインを選択すると<br>公式意匠画像を表示します'}
+  const design=val('meeting-design'),title=document.getElementById('meeting-preview-title');
+  title.textContent=design?`候補1：${design}`:'候補1：デザイン未選択';
 }
 function getDoorFamily(){const s=val('meeting-series');return s.startsWith('D50')?'D50':s==='アルミドア'?'ALUMINUM':s.startsWith('D30')?'D30':'';}
 function updateHandleColors(setDefault=true){
@@ -1420,13 +1542,13 @@ function updateLockPower(setDefault=true){
   updateCompatibilityStatus();
 }
 function updateDoorDesignRules(){
-  if(val('meeting-series')!=='D50 高断熱ドア'||chipState.katachi!=='oyako')return;
+  if(val('meeting-series')!=='D50 高断熱ドア'||!['oyako','sode_oyako'].includes(val('meeting-new-shape')))return;
   const code=D50_CHILD_BY_DESIGN[val('meeting-design')];if(!code)return;
   const type=code==='K60N'?'無採光':'採光';setVal('meeting-child-type',type);updateChildProductOptions(false);setVal('meeting-child-door',code);
 }
 function updateCompatibilityStatus(){
   const alert=document.getElementById('meeting-compatibility'),series=val('meeting-series'),lock=val('meeting-lock'),power=val('meeting-power'),handle=val('meeting-handle'),color=val('meeting-handle-color');
-  const missing=[];if(!series)missing.push('商品');if(series&&!val('meeting-design'))missing.push('デザイン');if(val('meeting-design')&&!val('meeting-color'))missing.push('扉カラー');if(!lock)missing.push('鍵');if(lock&&!power)missing.push('電源');if(lock&&!handle)missing.push('ハンドル');if(handle&&!color)missing.push('ハンドル色');
+  const missing=[];if(!val('meeting-new-shape'))missing.push('新設枠形式');if(!val('meeting-new-upper'))missing.push('上部仕様');if(!series)missing.push('商品');if(series&&!val('meeting-design'))missing.push('デザイン');if(val('meeting-design')&&!val('meeting-color'))missing.push('扉カラー');if(!lock)missing.push('鍵');if(lock&&!power)missing.push('電源');if(lock&&!handle)missing.push('ハンドル');if(handle&&!color)missing.push('ハンドル色');
   if(missing.length){alert.textContent='未選択：'+missing.join('・')+'。上から順に選択してください。';return;}
   alert.textContent='現在の「商品・鍵・電源・ハンドル・ハンドル色」はカタログの基本組み合わせルール内です。デザイン別の最終設定は発注前に確認してください。';
 }
@@ -1461,9 +1583,16 @@ function updateLowerFrameAdvice(){
   if(baseboard==='あり'){if(!vertical.value)vertical.value='長め';hint.textContent='下枠幅木あり：たて額長さは「長め」を選択してください。'}
   else hint.textContent='下枠幅木を使用する場合は「長め」が推奨されています。';
 }
-document.getElementById('meeting-design').addEventListener('change',()=>{updateMeetingPreview();updateDesignColorOptions(false);updateDoorDesignRules();updateCompatibilityStatus();});
+document.getElementById('meeting-design').addEventListener('change',()=>{updateMeetingPreview();updateDesignColorOptions(false);updateDoorDesignRules();updateCompatibilityStatus();updateManufacturingRangeWarning();});
 document.getElementById('meeting-lock').addEventListener('change',()=>updateLockPower(true));
 document.getElementById('meeting-series').addEventListener('change',()=>updateProductOptions(false));
+document.getElementById('meeting-status').addEventListener('change',()=>updateCandidateVisibility(true));
+document.getElementById('meeting-new-shape').addEventListener('change',()=>{newShapeAutoFromSingle=false;updateChildDoorVisibility();updateDoorDesignRules();updateCompatibilityStatus();updateManufacturingRangeWarning();});
+document.getElementById('meeting-new-upper').addEventListener('change',()=>{updateNewShapeOptions(true);updateCompatibilityStatus();updateManufacturingRangeWarning();});
+document.getElementById('meeting-series-2').addEventListener('change',()=>updateCandidateOptions(2,false));
+document.getElementById('meeting-design-2').addEventListener('change',()=>updateCandidateColorOptions(2,false));
+document.getElementById('meeting-series-3').addEventListener('change',()=>updateCandidateOptions(3,false));
+document.getElementById('meeting-design-3').addEventListener('change',()=>updateCandidateColorOptions(3,false));
 document.getElementById('meeting-handle').addEventListener('change',()=>updateHandleColors(true));
 document.getElementById('meeting-power').addEventListener('change',updateCompatibilityStatus);
 document.getElementById('meeting-handle-color').addEventListener('change',updateCompatibilityStatus);
@@ -1684,7 +1813,7 @@ function buildText() {
   const kengu = getKenguText();
   if (kengu) lines.push('建具種別：' + kengu);
   const tsukeLabel = tsukeMethod === 'hanzoto' ? '半外付け' : tsukeMethod === 'uchi' ? '内付け' : '';
-  if (tsukeLabel) lines.push('取付方法：' + tsukeLabel);
+  if (tsukeLabel) lines.push('既設枠の種類：' + tsukeLabel);
   const at = document.getElementById('cb-shimowaku').checked;
   const tsuri = document.getElementById('cb-tsuri').checked;
   if (tsuri) { lines.push('下枠：はつり納まり'); }
@@ -1713,7 +1842,7 @@ function buildText() {
     lines.push('有効開口：' + kouW + '  ' + document.getElementById('kouchi-w-formula').textContent);
   }
   const meeting = collectMeeting();
-  const meetingItems = [['商品・仕様',meeting.series],['状況',meeting.status],['デザイン',meeting.design],['扉カラー',meeting.color],['子扉の種類',meeting['child-type']],['子扉の品番',meeting['child-door']],['鍵',meeting.lock],['電源方式',meeting.power],['ハンドル',meeting.handle],['ハンドル色',meeting['handle-color']],['下枠納まり',meeting['lower-type']],['段差緩和材',meeting['lower-relief']],['下枠化粧カバー',meeting['lower-cover']],['下枠幅木',meeting['lower-baseboard']],['補強アングル',meeting['lower-angle']],['たて額長さ',meeting['lower-vertical']],['下部カバーセット',meeting['lower-wood-cover']]].filter(x=>x[1]);
+  const meetingItems = [['候補1 商品・仕様',meeting.series],['状況',meeting.status],['新設枠形式',KATACHI_LABEL[meeting['new-shape']]||meeting['new-shape']],['新設上部仕様',NEW_UPPER_LABEL[meeting['new-upper']]||meeting['new-upper']],['製作範囲警告',meeting['range-result']],['候補1 デザイン',meeting.design],['候補1 扉カラー',meeting.color],['候補2 商品・仕様',meeting['series-2']],['候補2 デザイン',meeting['design-2']],['候補2 扉カラー',meeting['color-2']],['候補3 商品・仕様',meeting['series-3']],['候補3 デザイン',meeting['design-3']],['候補3 扉カラー',meeting['color-3']],['子扉の種類',meeting['child-type']],['子扉（自動判定）',meeting['child-door']],['鍵',meeting.lock],['電源方式',meeting.power],['ハンドル',meeting.handle],['ハンドル色',meeting['handle-color']],['下枠納まり',meeting['lower-type']],['段差緩和材',meeting['lower-relief']],['下枠化粧カバー',meeting['lower-cover']],['下枠幅木',meeting['lower-baseboard']],['補強アングル',meeting['lower-angle']],['たて額長さ',meeting['lower-vertical']],['下部カバーセット',meeting['lower-wood-cover']]].filter(x=>x[1]);
   if (currentType === 'door' && (meetingItems.length || meeting.notes)) {
     lines.push('', '【現地打ち合わせ内容】');
     meetingItems.forEach(([k,v])=>lines.push(`${k}：${v}`));
@@ -1774,6 +1903,7 @@ function restoreState(state) {
   photoData = Array.isArray(state.photos) ? state.photos.map(p => ({ src: p.src, caption: p.caption || '' })) : [];
   renderPhotos();
   restoreMeeting(state.meeting || {});
+  syncNewShapeFromExisting();
   restoreBackdoor(state.backdoor || {});
   restoreSliding(state.sliding || {});
   const sotoBtn = document.getElementById('toggle-soto');
@@ -1895,6 +2025,93 @@ function copyText() {
   }
 }
 
+// ======= リモNAVi転記データ（内部形式は旧データ互換） =======
+function transferNumber(value) {
+  const match = String(value || '').replace(/,/g, '').match(/-?\d+(?:\.\d+)?/);
+  return match ? Number(match[0]) : null;
+}
+
+function transferFrame(key) {
+  const common = val(key);
+  return {
+    top: val(key + '_t') || common || '',
+    right: val(key + '_r') || common || '',
+    left: val(key + '_l') || common || ''
+  };
+}
+
+function safeTransferName(value) {
+  return String(value || '採寸').replace(/[\\/:*?"<>|]/g, '_').trim() || '採寸';
+}
+
+function exportYkkTransfer() {
+  if (currentType !== 'door') {
+    showToast('リモNAVi自動転記は現在「玄関ドア」に対応しています', true);
+    return;
+  }
+
+  const meeting = collectMeeting();
+  const data = {
+    schema: 'doorimo-ykk-transfer',
+    version: 1,
+    generatedAt: new Date().toISOString(),
+    target: 'http://doorremo.ykkap.co.jp/Doorremo/MenuAction?product=entrance_door',
+    site: {
+      name: val('site-name').trim(),
+      date: val('site-date')
+    },
+    door: {
+      type: currentType,
+      handing: chipState.katte || '',
+      shape: meeting['new-shape'] || '',
+      upperSpec: meeting['new-upper'] || '',
+      transom: ['yes','yes_middle'].includes(meeting['new-upper']) ? 'yes' : 'no',
+      post: chipState.post || '',
+      mounting: tsukeMethod || '',
+      existingFrameType: tsukeMethod || '',
+      series: meeting.series || '',
+      design: meeting.design || '',
+      designImage: DESIGN_IMAGES[meeting.design] || '',
+      color: meeting.color || '',
+      lock: meeting.lock || '',
+      power: meeting.power || '',
+      handle: meeting.handle || '',
+      handleColor: meeting['handle-color'] || '',
+      childType: meeting['child-type'] || '',
+      childDoor: meeting['child-door'] || '',
+      lowerType: meeting['lower-type'] || '',
+      outerFrame: transferFrame('soto'),
+      innerFrame: transferFrame('uchi'),
+      dimensions: {
+        frameH: transferNumber(document.getElementById('calc-h').textContent),
+        frameW: transferNumber(document.getElementById('calc-w').textContent),
+        existingOpeningH: transferNumber(val('kh')),
+        existingOpeningW: transferNumber(val('kw')),
+        existingDoorW: transferNumber(val('dw'))
+      },
+      options: {
+        lowerRelief: meeting['lower-relief'] || '',
+        lowerCover: meeting['lower-cover'] || '',
+        lowerBaseboard: meeting['lower-baseboard'] || '',
+        lowerAngle: meeting['lower-angle'] || '',
+        lowerVertical: meeting['lower-vertical'] || '',
+        lowerWoodCover: meeting['lower-wood-cover'] || '',
+        flatMaterial: document.getElementById('cb-shimowaku').checked,
+        chiseled: document.getElementById('cb-tsuri').checked
+      }
+    }
+  };
+
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `リモNAVi転記_${safeTransferName(data.site.name)}_${data.site.date || '日付なし'}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  showToast('🔗 リモNAVi転記データを保存しました');
+}
+
 // ======= PDF Sheet =======
 function getPdfTitle() {
   if (currentType === 'sliding') return 'ドアリモ引戸 採寸チェックシート';
@@ -1931,7 +2148,7 @@ function buildSheetHTML(siteName, siteDate, kengu, tsukeLabel, shimowakuTxt, isD
   </div>` : '';
   const meeting = collectMeeting();
   const esc = s => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const meetingRows = [['商品・仕様',meeting.series],['打ち合わせ状況',meeting.status],['デザイン',meeting.design],['扉カラー',meeting.color],['子扉の種類',meeting['child-type']],['子扉の品番',meeting['child-door']],['鍵',meeting.lock],['電源方式',meeting.power],['ハンドル',meeting.handle],['ハンドル色',meeting['handle-color']],['下枠納まり',meeting['lower-type']],['段差緩和材',meeting['lower-relief']],['下枠化粧カバー',meeting['lower-cover']],['下枠幅木',meeting['lower-baseboard']],['補強アングル',meeting['lower-angle']],['たて額長さ',meeting['lower-vertical']],['下部カバーセット',meeting['lower-wood-cover']]].filter(x=>x[1]);
+  const meetingRows = [['候補1 商品・仕様',meeting.series],['打ち合わせ状況',meeting.status],['新設枠形式',KATACHI_LABEL[meeting['new-shape']]||meeting['new-shape']],['新設上部仕様',NEW_UPPER_LABEL[meeting['new-upper']]||meeting['new-upper']],['製作範囲警告',meeting['range-result']],['候補1 デザイン',meeting.design],['候補1 扉カラー',meeting.color],['候補2 商品・仕様',meeting['series-2']],['候補2 デザイン',meeting['design-2']],['候補2 扉カラー',meeting['color-2']],['候補3 商品・仕様',meeting['series-3']],['候補3 デザイン',meeting['design-3']],['候補3 扉カラー',meeting['color-3']],['子扉の種類',meeting['child-type']],['子扉（自動判定）',meeting['child-door']],['鍵',meeting.lock],['電源方式',meeting.power],['ハンドル',meeting.handle],['ハンドル色',meeting['handle-color']],['下枠納まり',meeting['lower-type']],['段差緩和材',meeting['lower-relief']],['下枠化粧カバー',meeting['lower-cover']],['下枠幅木',meeting['lower-baseboard']],['補強アングル',meeting['lower-angle']],['たて額長さ',meeting['lower-vertical']],['下部カバーセット',meeting['lower-wood-cover']]].filter(x=>x[1]);
   const meetingHtml = currentType==='door' && (meetingRows.length || meeting.notes) ? `<div style="margin-top:12px;break-inside:avoid">
     <div style="font-size:9px;font-weight:700;letter-spacing:.15em;color:#666;border-bottom:1px solid #ccc;padding-bottom:3px;margin-bottom:7px">現地打ち合わせ内容</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">${meetingRows.map(([k,v])=>`<div style="border:1px solid #ddd;border-radius:5px;padding:6px 9px"><div style="font-size:9px;color:#888">${k}</div><div style="font-size:12px;font-weight:600">${esc(v)}</div></div>`).join('')}</div>
@@ -2057,12 +2274,22 @@ async function shareSheet(btn) {
     await document.fonts.ready;
     await new Promise(r => setTimeout(r, 200));
 
-    // 見出し・入力ブロック・写真カードの開始位置を改ページ候補として記録する。
+    // 見出し・入力ブロック・写真カードの位置を記録する。
+    // 開始位置だけでなく終了位置も使い、カードやセクションの途中で
+    // ページを切らないようにする。
     const sheetRect = sheet.getBoundingClientRect();
     const topLevelBlocks = sheet.firstElementChild ? [...sheet.firstElementChild.children] : [];
     const protectedBlocks = [...sheet.querySelectorAll('[style*="break-inside:avoid"]')];
-    const cssBreakPoints = [...new Set([...topLevelBlocks, ...protectedBlocks]
-      .map(el => Math.max(0, el.getBoundingClientRect().top - sheetRect.top))
+    const pageBlocks = [...new Set([...topLevelBlocks, ...protectedBlocks])];
+    const cssBlockRanges = pageBlocks.map(el => {
+      const rect = el.getBoundingClientRect();
+      return {
+        top: Math.max(0, rect.top - sheetRect.top),
+        bottom: Math.max(0, rect.bottom - sheetRect.top)
+      };
+    }).filter(r => r.bottom - r.top > 4);
+    const cssBreakPoints = [...new Set(cssBlockRanges
+      .map(r => r.top)
       .filter(y => y > 20))].sort((a,b) => a-b);
 
     const canvas = await html2canvas(sheet, {
@@ -2078,16 +2305,37 @@ async function shareSheet(btn) {
     const maxW = pageW - margin * 2, maxH = pageH - margin * 2;
     const cssToCanvas = canvas.width / sheetRect.width;
     const breakPoints = cssBreakPoints.map(y => Math.round(y * cssToCanvas));
+    const blockRanges = cssBlockRanges.map(r => ({
+      top: Math.round(r.top * cssToCanvas),
+      bottom: Math.round(r.bottom * cssToCanvas)
+    }));
     const maxSliceH = Math.floor(canvas.width * (maxH / maxW));
     let sliceTop = 0, pageIndex = 0;
     while (sliceTop < canvas.height) {
       const naturalEnd = Math.min(canvas.height, sliceTop + maxSliceH);
       let sliceEnd = naturalEnd;
       if (naturalEnd < canvas.height) {
-        // ページの60%以降にある最後のブロック境界で区切る。
-        const minUsefulEnd = sliceTop + maxSliceH * 0.60;
+        // まずページの55%以降にある最後のブロック境界を候補にする。
+        const minUsefulEnd = sliceTop + maxSliceH * 0.55;
         const candidates = breakPoints.filter(y => y >= minUsefulEnd && y <= naturalEnd);
         if (candidates.length) sliceEnd = candidates[candidates.length - 1];
+
+        // 候補位置が項目・打ち合わせ欄・写真カードの途中なら、
+        // そのブロックの手前まで戻して次ページへ送る。
+        // 1ページより背の高いブロックだけは分割を許可する。
+        let moved = true;
+        while (moved) {
+          moved = false;
+          const crossing = blockRanges
+            .filter(r => r.top > sliceTop + 40 && r.top < sliceEnd - 2 &&
+                         r.bottom > sliceEnd + 2 &&
+                         r.bottom - r.top < maxSliceH * 0.96)
+            .sort((a,b) => a.top - b.top);
+          if (crossing.length) {
+            sliceEnd = crossing[0].top;
+            moved = true;
+          }
+        }
       }
       if (sliceEnd <= sliceTop + 40) sliceEnd = naturalEnd;
       const sliceH = Math.max(1, sliceEnd - sliceTop);
@@ -2137,6 +2385,7 @@ function clearAll(silent=false) {
   document.getElementById('cb-shimowaku').checked = false;
   document.getElementById('cb-tsuri').checked = false;
   currentType = '';
+  newShapeAutoFromSingle = false;
   photoData = [];
   renderPhotos();
   clearMeeting();
