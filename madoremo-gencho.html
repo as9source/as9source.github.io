@@ -282,6 +282,11 @@ header{box-shadow:0 2px 8px rgba(16,48,82,.16)}
 h1{font-size:20px;font-weight:700;letter-spacing:.02em}
 .actions{gap:8px}
 .edit-only .ghost{background:var(--accent);border-color:var(--accent);color:#fff}
+.win-check{display:flex;align-items:center;gap:5px;margin:0 0 4px;font-size:11px;color:var(--text2);font-weight:600}
+.win-select{width:18px!important;min-height:18px!important;height:18px;padding:0;appearance:auto;-webkit-appearance:checkbox;accent-color:var(--accent)}
+.bulk-actions{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end}
+.bulk-actions button{min-width:110px}
+.bulk-count{color:var(--accent);font-weight:700}
 button{min-height:43px;padding:9px 14px;border:1px solid var(--bd);border-radius:9px;font-size:14px;font-weight:600}
 header button{box-shadow:0 1px 2px rgba(0,0,0,.08)}
 main{padding-bottom:calc(28px + var(--safe-bottom))}
@@ -307,6 +312,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 @media(max-width:900px){
   .bar{align-items:stretch;gap:10px}.actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%}header button{width:100%;min-width:0;padding:9px 6px}
   .panel{position:relative;top:auto}.grid,.grid3{grid-template-columns:1fr}
+  .bulk-actions{grid-template-columns:1fr}
   section{padding:18px 15px;margin:8px 8px 0}.row{align-items:stretch;flex-direction:column}.row>*{width:100%}
 }
 @media(max-width:480px){h1{font-size:19px}.bar{padding-left:14px;padding-right:14px}.actions{gap:6px}button{font-size:12.5px}.win-card{min-width:138px}}
@@ -478,12 +484,18 @@ const STORE = 'madoremo-survey-draft-v2';
 const byId = (arr,id) => arr.find(x => String(x.id) === String(id));
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const text = v => esc(v || '－').split('\n').join(' / ');
-const blankWindow = () => ({placeId:'',existingId:'',fitId:'',placeMemo:'',w:[null,null,null],h:[null,null,null],seriesId:'',newWindowId:'',glassId:'',outerColor:'',innerColor:'',edgeId:'',screen:'no',mool:'なし',upper:'未確認',memo:''});
+const blankWindow = () => ({placeId:'',existingId:'',fitId:'',floor:'',roomType:'',roomDetail:'',placeMemo:'',w:[null,null,null],h:[null,null,null],seriesId:'',newWindowId:'',glassId:'',outerColor:'',innerColor:'',edgeId:'',screen:'no',mool:'なし',upper:'未確認',memo:''});
 let state = {current:0,site:{projectName:'',surveyDate:new Date().toISOString().slice(0,10),building:'木造（3階以下）',around:'修復不必要',siteMemo:''},windows:[blankWindow()]};
-const ids = ['projectName','surveyDate','building','around','siteMemo','place','existing','fit','placeMemo','w1','w2','w3','h1','h2','h3','series','newWindow','glass','outerColor','innerColor','edge','screen','mool','upper','memo'];
+let bulkSelected = new Set();
+const ids = ['projectName','surveyDate','building','around','siteMemo','place','existing','fit','roomFloor','roomType','roomDetail','placeMemo','w1','w2','w3','h1','h2','h3','series','newWindow','glass','outerColor','innerColor','edge','screen','mool','upper','memo'];
 function opt(v,t){return `<option value="${esc(v ?? '')}">${esc(t ?? '')}</option>`}
 function fillSelect(id,items,labeler,empty='選択してください'){document.getElementById(id).innerHTML = opt('',empty) + items.map(x => opt(x.id,labeler(x))).join('')}
 function readNum(id){const v=parseInt(document.getElementById(id).value,10);return Number.isFinite(v)?v:null}
+function roomName(w){
+  const structured = [w.floor,w.roomType,w.roomDetail].filter(Boolean);
+  return structured.length ? structured.join('・') : (w.placeMemo || '');
+}
+function colorNames(side){return [...new Set(DATA.colors.filter(c => c.side===side).map(c => c.name))].sort((a,b)=>a.localeCompare(b,'ja'))}
 function calc(w){
   const ww = w.w.filter(v => Number.isFinite(v));
   const hh = w.h.filter(v => Number.isFinite(v));
@@ -500,6 +512,11 @@ function calc(w){
 const App = {
   init(){
     try{const saved=JSON.parse(localStorage.getItem(STORE)||'null'); if(saved) state=saved;}catch(e){}
+    const oldRoomField=document.getElementById('placeMemo');
+    oldRoomField.parentElement.outerHTML = `<div class="grid3"><p><label>階</label><select id="roomFloor"><option value="">未選択</option><option>1階</option><option>2階</option><option>3階</option><option>その他</option></select></p><p><label>部屋</label><select id="roomType"><option value="">未選択</option><option>トイレ</option><option>浴室</option><option>洗面脱衣</option><option>リビング</option><option>居間</option><option>寝室</option><option>子供室</option><option>キッチン</option><option>和室</option><option>玄関</option><option>廊下</option><option>納戸</option><option>その他</option></select></p><p><label>方角・特徴</label><input id="roomDetail" placeholder="例）南・掃き出し・道路側"><input id="placeMemo" type="hidden"></p></div>`;
+    document.getElementById('winEditor').insertAdjacentHTML('beforebegin', `<section id="bulkColorPanel" class="edit-only hidden"><h2>選択した窓の色を一括変更</h2><p class="bulk-count" id="bulkCount"></p><div class="bulk-actions"><p><label>外観色</label><select id="bulkOuterColor"></select></p><p><label>内観色</label><select id="bulkInnerColor"></select></p><button class="primary" onclick="App.applyBulkColors()">選択窓に反映</button></div><div class="note">窓一覧の「選択」にチェックした窓だけ変更します。シリーズに同じ色がない窓は変更せずに残します。</div></section>`);
+    bulkOuterColor.innerHTML = opt('','変更しない') + colorNames('外観色').map(name=>opt(name,name)).join('');
+    bulkInnerColor.innerHTML = opt('','変更しない') + colorNames('内観色').map(name=>opt(name,name)).join('');
     fillSelect('place',DATA.places,x=>x.name);
     document.getElementById('existing').innerHTML = opt('','選択してください') + DATA.existing.map(x => opt(x.id,`${x.category ? x.category + ' / ' : ''}${x.name}`)).join('');
     fillSelect('fit',DATA.fits,x=>x.name);
@@ -513,13 +530,15 @@ const App = {
         el.select();
       });
     });
-    ['place','existing','fit','series','newWindow','glass','outerColor','innerColor','edge','screen','mool','upper','building','around'].forEach(id => {const el=document.getElementById(id); if(el) el.addEventListener('change',()=>App.capture())});
+    ['place','existing','fit','series','newWindow','glass','outerColor','innerColor','edge','screen','mool','upper','building','around','roomFloor','roomType'].forEach(id => {const el=document.getElementById(id); if(el) el.addEventListener('change',()=>App.capture())});
     this.render();
   },
   capture(){
     state.site.projectName=projectName.value; state.site.surveyDate=surveyDate.value; state.site.building=building.value; state.site.around=around.value; state.site.siteMemo=siteMemo.value;
     const w=state.windows[state.current]; if(!w) return;
-    Object.assign(w,{placeId:place.value,existingId:existing.value,fitId:fit.value,placeMemo:placeMemo.value,w:[readNum('w1'),readNum('w2'),readNum('w3')],h:[readNum('h1'),readNum('h2'),readNum('h3')],seriesId:series.value,newWindowId:newWindow.value,glassId:glass.value,outerColor:outerColor.value,innerColor:innerColor.value,edgeId:edge.value,screen:screen.value,mool:mool.value,upper:upper.value,memo:memo.value});
+    const floor=roomFloor.value, room=roomType.value, detail=roomDetail.value.trim();
+    placeMemo.value=[floor,room,detail].filter(Boolean).join('・');
+    Object.assign(w,{placeId:place.value,existingId:existing.value,fitId:fit.value,floor,roomType:room,roomDetail:detail,placeMemo:placeMemo.value,w:[readNum('w1'),readNum('w2'),readNum('w3')],h:[readNum('h1'),readNum('h2'),readNum('h3')],seriesId:series.value,newWindowId:newWindow.value,glassId:glass.value,outerColor:outerColor.value,innerColor:innerColor.value,edgeId:edge.value,screen:screen.value,mool:mool.value,upper:upper.value,memo:memo.value});
     this.updateDependent(); this.save(false); this.renderList(); this.renderSummary();
   },
   updateDependent(){
@@ -562,25 +581,57 @@ const App = {
   },
   loadWindow(){
     const w=state.windows[state.current]; winHeading.textContent=`窓 ${state.current+1}`;
-    place.value=w.placeId||''; existing.value=w.existingId||''; fit.value=w.fitId||''; placeMemo.value=w.placeMemo||'';
+    if(w.floor==null && w.roomType==null && w.roomDetail==null){w.floor=''; w.roomType=''; w.roomDetail=w.placeMemo||'';}
+    place.value=w.placeId||''; existing.value=w.existingId||''; fit.value=w.fitId||''; roomFloor.value=w.floor||''; roomType.value=w.roomType||''; roomDetail.value=w.roomDetail||''; placeMemo.value=roomName(w);
     ['w1','w2','w3'].forEach((id,i)=>document.getElementById(id).value=w.w[i]||''); ['h1','h2','h3'].forEach((id,i)=>document.getElementById(id).value=w.h[i]||'');
     series.value=w.seriesId||''; edge.value=w.edgeId||''; screen.value=w.screen||'no'; mool.value=w.mool||'なし'; upper.value=w.upper||'未確認'; memo.value=w.memo||'';
     this.updateDependent();
   },
   renderList(){
-    windowList.innerHTML = state.windows.map((w,i) => {const c=calc(w), nw=byId(DATA.newWindows,w.newWindowId); return `<div class="win-card ${i===state.current?'active':''}"><div class="win-head"><div><div class="win-title">窓 ${i+1} ${esc(nw ? nw.name : '未設定')}</div><div class="mini">${esc(w.placeMemo || byId(DATA.places,w.placeId)?.name || '')} ${c.wMin&&c.hMin ? ' / '+c.wMin+'x'+c.hMin+'mm' : ''}</div></div><button onclick="App.selectWindow(${i})">開く</button></div></div>`}).join('');
+    windowList.innerHTML = state.windows.map((w,i) => {
+      const c=calc(w), nw=byId(DATA.newWindows,w.newWindowId);
+      return `<div class="win-card ${i===state.current?'active':''}"><div class="win-head"><div><label class="win-check" onclick="event.stopPropagation()"><input class="win-select" type="checkbox" ${bulkSelected.has(i)?'checked':''} onchange="App.toggleBulk(${i},this.checked)">選択</label><div class="win-title">窓 ${i+1} ${esc(nw ? nw.name : '未設定')}</div><div class="mini">${esc(roomName(w) || byId(DATA.places,w.placeId)?.name || '')} ${c.wMin&&c.hMin ? ' / '+c.wMin+'x'+c.hMin+'mm' : ''}</div></div><button onclick="App.selectWindow(${i})">開く</button></div></div>`;
+    }).join('');
+    this.updateBulkPanel();
+  },
+  toggleBulk(i,checked){
+    if(checked) bulkSelected.add(i); else bulkSelected.delete(i);
+    this.updateBulkPanel();
+  },
+  updateBulkPanel(){
+    bulkSelected = new Set([...bulkSelected].filter(i => i>=0 && i<state.windows.length));
+    const panel=document.getElementById('bulkColorPanel');
+    if(!panel) return;
+    panel.classList.toggle('hidden',bulkSelected.size===0);
+    bulkCount.textContent=`選択中: ${bulkSelected.size}窓`;
+  },
+  applyBulkColors(){
+    this.capture();
+    const outerName=bulkOuterColor.value, innerName=bulkInnerColor.value;
+    if(!outerName && !innerName) return alert('変更する外観色または内観色を選択してください');
+    let changed=0, skipped=0;
+    [...bulkSelected].forEach(i => {
+      const w=state.windows[i]; if(!w) return;
+      const sid=w.seriesId || byId(DATA.newWindows,w.newWindowId)?.seriesId || '';
+      let applied=false, missing=false;
+      if(outerName){const color=DATA.colors.find(c=>String(c.seriesId)===String(sid)&&c.side==='外観色'&&c.name===outerName); if(color){w.outerColor=String(color.id); applied=true;} else missing=true;}
+      if(innerName){const color=DATA.colors.find(c=>String(c.seriesId)===String(sid)&&c.side==='内観色'&&c.name===innerName); if(color){w.innerColor=String(color.id); applied=true;} else missing=true;}
+      if(applied) changed++; if(missing) skipped++;
+    });
+    this.save(false); this.render();
+    alert(`${changed}窓の色を変更しました${skipped ? `。${skipped}窓はシリーズに同じ色がないため、対応できる色だけ反映しました` : ''}`);
   },
   renderSummary(){
     const siteRows = `<tr><th>現場調査名</th><td>${text(state.site.projectName)}</td></tr><tr><th>調査日</th><td>${text(state.site.surveyDate)}</td></tr><tr><th>躯体構造</th><td>${text(state.site.building)}</td></tr><tr><th>既設窓まわり</th><td>${text(state.site.around)}</td></tr><tr><th>共通メモ</th><td>${text(state.site.siteMemo)}</td></tr>`;
-    const sheets = state.windows.map((w,i) => {const c=calc(w), nw=byId(DATA.newWindows,w.newWindowId), ser=byId(DATA.series,w.seriesId || nw?.seriesId), pl=byId(DATA.places,w.placeId), ex=byId(DATA.existing,w.existingId), ft=byId(DATA.fits,w.fitId), ed=byId(DATA.edges,w.edgeId), gl=byId(DATA.glass,w.glassId); const check = `${c.target?.catalogAdd ? 'PDF追加候補・要確認' : (c.target ? '組み合わせOK' : '組み合わせ要確認')} / ${c.sizeOk ? '寸法帯OK' : '寸法帯要確認'}${c.spreadWarn ? ' / 3点計測差要確認' : ''}`; return `<div class="print-sheet"><div class="print-title">窓 ${i+1} ${esc(nw?.name || '')}</div><table class="result"><tr><th>部屋名</th><td>${text(w.placeMemo)}</td></tr><tr><th>リフォーム場所</th><td>${text(pl?.name)}</td></tr><tr><th>既設窓 / 納まり</th><td>${text(ex?.name)} / ${text(ft?.name)}</td></tr><tr><th>使用寸法</th><td>${c.wMin&&c.hMin ? `${c.wMin} x ${c.hMin} mm` : '－'}</td></tr><tr><th>シリーズ / 新設窓</th><td>${text(ser?.name)} / ${text(nw?.name)}</td></tr><tr><th>ガラス</th><td>${gl ? text((gl.type ? gl.type + ' / ' : '') + gl.name) : '－'}</td></tr><tr><th>色</th><td>外観: ${text(byId(DATA.colors,w.outerColor)?.name)} / 内観: ${text(byId(DATA.colors,w.innerColor)?.name)}</td></tr><tr><th>内額縁</th><td>${text(ed?.name)}</td></tr><tr><th>網戸 / 外部モール / 上枠</th><td>${w.screen==='yes'?'あり':'なし'} / ${text(w.mool)} / ${text(w.upper)}</td></tr><tr><th>照合</th><td>${text(check)}</td></tr><tr><th>メモ</th><td>${text(w.memo)}</td></tr></table></div>`}).join('');
+    const sheets = state.windows.map((w,i) => {const c=calc(w), nw=byId(DATA.newWindows,w.newWindowId), ser=byId(DATA.series,w.seriesId || nw?.seriesId), pl=byId(DATA.places,w.placeId), ex=byId(DATA.existing,w.existingId), ft=byId(DATA.fits,w.fitId), ed=byId(DATA.edges,w.edgeId), gl=byId(DATA.glass,w.glassId); const check = `${c.target?.catalogAdd ? 'PDF追加候補・要確認' : (c.target ? '組み合わせOK' : '組み合わせ要確認')} / ${c.sizeOk ? '寸法帯OK' : '寸法帯要確認'}${c.spreadWarn ? ' / 3点計測差要確認' : ''}`; return `<div class="print-sheet"><div class="print-title">窓 ${i+1} ${esc(nw?.name || '')}</div><table class="result"><tr><th>部屋名</th><td>${text(roomName(w))}</td></tr><tr><th>リフォーム場所</th><td>${text(pl?.name)}</td></tr><tr><th>既設窓 / 納まり</th><td>${text(ex?.name)} / ${text(ft?.name)}</td></tr><tr><th>使用寸法</th><td>${c.wMin&&c.hMin ? `${c.wMin} x ${c.hMin} mm` : '－'}</td></tr><tr><th>シリーズ / 新設窓</th><td>${text(ser?.name)} / ${text(nw?.name)}</td></tr><tr><th>ガラス</th><td>${gl ? text((gl.type ? gl.type + ' / ' : '') + gl.name) : '－'}</td></tr><tr><th>色</th><td>外観: ${text(byId(DATA.colors,w.outerColor)?.name)} / 内観: ${text(byId(DATA.colors,w.innerColor)?.name)}</td></tr><tr><th>内額縁</th><td>${text(ed?.name)}</td></tr><tr><th>網戸 / 外部モール / 上枠</th><td>${w.screen==='yes'?'あり':'なし'} / ${text(w.mool)} / ${text(w.upper)}</td></tr><tr><th>照合</th><td>${text(check)}</td></tr><tr><th>メモ</th><td>${text(w.memo)}</td></tr></table></div>`}).join('');
     summary.innerHTML = `<div class="print-sheet"><div class="print-title">現場情報</div><table class="result">${siteRows}</table></div>${sheets}`;
   },
   selectWindow(i){this.capture(); state.current=i; this.render();},
   addWindow(){this.capture(); state.windows.push(blankWindow()); state.current=state.windows.length-1; this.render();},
-  duplicateWindow(){this.capture(); state.windows.splice(state.current+1,0,JSON.parse(JSON.stringify(state.windows[state.current]))); state.current++; this.render();},
-  deleteWindow(){if(state.windows.length===1) return alert('最低1件は残してください'); if(confirm('この窓を削除しますか？')){state.windows.splice(state.current,1); state.current=Math.max(0,state.current-1); this.render(); this.save(false);}},
+  duplicateWindow(){this.capture(); const insertAt=state.current+1; bulkSelected=new Set([...bulkSelected].map(i=>i>=insertAt?i+1:i)); state.windows.splice(insertAt,0,JSON.parse(JSON.stringify(state.windows[state.current]))); state.current++; this.render();},
+  deleteWindow(){if(state.windows.length===1) return alert('最低1件は残してください'); if(confirm('この窓を削除しますか？')){const removed=state.current; bulkSelected=new Set([...bulkSelected].filter(i=>i!==removed).map(i=>i>removed?i-1:i)); state.windows.splice(removed,1); state.current=Math.max(0,removed-1); this.render(); this.save(false);}},
   save(show=true){localStorage.setItem(STORE,JSON.stringify(state)); if(show) alert('保存しました');},
-  clearAll(){if(confirm('入力内容を初期化しますか？')){localStorage.removeItem(STORE); state={current:0,site:{projectName:'',surveyDate:new Date().toISOString().slice(0,10),building:'木造（3階以下）',around:'修復不必要',siteMemo:''},windows:[blankWindow()]}; this.render();}},
+  clearAll(){if(confirm('入力内容を初期化しますか？')){localStorage.removeItem(STORE); bulkSelected.clear(); state={current:0,site:{projectName:'',surveyDate:new Date().toISOString().slice(0,10),building:'木造（3階以下）',around:'修復不必要',siteMemo:''},windows:[blankWindow()]}; this.render();}},
   preparePrint(){this.capture(); printArea.innerHTML=summary.innerHTML;}
 };
 App.init();
