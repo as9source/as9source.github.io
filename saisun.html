@@ -740,11 +740,8 @@ main{max-width:940px;padding:24px 20px 12px}
       <div class="meeting-field"><label class="meeting-label" for="meeting-color-3">扉カラー（候補3）</label><select class="meeting-select" id="meeting-color-3"><option value="">デザインを先に選択</option></select></div>
       </div>
       <div id="meeting-child-wrap" style="display:none;margin-top:14px">
-        <div class="meeting-grid">
-          <div class="meeting-field"><label class="meeting-label" for="meeting-child-type">子扉の種類</label><select class="meeting-select" id="meeting-child-type"><option value="">商品・仕様を先に選択</option></select></div>
-          <div class="meeting-field"><label class="meeting-label" for="meeting-child-door">自動判定された子扉</label><input class="meeting-select" id="meeting-child-door" type="text" readonly placeholder="デザインと子扉の種類から自動判定"></div>
-        </div>
-        <div class="meeting-hint">親扉デザインと「無採光・採光・通風」から自動判定します。一意に決まらない場合は候補品番を表示します。</div>
+        <div class="meeting-field"><label class="meeting-label" for="meeting-child-type">子扉の種類</label><select class="meeting-select" id="meeting-child-type"><option value="">商品・仕様を先に選択</option></select></div>
+        <div class="meeting-hint">品番は指定せず、「無採光・採光・通風・ポスト付き」の種類だけを選択します。</div>
       </div>
     </div>
     <div class="meeting-card door-meeting-only">
@@ -1258,7 +1255,7 @@ document.getElementById('photo-library').addEventListener('change', async e => {
 renderPhotos();
 
 // ======= On-site meeting details =======
-const MEETING_IDS = ['meeting-series','meeting-status','meeting-new-shape','meeting-new-upper','meeting-range-result','meeting-design','meeting-color','meeting-series-2','meeting-design-2','meeting-color-2','meeting-series-3','meeting-design-3','meeting-color-3','meeting-child-type','meeting-child-door','meeting-lock','meeting-power','meeting-handle','meeting-handle-color','meeting-lower-type','meeting-lower-relief','meeting-lower-cover','meeting-lower-baseboard','meeting-lower-angle','meeting-lower-vertical','meeting-lower-wood-cover','meeting-notes'];
+const MEETING_IDS = ['meeting-series','meeting-status','meeting-new-shape','meeting-new-upper','meeting-range-result','meeting-design','meeting-color','meeting-series-2','meeting-design-2','meeting-color-2','meeting-series-3','meeting-design-3','meeting-color-3','meeting-child-type','meeting-lock','meeting-power','meeting-handle','meeting-handle-color','meeting-lower-type','meeting-lower-relief','meeting-lower-cover','meeting-lower-baseboard','meeting-lower-angle','meeting-lower-vertical','meeting-lower-wood-cover','meeting-notes'];
 const BACKDOOR_IDS = ['back-frame','back-floor','back-design','back-ranma','back-upper-panel','back-lower-panel','back-color-mode','back-outer-color','back-inner-color','back-cylinder','back-thumbturn'];
 const SLIDING_IDS = ['sliding-series','sliding-status','sliding-design','sliding-color','sliding-glass','sliding-handle','sliding-handle-color','sliding-lock','sliding-latch','sliding-screen','sliding-screen-type','sliding-screen-net','sliding-screen-color'];
 const SLIDING_STD_COLORS=['KG ナチュラルオーク','YF キャラメルチーク','YA ステインウォールナット','B1 ブラウン','B7 カームブラック','H2 プラチナステン'];
@@ -1272,33 +1269,25 @@ const SLIDING_CATALOG={
   '4枚建 伝統和風':{designs:['A01 たて太桟','A02 太桟格子','A03 千本格子','A05 万本格子','A07 三つ割り風','A09 横太桟','A10','A12','A13','A14','A15'],colors:SLIDING_WA_COLORS,handles:['外側バーハンドル','舟底引手'],locks:['召合せ錠＋突合せ錠＋戸先内錠']}
 };
 const D30_DESIGNS = ['N04H','N05T','N05N','N06K','N06H','N07T','N07N','N08N','N09N','N10N','N12N','N13N','N14N','F03T','F03N','F04H','F05K','F05H','F06K','F06H','F08H','C02N','C03N','C04T','C04N','C05N','C07T','C07N','C08K','C08H','C09T','C09N','C10N','C11T','C11N','E01N','E02N','E03N','E04N','E07N','E08N','E09T','E09N','E10N','E11N','E12N','F03S','F03M','F04M','C07S','C07M','C09S','C09M','C10M'];
-const D30_CHILDREN = ['K01N','K02N','K03N','K04N','K05N','K06N','K07N','K08N','K09H','K10N','K11N','K01M（ハイサイズ）','K08M（ハイサイズ）','K11M（ハイサイズ）','K51T（通風）','K52K（通風）','その他（要カタログ確認）'];
-const CHILD_OPTIONS={
-  'D50 高断熱ドア':{
-    '無採光':['K60N'],'採光':['K62N','K63N','K64N'],'通風':['設定なし（要確認）'],'ポスト付き':['設定なし（要確認）']
-  },
-  'D30 断熱ドア D2仕様':{
-    '無採光':['K01N','K01M（ハイサイズ）'],'採光':['K02N','K03N','K04N','K05N','K06N','K07N','K08N','K09H','K10N','K11N','K08M（ハイサイズ）','K11M（ハイサイズ）'],'通風':['K51T','K52K'],'ポスト付き':['中桟付ポスト付枠（品番要確認）']
-  },
-  'アルミドア':{
-    '無採光':['05（設定要確認）'],'採光':['06','07','08','50'],'通風':['K51T（設定要確認）'],'ポスト付き':['中桟付ポスト付枠（品番要確認）']
-  }
+const CHILD_TYPES={
+  'D50 高断熱ドア':['無採光','採光'],
+  'D30 断熱ドア D2仕様':['無採光','採光','通風','ポスト付き'],
+  'アルミドア':['無採光','採光','通風','ポスト付き']
 };
-CHILD_OPTIONS['D30 断熱ドア D4仕様']=CHILD_OPTIONS['D30 断熱ドア D2仕様'];
-CHILD_OPTIONS['D30 防火ドア D2仕様']=CHILD_OPTIONS['D30 断熱ドア D2仕様'];
-CHILD_OPTIONS['D30 防火ドア D4仕様']=CHILD_OPTIONS['D30 断熱ドア D2仕様'];
+CHILD_TYPES['D30 断熱ドア D4仕様']=CHILD_TYPES['D30 断熱ドア D2仕様'];
+CHILD_TYPES['D30 防火ドア D2仕様']=CHILD_TYPES['D30 断熱ドア D2仕様'];
+CHILD_TYPES['D30 防火ドア D4仕様']=CHILD_TYPES['D30 断熱ドア D2仕様'];
 const PRODUCT_CATALOG = {
-  'D50 高断熱ドア': {designs:['N40N','N41N','N42N','N43N','F61N','F62N','F63N','F64N','C60N','C62N','C63N','C64N','C66N','C40N','E62N','E63N','E64N','E65N','E66N','E67N'], colors:['ナチュラルオーク','マキアートパイン','ドライチーク','ステインウォールナット','スモークエルム','ブライトスタッコ','ベイクドストーン','プラチナステン','カームブラック'], locks:['ポケットKey','ピタットKey','手動錠','顔認証キー'], children:['K60N（採光なし）','K62N（採光付）','K63N（採光付）','K64N（採光付）']},
-  'D30 断熱ドア D2仕様': {designs:D30_DESIGNS, colors:['バニラウォールナット','ナチュラルオーク','マキアートパイン','ドライチーク','ダージリンウォールナット','ステインウォールナット','スモークエルム','ココナッツチェリー','アイスブルーノーチェ','プラチナステン','ブラウン','カームブラック'], locks:['ポケットKey','ピタットKey','手動錠','顔認証キー'], children:D30_CHILDREN},
+  'D50 高断熱ドア': {designs:['N40N','N41N','N42N','N43N','F61N','F62N','F63N','F64N','C60N','C62N','C63N','C64N','C66N','C40N','E62N','E63N','E64N','E65N','E66N','E67N'], colors:['ナチュラルオーク','マキアートパイン','ドライチーク','ステインウォールナット','スモークエルム','ブライトスタッコ','ベイクドストーン','プラチナステン','カームブラック'], locks:['ポケットKey','ピタットKey','手動錠','顔認証キー']},
+  'D30 断熱ドア D2仕様': {designs:D30_DESIGNS, colors:['バニラウォールナット','ナチュラルオーク','マキアートパイン','ドライチーク','ダージリンウォールナット','ステインウォールナット','スモークエルム','ココナッツチェリー','アイスブルーノーチェ','プラチナステン','ブラウン','カームブラック'], locks:['ポケットKey','ピタットKey','手動錠','顔認証キー']},
   'D30 断熱ドア D4仕様': null,
   'D30 防火ドア D2仕様': null,
   'D30 防火ドア D4仕様': null,
-  'アルミドア': {designs:['S01','S02','S03','S05','S06','S08','S11','S12','S50','S51','S52','G50','G51'], colors:['ナチュラルオーク','キャラメルチーク','ステインウォールナット','ホワイト','プラチナステン','ブラウン','カームブラック'], locks:['ポケットKey','ピタットKey','手動錠'], children:['05','06','07','08','50']}
+  'アルミドア': {designs:['S01','S02','S03','S05','S06','S08','S11','S12','S50','S51','S52','G50','G51'], colors:['ナチュラルオーク','キャラメルチーク','ステインウォールナット','ホワイト','プラチナステン','ブラウン','カームブラック'], locks:['ポケットKey','ピタットKey','手動錠']}
 };
 PRODUCT_CATALOG['D30 断熱ドア D4仕様']=PRODUCT_CATALOG['D30 断熱ドア D2仕様'];
 PRODUCT_CATALOG['D30 防火ドア D2仕様']={...PRODUCT_CATALOG['D30 断熱ドア D2仕様'],locks:['ポケットKey','ピタットKey','手動錠']};
 PRODUCT_CATALOG['D30 防火ドア D4仕様']=PRODUCT_CATALOG['D30 防火ドア D2仕様'];
-const D50_CHILD_BY_DESIGN={N40N:'K60N',N41N:'K62N',N42N:'K62N',N43N:'K62N',F61N:'K60N',F62N:'K60N',F63N:'K60N',F64N:'K64N',C60N:'K60N',C62N:'K63N',C63N:'K62N',C64N:'K62N',C66N:'K62N',C40N:'K62N',E62N:'K60N',E63N:'K60N',E64N:'K60N',E65N:'K60N',E66N:'K60N',E67N:'K60N'};
 const DOOR_HANDLE_RULES={
   D50:{smart:['ストレートハンドル'],manual:['ストレートハンドル','クラシックハンドル']},
   D30:{smart:['ストレートハンドル','洋風カーブハンドル'],manual:['01型 丸型ストレートハンドル','03型 角型ストレートハンドル','06型 クラシックハンドル','05型 ロートアイアン調ハンドル']},
@@ -1378,11 +1367,10 @@ function updateProductOptions(preserve=true){
   fillSelect('meeting-design',c?.designs||[],c?'選択してください':'商品・仕様を先に選択');
   fillSelect('meeting-color',c?.colors||[],c?'デザインを先に選択':'商品・仕様を先に選択');
   fillSelect('meeting-lock',c?.locks||[],c?'選択してください':'商品・仕様を先に選択');
-  const childMap=CHILD_OPTIONS[val('meeting-series')];
-  fillSelect('meeting-child-type',childMap?Object.keys(childMap):[],childMap?'選択してください':'商品・仕様を先に選択');
+  const childTypes=CHILD_TYPES[val('meeting-series')];
+  fillSelect('meeting-child-type',childTypes||[],childTypes?'選択してください':'商品・仕様を先に選択');
   if(preserve){setVal('meeting-design',old.design);setVal('meeting-lock',old.lock);setVal('meeting-child-type',old.childType);}
   updateDesignColorOptions(false);if(preserve)setVal('meeting-color',old.color);
-  updateChildProductOptions(false);
   updateNewUpperOptions(preserve);updateMeetingPreview();updateLockPower(false);updateChildDoorVisibility();updateManufacturingRangeWarning();
 }
 
@@ -1413,18 +1401,6 @@ function updateCandidateColorOptions(slot,preserve=true){
   fillSelect(colorId,colors,design?(colors.length?'選択してください':'カラー設定要確認'):'デザインを先に選択');
   if(preserve&&colors.includes(old))setVal(colorId,old);
 }
-function updateChildProductOptions(){
-  const series=val('meeting-series'),design=val('meeting-design'),type=val('meeting-child-type'),map=CHILD_OPTIONS[series],items=map?.[type]||[];
-  let result='';
-  if(!type) result='';
-  else if(series==='D50 高断熱ドア'&&D50_CHILD_BY_DESIGN[design]){
-    const code=D50_CHILD_BY_DESIGN[design],matchedType=code==='K60N'?'無採光':'採光';
-    result=type===matchedType?code:`${design}は${matchedType}子扉 ${code}（選択条件を要確認）`;
-  }else if(items.length===1) result=items[0];
-  else if(items.length>1) result='候補：'+items.join('／');
-  else if(type) result='設定なし／カタログ確認';
-  setVal('meeting-child-door',result);
-}
 function getPreliminaryManufacturingRange(){
   const series=val('meeting-series'),upper=val('meeting-new-upper');
   if(!series||!upper)return null;
@@ -1454,7 +1430,7 @@ function updateManufacturingRangeWarning(){
   if(errors.length){const message=`⚠ ${range.source}の製作範囲外の可能性：${errors.join('、')}`;alert.textContent=message;alert.style.background='#feecec';alert.style.borderColor='#df6b6b';alert.style.color='#8a2020';result.value=message;}
   else{alert.textContent=`✓ ${rangeText}の範囲内です。デザイン別の正式範囲はリモNAVi転記時にも確認します。`;alert.style.background='#edf9f1';alert.style.borderColor='#6db787';alert.style.color='#23643a';result.value='';}
 }
-function updateChildDoorVisibility(){const el=document.getElementById('meeting-child-wrap'),shape=val('meeting-new-shape'),show=currentType==='door'&&(shape==='oyako'||shape==='sode_oyako');if(el)el.style.display=show?'':'none';if(!show){setVal('meeting-child-type','');setVal('meeting-child-door','');}}
+function updateChildDoorVisibility(){const el=document.getElementById('meeting-child-wrap'),shape=val('meeting-new-shape'),show=currentType==='door'&&(shape==='oyako'||shape==='sode_oyako');if(el)el.style.display=show?'':'none';if(!show)setVal('meeting-child-type','');}
 function clearExtraCandidates(){['series-2','design-2','color-2','series-3','design-3','color-3'].forEach(k=>setVal('meeting-'+k,''));updateCandidateOptions(2,false);updateCandidateOptions(3,false);}
 function updateCandidateVisibility(clearHidden=true){const show=val('meeting-status')==='比較検討中',wrap=document.getElementById('meeting-extra-candidates');if(wrap)wrap.style.display=show?'':'none';if(!show&&clearHidden)clearExtraCandidates();}
 function collectMeeting() { const data={}; MEETING_IDS.forEach(id=>data[id.replace('meeting-','')]=val(id)); return data; }
@@ -1498,9 +1474,9 @@ function restoreMeeting(data={}) {
     setVal('meeting-series-2',data['series-2']||'');updateCandidateOptions(2,false);setVal('meeting-design-2',data['design-2']||'');updateCandidateColorOptions(2,false);setVal('meeting-color-2',data['color-2']||'');
     setVal('meeting-series-3',data['series-3']||'');updateCandidateOptions(3,false);setVal('meeting-design-3',data['design-3']||'');updateCandidateColorOptions(3,false);setVal('meeting-color-3',data['color-3']||'');
   }else clearExtraCandidates();
-  const handled=['meeting-series','meeting-status','meeting-new-shape','meeting-new-upper','meeting-range-result','meeting-design','meeting-color','meeting-series-2','meeting-design-2','meeting-color-2','meeting-series-3','meeting-design-3','meeting-color-3','meeting-child-door'];
+  const handled=['meeting-series','meeting-status','meeting-new-shape','meeting-new-upper','meeting-range-result','meeting-design','meeting-color','meeting-series-2','meeting-design-2','meeting-color-2','meeting-series-3','meeting-design-3','meeting-color-3'];
   MEETING_IDS.filter(id=>!handled.includes(id)).forEach(id=>setVal(id,data[id.replace('meeting-','')]||''));
-  updateChildProductOptions();updateMeetingPreview();updateLockPower(false);updateCandidateVisibility(false);updateChildDoorVisibility();updateDoorDesignRules();updateManufacturingRangeWarning();
+  updateMeetingPreview();updateLockPower(false);updateCandidateVisibility(false);updateChildDoorVisibility();updateManufacturingRangeWarning();
   if(data['lower-type'])syncLowerFrameToCalc(false);updateLowerFrameAdvice();
 }
 function restoreBackdoor(data={}){BACKDOOR_IDS.forEach(id=>setVal(id,data[id.replace('back-','')]||''));updateBackdoorColors(true);}
@@ -1541,11 +1517,7 @@ function updateLockPower(setDefault=true){
   updateHandleColors(setDefault);
   updateCompatibilityStatus();
 }
-function updateDoorDesignRules(){
-  if(val('meeting-series')!=='D50 高断熱ドア'||!['oyako','sode_oyako'].includes(val('meeting-new-shape')))return;
-  const code=D50_CHILD_BY_DESIGN[val('meeting-design')];if(!code)return;
-  const type=code==='K60N'?'無採光':'採光';setVal('meeting-child-type',type);updateChildProductOptions(false);setVal('meeting-child-door',code);
-}
+function updateDoorDesignRules(){}
 function updateCompatibilityStatus(){
   const alert=document.getElementById('meeting-compatibility'),series=val('meeting-series'),lock=val('meeting-lock'),power=val('meeting-power'),handle=val('meeting-handle'),color=val('meeting-handle-color');
   const missing=[];if(!val('meeting-new-shape'))missing.push('新設枠形式');if(!val('meeting-new-upper'))missing.push('上部仕様');if(!series)missing.push('商品');if(series&&!val('meeting-design'))missing.push('デザイン');if(val('meeting-design')&&!val('meeting-color'))missing.push('扉カラー');if(!lock)missing.push('鍵');if(lock&&!power)missing.push('電源');if(lock&&!handle)missing.push('ハンドル');if(handle&&!color)missing.push('ハンドル色');
@@ -1596,7 +1568,6 @@ document.getElementById('meeting-design-3').addEventListener('change',()=>update
 document.getElementById('meeting-handle').addEventListener('change',()=>updateHandleColors(true));
 document.getElementById('meeting-power').addEventListener('change',updateCompatibilityStatus);
 document.getElementById('meeting-handle-color').addEventListener('change',updateCompatibilityStatus);
-document.getElementById('meeting-child-type').addEventListener('change',()=>updateChildProductOptions(false));
 document.getElementById('sliding-series').addEventListener('change',()=>updateSlidingOptions(false));
 document.getElementById('sliding-design').addEventListener('change',()=>updateSlidingCombinationRules(false));
 document.getElementById('sliding-screen').addEventListener('change',()=>updateSlidingScreenOptions(false));
@@ -1842,7 +1813,7 @@ function buildText() {
     lines.push('有効開口：' + kouW + '  ' + document.getElementById('kouchi-w-formula').textContent);
   }
   const meeting = collectMeeting();
-  const meetingItems = [['候補1 商品・仕様',meeting.series],['状況',meeting.status],['新設枠形式',KATACHI_LABEL[meeting['new-shape']]||meeting['new-shape']],['新設上部仕様',NEW_UPPER_LABEL[meeting['new-upper']]||meeting['new-upper']],['製作範囲警告',meeting['range-result']],['候補1 デザイン',meeting.design],['候補1 扉カラー',meeting.color],['候補2 商品・仕様',meeting['series-2']],['候補2 デザイン',meeting['design-2']],['候補2 扉カラー',meeting['color-2']],['候補3 商品・仕様',meeting['series-3']],['候補3 デザイン',meeting['design-3']],['候補3 扉カラー',meeting['color-3']],['子扉の種類',meeting['child-type']],['子扉（自動判定）',meeting['child-door']],['鍵',meeting.lock],['電源方式',meeting.power],['ハンドル',meeting.handle],['ハンドル色',meeting['handle-color']],['下枠納まり',meeting['lower-type']],['段差緩和材',meeting['lower-relief']],['下枠化粧カバー',meeting['lower-cover']],['下枠幅木',meeting['lower-baseboard']],['補強アングル',meeting['lower-angle']],['たて額長さ',meeting['lower-vertical']],['下部カバーセット',meeting['lower-wood-cover']]].filter(x=>x[1]);
+  const meetingItems = [['候補1 商品・仕様',meeting.series],['状況',meeting.status],['新設枠形式',KATACHI_LABEL[meeting['new-shape']]||meeting['new-shape']],['新設上部仕様',NEW_UPPER_LABEL[meeting['new-upper']]||meeting['new-upper']],['製作範囲警告',meeting['range-result']],['候補1 デザイン',meeting.design],['候補1 扉カラー',meeting.color],['候補2 商品・仕様',meeting['series-2']],['候補2 デザイン',meeting['design-2']],['候補2 扉カラー',meeting['color-2']],['候補3 商品・仕様',meeting['series-3']],['候補3 デザイン',meeting['design-3']],['候補3 扉カラー',meeting['color-3']],['子扉の種類',meeting['child-type']],['鍵',meeting.lock],['電源方式',meeting.power],['ハンドル',meeting.handle],['ハンドル色',meeting['handle-color']],['下枠納まり',meeting['lower-type']],['段差緩和材',meeting['lower-relief']],['下枠化粧カバー',meeting['lower-cover']],['下枠幅木',meeting['lower-baseboard']],['補強アングル',meeting['lower-angle']],['たて額長さ',meeting['lower-vertical']],['下部カバーセット',meeting['lower-wood-cover']]].filter(x=>x[1]);
   if (currentType === 'door' && (meetingItems.length || meeting.notes)) {
     lines.push('', '【現地打ち合わせ内容】');
     meetingItems.forEach(([k,v])=>lines.push(`${k}：${v}`));
@@ -2078,7 +2049,6 @@ function exportYkkTransfer() {
       handle: meeting.handle || '',
       handleColor: meeting['handle-color'] || '',
       childType: meeting['child-type'] || '',
-      childDoor: meeting['child-door'] || '',
       lowerType: meeting['lower-type'] || '',
       outerFrame: transferFrame('soto'),
       innerFrame: transferFrame('uchi'),
@@ -2148,7 +2118,7 @@ function buildSheetHTML(siteName, siteDate, kengu, tsukeLabel, shimowakuTxt, isD
   </div>` : '';
   const meeting = collectMeeting();
   const esc = s => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const meetingRows = [['候補1 商品・仕様',meeting.series],['打ち合わせ状況',meeting.status],['新設枠形式',KATACHI_LABEL[meeting['new-shape']]||meeting['new-shape']],['新設上部仕様',NEW_UPPER_LABEL[meeting['new-upper']]||meeting['new-upper']],['製作範囲警告',meeting['range-result']],['候補1 デザイン',meeting.design],['候補1 扉カラー',meeting.color],['候補2 商品・仕様',meeting['series-2']],['候補2 デザイン',meeting['design-2']],['候補2 扉カラー',meeting['color-2']],['候補3 商品・仕様',meeting['series-3']],['候補3 デザイン',meeting['design-3']],['候補3 扉カラー',meeting['color-3']],['子扉の種類',meeting['child-type']],['子扉（自動判定）',meeting['child-door']],['鍵',meeting.lock],['電源方式',meeting.power],['ハンドル',meeting.handle],['ハンドル色',meeting['handle-color']],['下枠納まり',meeting['lower-type']],['段差緩和材',meeting['lower-relief']],['下枠化粧カバー',meeting['lower-cover']],['下枠幅木',meeting['lower-baseboard']],['補強アングル',meeting['lower-angle']],['たて額長さ',meeting['lower-vertical']],['下部カバーセット',meeting['lower-wood-cover']]].filter(x=>x[1]);
+  const meetingRows = [['候補1 商品・仕様',meeting.series],['打ち合わせ状況',meeting.status],['新設枠形式',KATACHI_LABEL[meeting['new-shape']]||meeting['new-shape']],['新設上部仕様',NEW_UPPER_LABEL[meeting['new-upper']]||meeting['new-upper']],['製作範囲警告',meeting['range-result']],['候補1 デザイン',meeting.design],['候補1 扉カラー',meeting.color],['候補2 商品・仕様',meeting['series-2']],['候補2 デザイン',meeting['design-2']],['候補2 扉カラー',meeting['color-2']],['候補3 商品・仕様',meeting['series-3']],['候補3 デザイン',meeting['design-3']],['候補3 扉カラー',meeting['color-3']],['子扉の種類',meeting['child-type']],['鍵',meeting.lock],['電源方式',meeting.power],['ハンドル',meeting.handle],['ハンドル色',meeting['handle-color']],['下枠納まり',meeting['lower-type']],['段差緩和材',meeting['lower-relief']],['下枠化粧カバー',meeting['lower-cover']],['下枠幅木',meeting['lower-baseboard']],['補強アングル',meeting['lower-angle']],['たて額長さ',meeting['lower-vertical']],['下部カバーセット',meeting['lower-wood-cover']]].filter(x=>x[1]);
   const meetingHtml = currentType==='door' && (meetingRows.length || meeting.notes) ? `<div style="margin-top:12px;break-inside:avoid">
     <div style="font-size:9px;font-weight:700;letter-spacing:.15em;color:#666;border-bottom:1px solid #ccc;padding-bottom:3px;margin-bottom:7px">現地打ち合わせ内容</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">${meetingRows.map(([k,v])=>`<div style="border:1px solid #ddd;border-radius:5px;padding:6px 9px"><div style="font-size:9px;color:#888">${k}</div><div style="font-size:12px;font-weight:600">${esc(v)}</div></div>`).join('')}</div>
