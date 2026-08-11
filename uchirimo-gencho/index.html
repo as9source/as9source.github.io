@@ -69,6 +69,8 @@ body{font-family:'Hiragino Sans','Meiryo',sans-serif;background:var(--bg2);displ
 .bulk-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end}
 .bulk-row .field{margin:0}
 .bulk-apply{min-height:48px;padding:10px 16px;border:0;border-radius:9px;background:var(--accent);color:#fff;font:inherit;font-weight:700;cursor:pointer}
+.panel-actions{display:flex;justify-content:flex-end;margin:2px 0 14px}
+.duplicate-btn{min-height:44px;padding:9px 15px;border:1px solid var(--accent);border-radius:9px;background:var(--accent2);color:var(--accent);font:inherit;font-weight:700;cursor:pointer}
 
 /* スクロールエリア */
 .scroll-area{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(16px + var(--safe-bottom))}
@@ -769,6 +771,17 @@ function addWindow(){
   document.getElementById('scroll-area').appendChild(makePanel(id));
   renderTabs();setActive(id);
 }
+function duplicateWindow(sourceId){
+  const copied=getWinData(sourceId);if(!copied){toast('複製元の窓が見つかりません',1);return;}
+  const id=++ctr,label='窓 '+(wins.length+1);
+  copied.id=id;copied.label=label;
+  wins.push({id,label});
+  document.getElementById('empty-state')?.remove();
+  document.getElementById('scroll-area').appendChild(makePanel(id));
+  restoreWin(copied);renderTabs();setActive(id);
+  document.getElementById('save-ind').textContent='未保存';
+  toast(label+'として複製しました');
+}
 function deleteWindow(id,e){
   e.stopPropagation();
   const lbl=(wins.find(w=>w.id===id)||{}).label||'この窓';
@@ -907,6 +920,7 @@ function makePanel(n){
   div.innerHTML=`
 <div class="section">
   <div class="sec-title">設置・基本情報</div>
+  <div class="panel-actions"><button class="duplicate-btn" onclick="duplicateWindow(${n})">この窓を複製して追加</button></div>
   <div class="grid3">
     <div class="field"><label>階</label><select id="floor-${n}"><option value="">未選択</option><option>1階</option><option>2階</option><option>3階</option><option>その他</option></select></div>
     <div class="field"><label>部屋</label><select id="room-${n}"><option value="">未選択</option><option>トイレ</option><option>浴室</option><option>洗面脱衣</option><option>リビング</option><option>居間</option><option>寝室</option><option>子供室</option><option>キッチン</option><option>和室</option><option>玄関</option><option>廊下</option><option>納戸</option><option>その他</option></select></div>
