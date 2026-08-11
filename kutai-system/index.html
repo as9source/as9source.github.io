@@ -14,10 +14,15 @@
     ========================================
     躯体採寸システム
     ========================================
-    バージョン: 1.50.0
-    最終更新: 2026-08-09
+    バージョン: 1.50.1
+    最終更新: 2026-08-12
     
     [更新履歴]
+    v1.50.1 (2026-08-12) - 図面上の辺寸法入力が戻る問題を修正
+    - 図面上で入力した値を下部の寸法入力欄にも即時同期
+    - 段差T字の高い側全長も図面上から正しく更新
+    - 図面上の寸法入力はEnterキーでも確定可能
+
     v1.50.0 (2026-08-10) - 斜めコーナーの躯体芯計算を角度対応
     - 90度以外の控除を「躯体幅÷2÷sin角度」で算出
     - 斜め辺は現場入力した芯寸法をそのまま使用
@@ -4656,12 +4661,52 @@
             });
         }
         
+        function syncVisibleDimensionInput(id, type, value) {
+            document.querySelectorAll('[data-dimension-line][data-dimension-type]').forEach(input => {
+                if (input.dataset.dimensionLine === id && input.dataset.dimensionType === type) {
+                    input.value = value ?? '';
+                }
+            });
+        }
+
+        function getSteppedTeeMainGroupForLine(lineId) {
+            for (const [cornerKey, corner] of Object.entries(corners || {})) {
+                if (!corner?.hasStep || corner.lines?.length !== 3) continue;
+                const parts = getTeeParts(corner);
+                if (parts?.mains?.some(({ line }) => line.id === lineId)) {
+                    return { cornerKey, corner, parts };
+                }
+            }
+            return null;
+        }
+
         function updateDimension(id, type, value) {
             if (!dimensions[id]) {
                 dimensions[id] = { length: null, width: null };
             }
-            
-            dimensions[id][type] = value ? parseFloat(value) : null;
+
+            const parsed = value !== null && value !== undefined && String(value).trim() !== ''
+                ? parseFloat(value)
+                : null;
+
+            // 段差T字の高い側は2辺を1つの「全長」として扱う。
+            // 図面上のどちらの辺ブロックから入力しても、全長欄と両辺を同期する。
+            const steppedGroup = type === 'length' ? getSteppedTeeMainGroupForLine(id) : null;
+            if (steppedGroup) {
+                steppedGroup.corner.mainLength = parsed;
+                steppedGroup.parts.mains.forEach(({ line }) => {
+                    if (!dimensions[line.id]) dimensions[line.id] = { length: null, width: commonWidth };
+                    dimensions[line.id].length = parsed;
+                });
+                document.querySelectorAll('[data-stepped-corner]').forEach(input => {
+                    if (input.dataset.steppedCorner === steppedGroup.cornerKey) input.value = parsed ?? '';
+                });
+            } else {
+                dimensions[id][type] = parsed;
+                // calculate()は表示中の入力欄から状態を再同期するため、
+                // 図面上入力時は先に表示値も更新して古い値の上書きを防ぐ。
+                syncVisibleDimensionInput(id, type, parsed);
+            }
             drawLines();
             calculate();
         }
@@ -8052,15 +8097,17 @@
             document.getElementById('diagram-menu-title').textContent = `${line.name}の寸法入力`;
             document.getElementById('diagram-menu-body').innerHTML = `
                 <p style="margin:10px 0 0;color:#64748b;font-size:13px;line-height:1.6;">図面上の辺ブロックから直接入力しています。</p>
+                <form onsubmit="event.preventDefault();applyLineDimensionFromDiagram('${lineId}',document.getElementById('direct-line-dimension').value)">
                 <div style="margin-top:12px;padding:11px;background:#eff6ff;border:1px solid #93c5fd;border-radius:9px;">
                     <label for="direct-line-dimension" style="display:block;margin-bottom:6px;color:#1e40af;font-size:13px;font-weight:800;">${dimensionLabel} (mm)</label>
                     <input id="direct-line-dimension" type="number" min="1" value="${current}" placeholder="寸法を入力" inputmode="decimal" autofocus
                            style="width:100%;padding:11px;border:2px solid #3b82f6;border-radius:7px;font-size:18px;font-weight:700;">
                 </div>
                 <div class="diagram-menu-actions">
-                    <button onclick="applyLineDimensionFromDiagram('${lineId}',document.getElementById('direct-line-dimension').value)">寸法を反映</button>
-                    <button onclick="closeDiagramMenu()">キャンセル</button>
+                    <button type="submit">寸法を反映</button>
+                    <button type="button" onclick="closeDiagramMenu()">キャンセル</button>
                 </div>
+                </form>
             `;
             showDiagramMenu();
             setTimeout(() => document.getElementById('direct-line-dimension')?.select(), 50);
