@@ -2160,6 +2160,35 @@ function clearAll(silent=false) {
   recalc();
 }
 
+// ======= Auto-select on click (for Disto input) =======
+function initAutoSelect() {
+  // 全数値入力欄にクリック時全選択イベントを追加
+  const selectors = [
+    '.inline-input',
+    '.measure-table input',
+    '#site-date',
+    '#site-name',
+    '.notes-input',
+    '.meeting-select',
+    '.meeting-notes'
+  ];
+  
+  selectors.forEach(selector => {
+    document.querySelectorAll(selector).forEach(el => {
+      el.addEventListener('click', function() {
+        this.select();
+      });
+    });
+  });
+}
+
+// DOM読み込み完了後に初期化
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initAutoSelect);
+} else {
+  initAutoSelect();
+}
+
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('saisun-sw.js').catch(() => {});
 }
