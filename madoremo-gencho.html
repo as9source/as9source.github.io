@@ -287,6 +287,17 @@ h1{font-size:20px;font-weight:700;letter-spacing:.02em}
 .bulk-actions{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end}
 .bulk-actions button{min-width:110px}
 .bulk-count{color:var(--accent);font-weight:700}
+.photo-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.photo-input{display:none}
+.photo-add{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:9px 15px;border:1px solid var(--accent);border-radius:9px;background:var(--accent2);color:var(--accent);font-weight:700;cursor:pointer}
+.photo-add.disabled{opacity:.45;pointer-events:none}
+.photo-count{font-size:12px;color:var(--text2)}
+.photo-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.photo-item{position:relative;border:1px solid var(--bd);border-radius:9px;overflow:hidden;background:var(--bg2)}
+.photo-item img{display:block;width:100%;height:180px;object-fit:cover}
+.photo-remove{position:absolute;top:6px;right:6px;min-height:32px;padding:4px 9px;border:0;border-radius:999px;background:rgba(163,45,45,.9);color:#fff;font-size:12px}
+.print-photos{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}
+.print-photos img{display:block;width:100%;max-height:220px;object-fit:contain;border:1px solid var(--bd)}
 button{min-height:43px;padding:9px 14px;border:1px solid var(--bd);border-radius:9px;font-size:14px;font-weight:600}
 header button{box-shadow:0 1px 2px rgba(0,0,0,.08)}
 main{padding-bottom:calc(28px + var(--safe-bottom))}
@@ -484,9 +495,11 @@ const STORE = 'madoremo-survey-draft-v2';
 const byId = (arr,id) => arr.find(x => String(x.id) === String(id));
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const text = v => esc(v || '－').split('\n').join(' / ');
-const blankWindow = () => ({placeId:'',existingId:'',fitId:'',floor:'',roomType:'',roomDetail:'',placeMemo:'',w:[null,null,null],h:[null,null,null],seriesId:'',newWindowId:'',glassId:'',outerColor:'',innerColor:'',edgeId:'',screen:'no',mool:'なし',upper:'未確認',memo:''});
+const MAX_PHOTOS=2;
+const blankWindow = () => ({placeId:'',existingId:'',fitId:'',floor:'',roomType:'',roomDetail:'',placeMemo:'',w:[null,null,null],h:[null,null,null],seriesId:'',newWindowId:'',glassId:'',outerColor:'',innerColor:'',edgeId:'',screen:'no',mool:'なし',upper:'未確認',memo:'',photos:[]});
 let state = {current:0,site:{projectName:'',surveyDate:new Date().toISOString().slice(0,10),building:'木造（3階以下）',around:'修復不必要',siteMemo:''},windows:[blankWindow()]};
 let bulkSelected = new Set();
+let saveErrorShown=false;
 const ids = ['projectName','surveyDate','building','around','siteMemo','place','existing','fit','roomFloor','roomType','roomDetail','placeMemo','w1','w2','w3','h1','h2','h3','series','newWindow','glass','outerColor','innerColor','edge','screen','mool','upper','memo'];
 function opt(v,t){return `<option value="${esc(v ?? '')}">${esc(t ?? '')}</option>`}
 function fillSelect(id,items,labeler,empty='選択してください'){document.getElementById(id).innerHTML = opt('',empty) + items.map(x => opt(x.id,labeler(x))).join('')}
@@ -496,6 +509,25 @@ function roomName(w){
   return structured.length ? structured.join('・') : (w.placeMemo || '');
 }
 function colorNames(side){return [...new Set(DATA.colors.filter(c => c.side===side).map(c => c.name))].sort((a,b)=>a.localeCompare(b,'ja'))}
+function compressPhoto(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onerror=()=>reject(new Error('写真を読み込めませんでした'));
+    reader.onload=()=>{
+      const img=new Image();
+      img.onerror=()=>reject(new Error('写真を開けませんでした'));
+      img.onload=()=>{
+        const scale=Math.min(1,900/Math.max(img.width,img.height));
+        const canvas=document.createElement('canvas');
+        canvas.width=Math.max(1,Math.round(img.width*scale));canvas.height=Math.max(1,Math.round(img.height*scale));
+        canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+        resolve(canvas.toDataURL('image/jpeg',.72));
+      };
+      img.src=reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
 function calc(w){
   const ww = w.w.filter(v => Number.isFinite(v));
   const hh = w.h.filter(v => Number.isFinite(v));
@@ -515,6 +547,7 @@ const App = {
     const oldRoomField=document.getElementById('placeMemo');
     oldRoomField.parentElement.outerHTML = `<div class="grid3"><p><label>階</label><select id="roomFloor"><option value="">未選択</option><option>1階</option><option>2階</option><option>3階</option><option>その他</option></select></p><p><label>部屋</label><select id="roomType"><option value="">未選択</option><option>トイレ</option><option>浴室</option><option>洗面脱衣</option><option>リビング</option><option>居間</option><option>寝室</option><option>子供室</option><option>キッチン</option><option>和室</option><option>玄関</option><option>廊下</option><option>納戸</option><option>その他</option></select></p><p><label>方角・特徴</label><input id="roomDetail" placeholder="例）南・掃き出し・道路側"><input id="placeMemo" type="hidden"></p></div>`;
     document.getElementById('winEditor').insertAdjacentHTML('beforebegin', `<section id="bulkColorPanel" class="edit-only hidden"><h2>選択した窓の色を一括変更</h2><p class="bulk-count" id="bulkCount"></p><div class="bulk-actions"><p><label>外観色</label><select id="bulkOuterColor"></select></p><p><label>内観色</label><select id="bulkInnerColor"></select></p><button class="primary" onclick="App.applyBulkColors()">選択窓に反映</button></div><div class="note">窓一覧の「選択」にチェックした窓だけ変更します。シリーズに同じ色がない窓は変更せずに残します。</div></section>`);
+    document.getElementById('matchNote').insertAdjacentHTML('beforebegin', `<h3>現場写真</h3><div class="photo-tools"><label class="photo-add" for="photoInput">📷 写真を追加</label><input class="photo-input" id="photoInput" type="file" accept="image/*" multiple onchange="App.addPhotos(this.files)"><span class="photo-count" id="photoCount"></span></div><div class="photo-grid" id="photoGrid"></div>`);
     bulkOuterColor.innerHTML = opt('','変更しない') + colorNames('外観色').map(name=>opt(name,name)).join('');
     bulkInnerColor.innerHTML = opt('','変更しない') + colorNames('内観色').map(name=>opt(name,name)).join('');
     fillSelect('place',DATA.places,x=>x.name);
@@ -585,7 +618,7 @@ const App = {
     place.value=w.placeId||''; existing.value=w.existingId||''; fit.value=w.fitId||''; roomFloor.value=w.floor||''; roomType.value=w.roomType||''; roomDetail.value=w.roomDetail||''; placeMemo.value=roomName(w);
     ['w1','w2','w3'].forEach((id,i)=>document.getElementById(id).value=w.w[i]||''); ['h1','h2','h3'].forEach((id,i)=>document.getElementById(id).value=w.h[i]||'');
     series.value=w.seriesId||''; edge.value=w.edgeId||''; screen.value=w.screen||'no'; mool.value=w.mool||'なし'; upper.value=w.upper||'未確認'; memo.value=w.memo||'';
-    this.updateDependent();
+    this.updateDependent(); this.renderPhotos();
   },
   renderList(){
     windowList.innerHTML = state.windows.map((w,i) => {
@@ -621,16 +654,47 @@ const App = {
     this.save(false); this.render();
     alert(`${changed}窓の色を変更しました${skipped ? `。${skipped}窓はシリーズに同じ色がないため、対応できる色だけ反映しました` : ''}`);
   },
+  async addPhotos(files){
+    const w=state.windows[state.current];if(!w)return;
+    w.photos=Array.isArray(w.photos)?w.photos:[];
+    const candidates=Array.from(files||[]).filter(file=>file.type.startsWith('image/'));
+    const remaining=MAX_PHOTOS-w.photos.length;
+    if(remaining<=0){alert(`写真は1窓につき${MAX_PHOTOS}枚までです`);photoInput.value='';return;}
+    try{
+      for(const file of candidates.slice(0,remaining))w.photos.push(await compressPhoto(file));
+      this.save(false);this.renderPhotos();this.renderSummary();
+      if(candidates.length>remaining)alert(`写真は1窓につき${MAX_PHOTOS}枚までのため、先頭${remaining}枚を追加しました`);
+    }catch(e){alert(e.message||'写真の追加に失敗しました');}
+    photoInput.value='';
+  },
+  removePhoto(index){
+    const w=state.windows[state.current];if(!w||!Array.isArray(w.photos))return;
+    w.photos.splice(index,1);this.save(false);this.renderPhotos();this.renderSummary();
+  },
+  renderPhotos(){
+    const w=state.windows[state.current]||{};const photos=Array.isArray(w.photos)?w.photos:[];
+    const grid=document.getElementById('photoGrid');if(!grid)return;
+    grid.innerHTML=photos.map((src,i)=>`<div class="photo-item"><img src="${esc(src)}" alt="現場写真 ${i+1}"><button class="photo-remove" onclick="App.removePhoto(${i})">削除</button></div>`).join('');
+    document.getElementById('photoCount').textContent=`${photos.length} / ${MAX_PHOTOS}枚`;
+    photoInput.disabled=photos.length>=MAX_PHOTOS;
+    document.querySelector('label[for="photoInput"]')?.classList.toggle('disabled',photos.length>=MAX_PHOTOS);
+  },
   renderSummary(){
     const siteRows = `<tr><th>現場調査名</th><td>${text(state.site.projectName)}</td></tr><tr><th>調査日</th><td>${text(state.site.surveyDate)}</td></tr><tr><th>躯体構造</th><td>${text(state.site.building)}</td></tr><tr><th>既設窓まわり</th><td>${text(state.site.around)}</td></tr><tr><th>共通メモ</th><td>${text(state.site.siteMemo)}</td></tr>`;
-    const sheets = state.windows.map((w,i) => {const c=calc(w), nw=byId(DATA.newWindows,w.newWindowId), ser=byId(DATA.series,w.seriesId || nw?.seriesId), pl=byId(DATA.places,w.placeId), ex=byId(DATA.existing,w.existingId), ft=byId(DATA.fits,w.fitId), ed=byId(DATA.edges,w.edgeId), gl=byId(DATA.glass,w.glassId); const check = `${c.target?.catalogAdd ? 'PDF追加候補・要確認' : (c.target ? '組み合わせOK' : '組み合わせ要確認')} / ${c.sizeOk ? '寸法帯OK' : '寸法帯要確認'}${c.spreadWarn ? ' / 3点計測差要確認' : ''}`; return `<div class="print-sheet"><div class="print-title">窓 ${i+1} ${esc(nw?.name || '')}</div><table class="result"><tr><th>部屋名</th><td>${text(roomName(w))}</td></tr><tr><th>リフォーム場所</th><td>${text(pl?.name)}</td></tr><tr><th>既設窓 / 納まり</th><td>${text(ex?.name)} / ${text(ft?.name)}</td></tr><tr><th>使用寸法</th><td>${c.wMin&&c.hMin ? `${c.wMin} x ${c.hMin} mm` : '－'}</td></tr><tr><th>シリーズ / 新設窓</th><td>${text(ser?.name)} / ${text(nw?.name)}</td></tr><tr><th>ガラス</th><td>${gl ? text((gl.type ? gl.type + ' / ' : '') + gl.name) : '－'}</td></tr><tr><th>色</th><td>外観: ${text(byId(DATA.colors,w.outerColor)?.name)} / 内観: ${text(byId(DATA.colors,w.innerColor)?.name)}</td></tr><tr><th>内額縁</th><td>${text(ed?.name)}</td></tr><tr><th>網戸 / 外部モール / 上枠</th><td>${w.screen==='yes'?'あり':'なし'} / ${text(w.mool)} / ${text(w.upper)}</td></tr><tr><th>照合</th><td>${text(check)}</td></tr><tr><th>メモ</th><td>${text(w.memo)}</td></tr></table></div>`}).join('');
+    const sheets = state.windows.map((w,i) => {
+      const c=calc(w), nw=byId(DATA.newWindows,w.newWindowId), ser=byId(DATA.series,w.seriesId || nw?.seriesId), pl=byId(DATA.places,w.placeId), ex=byId(DATA.existing,w.existingId), ft=byId(DATA.fits,w.fitId), ed=byId(DATA.edges,w.edgeId), gl=byId(DATA.glass,w.glassId);
+      const check = `${c.target?.catalogAdd ? 'PDF追加候補・要確認' : (c.target ? '組み合わせOK' : '組み合わせ要確認')} / ${c.sizeOk ? '寸法帯OK' : '寸法帯要確認'}${c.spreadWarn ? ' / 3点計測差要確認' : ''}`;
+      const photos=Array.isArray(w.photos)?w.photos:[];
+      const photoBlock=photos.length?`<div class="print-photos">${photos.map((src,j)=>`<img src="${esc(src)}" alt="窓 ${i+1} 写真 ${j+1}">`).join('')}</div>`:'';
+      return `<div class="print-sheet"><div class="print-title">窓 ${i+1} ${esc(nw?.name || '')}</div><table class="result"><tr><th>部屋名</th><td>${text(roomName(w))}</td></tr><tr><th>リフォーム場所</th><td>${text(pl?.name)}</td></tr><tr><th>既設窓 / 納まり</th><td>${text(ex?.name)} / ${text(ft?.name)}</td></tr><tr><th>使用寸法</th><td>${c.wMin&&c.hMin ? `${c.wMin} x ${c.hMin} mm` : '－'}</td></tr><tr><th>シリーズ / 新設窓</th><td>${text(ser?.name)} / ${text(nw?.name)}</td></tr><tr><th>ガラス</th><td>${gl ? text((gl.type ? gl.type + ' / ' : '') + gl.name) : '－'}</td></tr><tr><th>色</th><td>外観: ${text(byId(DATA.colors,w.outerColor)?.name)} / 内観: ${text(byId(DATA.colors,w.innerColor)?.name)}</td></tr><tr><th>内額縁</th><td>${text(ed?.name)}</td></tr><tr><th>網戸 / 外部モール / 上枠</th><td>${w.screen==='yes'?'あり':'なし'} / ${text(w.mool)} / ${text(w.upper)}</td></tr><tr><th>照合</th><td>${text(check)}</td></tr><tr><th>メモ</th><td>${text(w.memo)}</td></tr></table>${photoBlock}</div>`;
+    }).join('');
     summary.innerHTML = `<div class="print-sheet"><div class="print-title">現場情報</div><table class="result">${siteRows}</table></div>${sheets}`;
   },
   selectWindow(i){this.capture(); state.current=i; this.render();},
   addWindow(){this.capture(); state.windows.push(blankWindow()); state.current=state.windows.length-1; this.render();},
-  duplicateWindow(){this.capture(); const insertAt=state.current+1; bulkSelected=new Set([...bulkSelected].map(i=>i>=insertAt?i+1:i)); state.windows.splice(insertAt,0,JSON.parse(JSON.stringify(state.windows[state.current]))); state.current++; this.render();},
+  duplicateWindow(){this.capture(); const insertAt=state.current+1,copy=JSON.parse(JSON.stringify(state.windows[state.current])); copy.photos=[]; bulkSelected=new Set([...bulkSelected].map(i=>i>=insertAt?i+1:i)); state.windows.splice(insertAt,0,copy); state.current++; this.render();},
   deleteWindow(){if(state.windows.length===1) return alert('最低1件は残してください'); if(confirm('この窓を削除しますか？')){const removed=state.current; bulkSelected=new Set([...bulkSelected].filter(i=>i!==removed).map(i=>i>removed?i-1:i)); state.windows.splice(removed,1); state.current=Math.max(0,removed-1); this.render(); this.save(false);}},
-  save(show=true){localStorage.setItem(STORE,JSON.stringify(state)); if(show) alert('保存しました');},
+  save(show=true){try{localStorage.setItem(STORE,JSON.stringify(state));saveErrorShown=false;if(show)alert('保存しました');return true;}catch(e){if(show||!saveErrorShown){alert('写真を含む保存容量が上限に達しました。不要な写真を削除してください。');saveErrorShown=true;}return false;}},
   clearAll(){if(confirm('入力内容を初期化しますか？')){localStorage.removeItem(STORE); bulkSelected.clear(); state={current:0,site:{projectName:'',surveyDate:new Date().toISOString().slice(0,10),building:'木造（3階以下）',around:'修復不必要',siteMemo:''},windows:[blankWindow()]}; this.render();}},
   preparePrint(){this.capture(); printArea.innerHTML=summary.innerHTML;}
 };
