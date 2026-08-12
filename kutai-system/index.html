@@ -14,10 +14,15 @@
     ========================================
     躯体採寸システム
     ========================================
-    バージョン: 1.50.1
+    バージョン: 1.50.2
     最終更新: 2026-08-12
     
     [更新履歴]
+    v1.50.2 (2026-08-12) - 保存・共有操作をPDFに統一
+    - 「画像で保存」ボタンを削除
+    - 共有はPDF保存と完全に同じページ構成のPDFファイルを使用
+    - PDFファイル共有に対応しない端末では自動的にPDFを保存
+
     v1.50.1 (2026-08-12) - 図面上の辺寸法入力が戻る問題を修正
     - 図面上で入力した値を下部の寸法入力欄にも即時同期
     - 段差T字の高い側全長も図面上から正しく更新
@@ -2053,7 +2058,7 @@
                 <li>図の辺やコーナーを選択し、壁、柱、段差、T字、堀込を配置します</li>
                 <li><strong>配置を確定して寸法入力へ</strong>を押します</li>
                 <li>現場名、色、躯体幅、躯体高さ、各辺の実測寸法を入力します</li>
-                <li>採寸結果を確認し、現場保存、PDF保存、画像保存、共有を行います</li>
+                <li>採寸結果を確認し、現場保存、PDF保存、PDF共有を行います</li>
             </ol>
 
             <h2>📐 図面の編集</h2>
@@ -5848,11 +5853,8 @@
                         <button onclick="downloadAsPDF()" style="flex: 1; min-width: 140px; padding: 12px 20px; background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
                             📄 PDFで保存
                         </button>
-                        <button onclick="downloadAsPNG()" style="flex: 1; min-width: 140px; padding: 12px 20px; background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                            🖼️ 画像で保存
-                        </button>
-                        <button onclick="shareResult()" style="flex: 1; min-width: 140px; padding: 12px 20px; background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                            📤 共有
+                        <button onclick="shareResultsAsPDF()" style="flex: 1; min-width: 140px; padding: 12px 20px; background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            📤 PDFを共有
                         </button>
                     </div>
                 ` + html;
@@ -9006,7 +9008,7 @@
             return resultsHTML;
         }
         
-        async function downloadAsPDF() {
+        async function downloadAsPDF(options = {}) {
             const resultsContent = document.getElementById('results-content');
             if (!resultsContent || !resultsContent.innerHTML || resultsContent.innerHTML.includes('入力が完了していません')) {
                 alert('採寸結果がありません');
@@ -9176,11 +9178,62 @@
                 document.body.removeChild(resultDiv);
                 
                 const filename = getPdfFilename(siteName, sashColor);
+                if (options.returnFile) {
+                    const blob = pdf.output('blob');
+                    return new File([blob], filename, { type: 'application/pdf' });
+                }
                 pdf.save(filename);
                 
             } catch (error) {
+                if (options.returnFile) throw error;
                 console.error('PDF保存エラー:', error);
                 alert('PDFの保存に失敗しました: ' + error.message);
+            }
+        }
+
+        async function shareResultsAsPDF() {
+            const loadingDiv = document.createElement('div');
+            loadingDiv.id = 'share-loading';
+            loadingDiv.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:10000;display:flex;align-items:center;justify-content:center;';
+            loadingDiv.innerHTML = '<div style="background:white;padding:40px;border-radius:12px;text-align:center;"><div style="font-size:60px;margin-bottom:20px;">⏳</div><div style="font-size:20px;font-weight:bold;color:#333;">PDF生成中...</div><div style="font-size:14px;color:#666;margin-top:10px;">しばらくお待ちください</div></div>';
+            document.body.appendChild(loadingDiv);
+
+            const removeLoading = () => document.getElementById('share-loading')?.remove();
+            try {
+                // 保存時と同じ生成処理を使い、レイアウト差をなくす。
+                const file = await downloadAsPDF({ returnFile: true });
+                if (!file) {
+                    removeLoading();
+                    return;
+                }
+                removeLoading();
+
+                const shareData = {
+                    title: '躯体採寸結果',
+                    text: '躯体の現地採寸結果です',
+                    files: [file]
+                };
+                const canShareFile = typeof navigator.share === 'function' &&
+                    (typeof navigator.canShare !== 'function' || navigator.canShare({ files: [file] }));
+                if (canShareFile) {
+                    try {
+                        await navigator.share(shareData);
+                        return;
+                    } catch (shareError) {
+                        if (shareError.name === 'AbortError') return;
+                    }
+                }
+
+                const link = document.createElement('a');
+                link.download = file.name;
+                link.href = URL.createObjectURL(file);
+                link.click();
+                setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+                showAlert('PDF共有に対応していないため、PDFを保存しました。', 'info');
+            } catch (error) {
+                removeLoading();
+                console.error('PDF共有エラー:', error);
+                alert('PDFの共有準備に失敗しました: ' + error.message);
             }
         }
         
