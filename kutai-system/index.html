@@ -14,10 +14,58 @@
     ========================================
     躯体採寸システム
     ========================================
-    バージョン: 1.50.2
+    バージョン: 1.54.0
     最終更新: 2026-08-12
     
     [更新履歴]
+    v1.54.2 (2026-08-12) - 躯体伸ばし後の合計寸法を追加
+    - 躯体伸ばしがある端部に「辺寸法＋躯体伸び＝合計寸法」を表示
+    - 計算結果とPDFにも伸ばし後の合計寸法を記載
+
+    v1.54.1 (2026-08-12) - 出隅壁の表示を寸法情報へ簡素化
+    - 分かりにくかった出隅壁の斜線・躯体伸ばしの二重線を削除
+    - 出隅端部には「辺からの躯体伸び」「壁からの躯体の飛び出し」「外側／内側伸ばし」の文字情報のみ表示
+    - 壁からの躯体の飛び出しは0mmも入力・計算・保存可能に変更
+
+    v1.54.0 (2026-08-12) - 出隅壁と躯体伸ばしの図示を明確化
+    - 「辺○からの躯体伸び寸法」を追加
+    - 出隅壁は斜線、躯体伸ばしは橙色の二重線で描き分け
+    - 出隅詳細の文字箱を作図画面・結果図でドラッグ移動可能に変更
+    - 図中に「斜線＝出隅壁／橙色線＝躯体伸ばし」の説明を表示
+
+    v1.53.2 (2026-08-12) - 出隅壁と笠木切り欠きの対象を明確化
+    - 斜線部分を出隅の壁、切り欠く対象を笠木として表示
+    - 操作名を「出隅壁（笠木切り欠き）」へ統一
+    - 壁からの躯体の飛び出しと、躯体の伸ばし方向を記録
+
+    v1.53.1 (2026-08-12) - 出隅を現場図の伸ばし納まりへ修正
+    - 「切り欠き幅・奥行」を廃止
+    - 既存の躯体幅のまま、辺端部から直角方向へ壁を伸ばす図形へ変更
+    - 追加入力を「躯体からの飛び出し」と「外観左側／右側伸ばし」に簡素化
+
+    v1.53.0 (2026-08-12) - 出隅・途中勾配・図上注意を修正
+    - 出隅は通常コーナーではなく、辺の始点／終点で選択する壁の詳細へ変更
+    - 辺端部の柱選択を削除し、出隅（切り欠き詳細）を追加
+    - 途中勾配はタップ位置で通常部と勾配部の2辺へ分割
+    - 勾配部分と低い側を選択し、図・結果・PDFへ表示
+    - 躯体幅差の注意を作図画面と結果図へ引き出し表示
+
+    v1.52.1 (2026-08-12) - 躯体幅が異なる接続部の注意表示を追加
+    - コーナー・T字で接続する辺の躯体幅を比較
+    - 幅が異なる場合は該当辺名と各幅を採寸結果・PDFへ注意表示
+
+    v1.52.0 (2026-08-12) - 図上入力と特殊納まりを拡張
+    - 辺選択時に寸法入力を直接開き、現在値を選択
+    - 柱幅・柱奥行の初期値を廃止
+    - 個別躯体幅を辺ブロックへ表示し、柱と幅が異なる場合は注意表示
+    - 出隅の切り欠き詳細と、途中／辺全体の勾配笠木を追加
+
+    v1.51.0 (2026-08-12) - 採寸入力を図面上の操作へ統一
+    - 入力順を「現場名・色 → 躯体幅・高さ → 辺寸法」に整理
+    - 辺ごとの躯体幅は、辺の図上入力で寸法と同時に入力
+    - 90度でないコーナーは、コーナー選択時に角度を入力
+    - 図面下の重複した寸法入力欄を非表示化
+
     v1.50.2 (2026-08-12) - 保存・共有操作をPDFに統一
     - 「画像で保存」ボタンを削除
     - 共有はPDF保存と完全に同じページ構成のPDFファイルを使用
@@ -1956,6 +2004,7 @@
             
             <!-- 現場名とサッシ色入力欄（NEW - v1.15.0） -->
             <div class="measurement-site-card">
+                <div style="margin-bottom:12px;color:#92400e;font-size:13px;font-weight:900;">1. 現場情報を入力</div>
                 <div class="measurement-site-grid">
                     <div>
                         <label style="display: block; color: #856404; font-weight: bold; margin-bottom: 8px; font-size: 14px;">
@@ -1982,13 +2031,40 @@
                     </div>
                 </div>
             </div>
+
+            <div class="measurement-site-card" style="background:#eff6ff;border-color:#93c5fd;">
+                <div style="margin-bottom:12px;color:#1e40af;font-size:13px;font-weight:900;">2. 躯体の基本寸法を入力</div>
+                <div class="measurement-site-grid">
+                    <div>
+                        <label for="common-width" style="display:block;color:#1e40af;font-weight:bold;margin-bottom:8px;font-size:14px;">
+                            躯体幅 (mm) <span style="color:#dc2626;">*必須</span>
+                        </label>
+                        <input type="number" id="common-width" min="1" placeholder="例: 180" inputmode="decimal"
+                               oninput="updateCommonWidth(this.value)"
+                               style="width:100%;padding:12px;border:2px solid #60a5fa;border-radius:8px;font-size:16px;">
+                    </div>
+                    <div>
+                        <label for="common-height" style="display:block;color:#1e40af;font-weight:bold;margin-bottom:8px;font-size:14px;">
+                            躯体高さ (mm) <span style="color:#dc2626;">*必須</span>
+                        </label>
+                        <input type="number" id="common-height" min="1" placeholder="例: 1100" inputmode="decimal"
+                               oninput="updateCommonHeight(this.value)"
+                               style="width:100%;padding:12px;border:2px solid #60a5fa;border-radius:8px;font-size:16px;">
+                    </div>
+                </div>
+                <label style="display:flex;align-items:flex-start;gap:9px;margin-top:13px;cursor:pointer;color:#334155;font-size:14px;font-weight:700;line-height:1.5;">
+                    <input type="checkbox" id="individual-width-check" onchange="toggleIndividualWidth(this.checked)"
+                           style="width:19px;height:19px;margin-top:1px;cursor:pointer;">
+                    <span>辺ごとに躯体幅が違う <small style="display:block;color:#64748b;font-weight:600;">チェック後、図の辺を選択すると躯体幅も入力できます</small></span>
+                </label>
+            </div>
             
             <div id="alert" class="alert" style="display: none;"></div>
 
             <section class="measurement-drawing-card">
                 <div class="measurement-section-head">
-                    <h2>採寸図</h2>
-                    <span>辺・端部・コーナーを選択して部品を追加</span>
+                    <h2>3. 採寸図で入力</h2>
+                    <span>辺の寸法と個別幅、斜めコーナーの角度を図から入力</span>
                 </div>
             <div id="interaction-mode-badge" style="margin:10px 0 6px;padding:9px 12px;border-radius:8px;background:#dcfce7;border:1px solid #86efac;color:#166534;font-size:13px;font-weight:800;">
                 👆 部品選択モード：辺・端部・コーナーを選択できます
@@ -2012,7 +2088,7 @@
             </div>
             </section>
             
-            <div class="dimension-inputs" id="dimension-inputs"></div>
+            <div class="dimension-inputs" id="dimension-inputs" hidden></div>
             
             <div class="results">
                 <h2>採寸結果</h2>
@@ -2055,16 +2131,21 @@
             <h2>📝 採寸手順</h2>
             <ol>
                 <li>現場の形に合うパターンを選びます</li>
+                <li>現場名と色を入力します</li>
+                <li>躯体幅と躯体高さを入力します</li>
                 <li>図の辺やコーナーを選択し、壁、柱、段差、T字、堀込を配置します</li>
-                <li><strong>配置を確定して寸法入力へ</strong>を押します</li>
-                <li>現場名、色、躯体幅、躯体高さ、各辺の実測寸法を入力します</li>
+                <li>辺名ブロックを選択し、各辺の実測寸法を入力します</li>
+                <li>辺ごとに躯体幅が違う場合は、上部のチェックを入れ、辺の寸法と一緒に躯体幅を入力します</li>
+                <li>90度でないコーナーは、コーナーを選択して角度を入力します</li>
                 <li>採寸結果を確認し、現場保存、PDF保存、PDF共有を行います</li>
             </ol>
 
             <h2>📐 図面の編集</h2>
             <ul>
-                <li>辺を選択すると、柱、壁、堀込、T字を配置できます</li>
-                <li>コーナーを選択すると、段差、柱、コーナー壁を配置できます</li>
+                <li>辺を選択すると寸法入力が直接開き、現在値が選択されます</li>
+                <li>辺入力内の「部品・勾配を追加」から、柱、壁、堀込、T字、勾配笠木を配置できます</li>
+                <li>辺の始点・終点を選択すると、エンド、壁、出隅壁（躯体伸ばし）を設定できます</li>
+                <li>通常コーナーを選択すると、段差、柱、コーナー壁を配置できます</li>
                 <li>配置済みの部品を選択すると、寸法変更または削除ができます</li>
                 <li>配置を間違えたときは<strong>↶ 直前の部品配置を戻す</strong>を押します</li>
             </ul>
@@ -2073,7 +2154,10 @@
             <ul>
                 <li>壁の寸法入力は不要です</li>
                 <li>柱は柱幅と柱奥行を入力します</li>
+                <li>躯体幅と柱幅・柱奥行が異なる場合は注意を表示します</li>
                 <li>段差と堀込は高さ差を入力します</li>
+                <li>勾配笠木は「途中から」または「辺全体」を選び、角度を入力します</li>
+                <li>出隅壁は辺の始点／終点から選び、壁からの躯体の飛び出し、辺からの躯体伸び、躯体の伸ばし方向（外側／内側）を入力します</li>
                 <li>斜め辺は現地で測定した芯寸法を入力します</li>
                 <li>90度でないコーナーは、躯体幅と入力角度から芯位置までの控除量を計算します</li>
                 <li>躯体高さが1100mm以下のときは、1100 - 20と1100 - 30の確認値を表示します</li>
@@ -3446,7 +3530,7 @@
                 }
                 const planWidth = getLinePlanWidth(line);
                 // 正方形を標準とし、個別変更された柱寸法の縦横比も図へ反映する。
-                const widthValue = Number(pillar.width) || 300;
+                const widthValue = Number(pillar.width) || 1;
                 const depthValue = Number(pillar.depth) || widthValue;
                 const maxValue = Math.max(widthValue, depthValue, 1);
                 const baseSize = planWidth * scaleFactor;
@@ -3456,7 +3540,202 @@
                     displayFeatureGeometry.set(pillar.id, { type: 'pillar', x: point.x, y: point.y, width, depth });
                 }
                 drawHatchedRect(targetCtx, point.x, point.y, width, depth, pillar.angle ?? angle, '');
+                const widthWarning = getPillarWidthWarning(pillar);
+                if (widthWarning) {
+                    targetCtx.save();
+                    targetCtx.font = `bold ${Math.max(10, 11 * scaleFactor)}px sans-serif`;
+                    targetCtx.fillStyle = '#dc2626';
+                    targetCtx.textAlign = 'center';
+                    targetCtx.textBaseline = 'bottom';
+                    targetCtx.fillText('⚠ 躯体幅と柱サイズが異なります', point.x, point.y - depth / 2 - 5);
+                    targetCtx.restore();
+                }
             });
+        }
+
+        function getPillarWidthWarning(pillar) {
+            if (!pillar) return null;
+            const line = lines.find(item => item.id === pillar.lineId) ||
+                lines.find(item => item.id === pillar.beforeLineId) ||
+                lines.find(item => item.id === pillar.afterLineId);
+            const bodyWidth = positiveNumberOrNull(line ? (dimensions[line.id]?.width || commonWidth) : commonWidth);
+            const pillarWidth = positiveNumberOrNull(pillar.width);
+            const pillarDepth = positiveNumberOrNull(pillar.depth);
+            if (!bodyWidth || !pillarWidth || !pillarDepth ||
+                (Math.abs(bodyWidth - pillarWidth) < 0.5 && Math.abs(bodyWidth - pillarDepth) < 0.5)) return null;
+            return {
+                pillar,
+                lineName: line?.name || '躯体',
+                bodyWidth,
+                pillarWidth,
+                pillarDepth
+            };
+        }
+
+        function buildPillarWidthWarnings() {
+            return pillars.map(getPillarWidthWarning).filter(Boolean);
+        }
+
+        function buildBodyWidthWarnings() {
+            detectCorners();
+            return Object.entries(corners || {}).map(([cornerKey, corner]) => {
+                if (!corner?.lines || corner.lines.length < 2) return null;
+                const items = corner.lines.map(ref => {
+                    const line = lines.find(item => item.id === ref.lineId);
+                    const width = line ? positiveNumberOrNull(dimensions[line.id]?.width || commonWidth) : null;
+                    return line && width ? { line, width } : null;
+                }).filter(Boolean);
+                const uniqueWidths = [...new Set(items.map(item => item.width))];
+                if (items.length < 2 || uniqueWidths.length < 2) return null;
+                return {
+                    cornerKey,
+                    lineIds: items.map(item => item.line.id),
+                    detail: items.map(item => `${item.line.name} ${item.width}mm`).join(' ／ ')
+                };
+            }).filter(Boolean);
+        }
+
+        function drawBodyWidthWarnings(targetCtx, transformPoint) {
+            buildBodyWidthWarnings().forEach((warning, index) => {
+                const corner = corners?.[warning.cornerKey];
+                if (!corner) return;
+                const anchor = transformPoint(corner.x, corner.y);
+                const text = `⚠ 躯体幅が異なります ${warning.detail}`;
+                targetCtx.save();
+                targetCtx.font = 'bold 11px sans-serif';
+                const width = targetCtx.measureText(text).width + 16;
+                const height = 27;
+                const canvasWidth = targetCtx.canvas?.width || 800;
+                const canvasHeight = targetCtx.canvas?.height || 600;
+                const direction = index % 2 === 0 ? 1 : -1;
+                const x = Math.max(width / 2 + 6, Math.min(canvasWidth - width / 2 - 6, anchor.x + 85 * direction));
+                const y = Math.max(height / 2 + 6, Math.min(canvasHeight - height / 2 - 6, anchor.y - 50 - (index % 3) * 30));
+                targetCtx.strokeStyle = '#ca8a04';
+                targetCtx.lineWidth = 1.5;
+                targetCtx.setLineDash([5, 4]);
+                targetCtx.beginPath();
+                targetCtx.moveTo(anchor.x, anchor.y);
+                targetCtx.lineTo(x, y + height / 2);
+                targetCtx.stroke();
+                targetCtx.setLineDash([]);
+                targetCtx.fillStyle = 'rgba(254,252,232,.98)';
+                targetCtx.fillRect(x - width / 2, y - height / 2, width, height);
+                targetCtx.strokeStyle = '#eab308';
+                targetCtx.strokeRect(x - width / 2, y - height / 2, width, height);
+                targetCtx.fillStyle = '#854d0e';
+                targetCtx.textAlign = 'center';
+                targetCtx.textBaseline = 'middle';
+                targetCtx.fillText(text, x, y);
+                targetCtx.restore();
+            });
+        }
+
+        function drawSlopeCapFeature(targetCtx, line, feature, point, scaleFactor = 1) {
+            const dx = line.x2 - line.x1;
+            const dy = line.y2 - line.y1;
+            const length = Math.max(1, Math.hypot(dx, dy));
+            const ux = dx / length;
+            const uy = dy / length;
+            const nx = -uy;
+            const ny = ux;
+            const planWidth = getLinePlanWidth(line) * scaleFactor;
+            targetCtx.save();
+            targetCtx.strokeStyle = '#7c3aed';
+            targetCtx.fillStyle = '#6d28d9';
+            targetCtx.lineWidth = Math.max(2, 2.5 * scaleFactor);
+            targetCtx.setLineDash([]);
+            if (feature.slopeMode === 'partial') {
+                targetCtx.beginPath();
+                targetCtx.moveTo(point.x + nx * planWidth / 2, point.y + ny * planWidth / 2);
+                targetCtx.lineTo(point.x - nx * planWidth / 2, point.y - ny * planWidth / 2);
+                targetCtx.stroke();
+            }
+            targetCtx.font = `bold ${Math.max(10, 12 * scaleFactor)}px sans-serif`;
+            targetCtx.textAlign = 'center';
+            targetCtx.textBaseline = 'bottom';
+            const labelX = point.x + nx * (planWidth / 2 + 8);
+            const labelY = point.y + ny * (planWidth / 2 + 8);
+            targetCtx.fillText(`勾配笠木 ${feature.slopeAngle}°`, labelX, labelY);
+            targetCtx.font = `bold ${Math.max(9, 10 * scaleFactor)}px sans-serif`;
+            targetCtx.fillStyle = '#dc2626';
+            targetCtx.textBaseline = 'top';
+            targetCtx.fillText(`▽ ${getSlopeLowSideLabel(feature)}`, labelX, labelY + 3);
+            targetCtx.restore();
+        }
+
+        function getSlopeLowSideLabel(feature) {
+            const slopeLine = lines.find(item => item.id === feature?.lineId);
+            if (!slopeLine) return '低い側未確認';
+            return `${slopeLine.name}${feature.lowSide === 'end' ? '終点側' : '始点側'}が低い`;
+        }
+
+        function drawNotchFeature(targetCtx, line, feature, point, scaleFactor = 1) {
+            const dx = line.x2 - line.x1;
+            const dy = line.y2 - line.y1;
+            const length = Math.max(1, Math.hypot(dx, dy));
+            let ux = dx / length;
+            let uy = dy / length;
+            if (Math.hypot(feature.x - line.x2, feature.y - line.y2) < Math.hypot(feature.x - line.x1, feature.y - line.y1)) {
+                ux *= -1;
+                uy *= -1;
+            }
+            const isInsideExtension = feature.side === 'inside' || feature.side === 'right';
+            const sideSign = isInsideExtension ? -1 : 1;
+            const nx = -uy * sideSign;
+            const ny = ux * sideSign;
+            const bodyExtensionValue = Number(feature.bodyExtension ?? feature.capExtension);
+            const edgeLength = Number(dimensions[line.id]?.length);
+            const extendedTotal = Number.isFinite(edgeLength) && edgeLength > 0 && Number.isFinite(bodyExtensionValue) && bodyExtensionValue > 0
+                ? edgeLength + bodyExtensionValue
+                : null;
+
+            const labelKey = `notch:${feature.id}`;
+            const labelLines = [
+                `${line.name}からの躯体伸び ${bodyExtensionValue}mm`,
+                `壁からの躯体の飛び出し ${feature.projection}mm／${isInsideExtension ? '内側伸ばし' : '外側伸ばし'}`,
+                ...(extendedTotal === null ? [] : [`元の${line.name} ${edgeLength}mm＋伸ばし ${bodyExtensionValue}mm＝合計 ${extendedTotal}mm`])
+            ];
+            targetCtx.save();
+            targetCtx.font = `bold ${Math.max(9, 10 * scaleFactor)}px sans-serif`;
+            const labelWidth = Math.max(...labelLines.map(text => targetCtx.measureText(text).width)) + 16;
+            const labelHeight = labelLines.length === 3 ? 54 : 38;
+            const defaultLabel = {
+                x: point.x + nx * 82 * scaleFactor,
+                y: point.y + ny * 82 * scaleFactor
+            };
+            const offsets = targetCtx === ctx ? diagramLabelOffsets : resultLabelOffsets;
+            const saved = offsets[labelKey];
+            const canvasWidth = targetCtx.canvas?.width || 800;
+            const canvasHeight = targetCtx.canvas?.height || 600;
+            const labelX = Math.max(labelWidth / 2 + 6, Math.min(canvasWidth - labelWidth / 2 - 6, saved?.x ?? defaultLabel.x));
+            const labelY = Math.max(labelHeight / 2 + 6, Math.min(canvasHeight - labelHeight / 2 - 6, saved?.y ?? defaultLabel.y));
+            if (saved) offsets[labelKey] = { x: labelX, y: labelY };
+            const rect = { left: labelX - labelWidth / 2, right: labelX + labelWidth / 2, top: labelY - labelHeight / 2, bottom: labelY + labelHeight / 2 };
+            targetCtx.strokeStyle = '#c2410c';
+            targetCtx.lineWidth = 1.3;
+            targetCtx.setLineDash([5, 4]);
+            targetCtx.beginPath();
+            targetCtx.moveTo(point.x, point.y);
+            targetCtx.lineTo(labelX, labelY);
+            targetCtx.stroke();
+            targetCtx.setLineDash([]);
+            targetCtx.fillStyle = 'rgba(255,247,237,.98)';
+            targetCtx.fillRect(rect.left, rect.top, labelWidth, labelHeight);
+            targetCtx.strokeStyle = '#f97316';
+            targetCtx.strokeRect(rect.left, rect.top, labelWidth, labelHeight);
+            targetCtx.textAlign = 'center';
+            targetCtx.textBaseline = 'middle';
+            labelLines.forEach((text, index) => {
+                targetCtx.fillStyle = index === 0 ? '#9a3412' : '#7c2d12';
+                targetCtx.font = `${index === 0 ? 'bold ' : ''}${Math.max(9, 10 * scaleFactor)}px sans-serif`;
+                targetCtx.fillText(text, labelX, labelY - ((labelLines.length - 1) * 8) + index * 16);
+            });
+            if (targetCtx === ctx) {
+                diagramLabelHitRegions.push({ key: labelKey, type: 'detail', x: labelX, y: labelY, rect });
+            } else {
+                resultLabelHitRegions.push({ key: labelKey, x: labelX, y: labelY, width: labelWidth, height: labelHeight, rect });
+            }
+            targetCtx.restore();
         }
 
         function drawWallsOnLine(targetCtx, line, transformPoint = (x, y) => ({x, y}), scaleFactor = 1) {
@@ -3474,6 +3753,17 @@
                     let ratio = wall.kind === 'start' ? 0 : wall.kind === 'end' ? 1 : (wall.position || 0) / measuredLength;
                     ratio = Math.max(0, Math.min(1, ratio));
                     point = transformPoint(line.x1 + dx * ratio, line.y1 + dy * ratio);
+                }
+                if (wall.featureType === 'slope-cap') {
+                    const planDepth = getLinePlanWidth(line) * scaleFactor;
+                    if (targetCtx === ctx) displayFeatureGeometry.set(wall.id, { type: 'wall', x: point.x, y: point.y, width: 110, depth: Math.max(30, planDepth + 24) });
+                    drawSlopeCapFeature(targetCtx, line, wall, point, scaleFactor);
+                    return;
+                }
+                if (wall.featureType === 'notch') {
+                    if (targetCtx === ctx) displayFeatureGeometry.set(wall.id, { type: 'wall', x: point.x, y: point.y, width: 90, depth: 70 });
+                    drawNotchFeature(targetCtx, line, wall, point, scaleFactor);
+                    return;
                 }
                 const planDepth = getLinePlanWidth(line);
                 // 確認図の比率：直線壁は躯体幅の約3倍、コーナー壁は約2.45倍。
@@ -3510,7 +3800,29 @@
                         return;
                     }
                 }
-                if (wall.featureType === 'recess') {
+                if (wall.featureType === 'slope-cap') {
+                    document.getElementById('diagram-menu-title').textContent = '勾配笠木を編集';
+                    document.getElementById('diagram-menu-body').innerHTML = `
+                        <p style="margin:10px 0 0;color:#64748b;font-size:13px;">${wall.slopeMode === 'full' ? '辺全体' : '途中から'}の勾配笠木です。</p>
+                        <div style="margin-top:12px;padding:11px;background:#f5f3ff;border:1px solid #c4b5fd;border-radius:9px;">
+                            <label for="edit-slope-angle" style="display:block;margin-bottom:5px;color:#6d28d9;font-size:13px;font-weight:800;">勾配角度（度）</label>
+                            <input id="edit-slope-angle" type="number" min="0.1" max="89.9" step="0.1" value="${wall.slopeAngle || ''}" inputmode="decimal" autofocus style="width:100%;padding:10px;border:2px solid #8b5cf6;border-radius:7px;font-size:16px;">
+                            <label for="edit-slope-low-side" style="display:block;margin:10px 0 5px;color:#6d28d9;font-size:13px;font-weight:800;">低い側</label>
+                            <select id="edit-slope-low-side" style="width:100%;padding:10px;border:2px solid #8b5cf6;border-radius:7px;background:white;font-size:16px;"><option value="start" ${wall.lowSide !== 'end' ? 'selected' : ''}>勾配辺の始点側</option><option value="end" ${wall.lowSide === 'end' ? 'selected' : ''}>勾配辺の終点側</option></select>
+                        </div>
+                        <div class="diagram-menu-actions"><button onclick="updatePlacedSlopeCap('${featureId}',document.getElementById('edit-slope-angle').value,document.getElementById('edit-slope-low-side').value)">角度・低い側を変更</button><button onclick="deletePlacedFeature('wall','${featureId}')" style="background:#dc2626;color:white;">勾配笠木を削除</button></div>
+                    `;
+                } else if (wall.featureType === 'notch') {
+                    document.getElementById('diagram-menu-title').textContent = '出隅壁（躯体伸ばし）を編集';
+                    document.getElementById('diagram-menu-body').innerHTML = `
+                        <div style="margin-top:12px;display:grid;gap:8px;padding:11px;background:#fff7ed;border:1px solid #fdba74;border-radius:9px;">
+                        <label>壁からの躯体の飛び出し (mm)<input id="edit-notch-projection" type="number" min="0" value="${wall.projection ?? ''}" style="width:100%;padding:9px;"></label>
+                        <label>${lines.find(line => line.id === wall.lineId)?.name || '辺'}からの躯体伸び (mm)<input id="edit-notch-body-extension" type="number" min="1" value="${wall.bodyExtension ?? wall.capExtension ?? ''}" style="width:100%;padding:9px;"></label>
+                            <label>躯体の伸ばし方向<select id="edit-notch-side" style="width:100%;padding:9px;"><option value="outside" ${wall.side !== 'inside' && wall.side !== 'right' ? 'selected' : ''}>外側伸ばし</option><option value="inside" ${wall.side === 'inside' || wall.side === 'right' ? 'selected' : ''}>内側伸ばし</option></select></label>
+                        </div>
+                        <div class="diagram-menu-actions"><button onclick="updatePlacedNotch('${featureId}',document.getElementById('edit-notch-projection').value,document.getElementById('edit-notch-body-extension').value,document.getElementById('edit-notch-side').value)">詳細を変更</button><button onclick="deletePlacedFeature('wall','${featureId}')" style="background:#dc2626;color:white;">出隅を削除</button></div>
+                    `;
+                } else if (wall.featureType === 'recess') {
                     drawInlineRecess(targetCtx, point.x, point.y, alongWidth, planDepth, wall.angle ?? angle);
                 } else {
                     drawInlineWall(targetCtx, point.x, point.y, alongWidth, planDepth, wall.angle ?? angle, wall.kind !== 'middle');
@@ -3708,13 +4020,16 @@
             mainLabelRequests.forEach(({ line, index, p1, p2, midX, midY, planWidth }) => {
                 const dim = dimensions[line.id];
                 const dimensionText = dim?.length ? `${dim.length}mm` : '';
+                const widthText = useIndividualWidth && dim?.width ? `躯体幅 ${dim.width}mm` : '';
                 ctx.font = 'bold 14px sans-serif';
                 const paddingX = 8;
                 const nameWidth = ctx.measureText(line.name).width;
                 ctx.font = '12px sans-serif';
                 const dimensionWidth = dimensionText ? ctx.measureText(dimensionText).width : 0;
-                const bgWidth = Math.max(nameWidth, dimensionWidth) + paddingX * 2;
-                const bgHeight = dimensionText ? 39 : 25;
+                const widthLineWidth = widthText ? ctx.measureText(widthText).width : 0;
+                const bgWidth = Math.max(nameWidth, dimensionWidth, widthLineWidth) + paddingX * 2;
+                const detailLineCount = (dimensionText ? 1 : 0) + (widthText ? 1 : 0);
+                const bgHeight = detailLineCount === 2 ? 53 : detailLineCount === 1 ? 39 : 25;
                 const labelKey = `line:${line.id}`;
                 let label = chooseMainLabelPosition(midX, midY, p1, p2, bgWidth, bgHeight, planWidth, index);
                 const saved = diagramLabelOffsets[labelKey];
@@ -3748,14 +4063,20 @@
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.font = 'bold 14px sans-serif';
-                ctx.fillText(line.name, label.x, dimensionText ? label.y - 8 : label.y);
+                ctx.fillText(line.name, label.x, detailLineCount === 2 ? label.y - 15 : detailLineCount === 1 ? label.y - 8 : label.y);
                 if (dimensionText) {
                     ctx.font = '12px sans-serif';
                     ctx.fillStyle = '#475569';
-                    ctx.fillText(dimensionText, label.x, label.y + 9);
+                    ctx.fillText(dimensionText, label.x, detailLineCount === 2 ? label.y + 1 : label.y + 9);
+                }
+                if (widthText) {
+                    ctx.font = 'bold 12px sans-serif';
+                    ctx.fillStyle = '#166534';
+                    ctx.fillText(widthText, label.x, label.y + 17);
                 }
             });
             drawLowLevelNotes(ctx, transform, [...mainLabelRects, ...mainLabelForbiddenRects]);
+            drawBodyWidthWarnings(ctx, transform);
             drawDiagramSelection(ctx, transform);
             
             const drawnCorners = new Set();
@@ -4138,6 +4459,16 @@
         function createInputs() {
             const container = document.getElementById('dimension-inputs');
             container.innerHTML = '';
+            container.hidden = true;
+
+            // 寸法入力は、画面上部の基本寸法と図面上の直接入力へ統一。
+            const commonWidthInput = document.getElementById('common-width');
+            const commonHeightInput = document.getElementById('common-height');
+            const individualWidthCheck = document.getElementById('individual-width-check');
+            if (commonWidthInput) commonWidthInput.value = commonWidth ?? '';
+            if (commonHeightInput) commonHeightInput.value = commonHeight ?? '';
+            if (individualWidthCheck) individualWidthCheck.checked = !!useIndividualWidth;
+            return;
             
             detectCorners();
 
@@ -4518,9 +4849,9 @@
                         dimensions[line.id].width = commonWidth;
                     }
                 });
-                drawLines();
-                calculate();
             }
+            drawLines();
+            calculate();
         }
         
         function updateCommonHeight(value) {
@@ -4696,8 +5027,8 @@
 
             // 段差T字の高い側は2辺を1つの「全長」として扱う。
             // 図面上のどちらの辺ブロックから入力しても、全長欄と両辺を同期する。
-            const steppedGroup = type === 'length' ? getSteppedTeeMainGroupForLine(id) : null;
-            if (steppedGroup) {
+            const steppedGroup = getSteppedTeeMainGroupForLine(id);
+            if (steppedGroup && type === 'length') {
                 steppedGroup.corner.mainLength = parsed;
                 steppedGroup.parts.mains.forEach(({ line }) => {
                     if (!dimensions[line.id]) dimensions[line.id] = { length: null, width: commonWidth };
@@ -4705,6 +5036,12 @@
                 });
                 document.querySelectorAll('[data-stepped-corner]').forEach(input => {
                     if (input.dataset.steppedCorner === steppedGroup.cornerKey) input.value = parsed ?? '';
+                });
+            } else if (steppedGroup && type === 'width') {
+                // 従来と同様、段差T字の高い側は2辺共通の躯体幅とする。
+                steppedGroup.parts.mains.forEach(({ line }) => {
+                    if (!dimensions[line.id]) dimensions[line.id] = { length: null, width: null };
+                    dimensions[line.id].width = parsed;
                 });
             } else {
                 dimensions[id][type] = parsed;
@@ -4782,8 +5119,8 @@
                 lineId,
                 kind,
                 position: kind === 'middle' ? Math.floor((dimensions[lineId]?.length || 0) / 2) : null,
-                width: 300,
-                depth: 300
+                width: null,
+                depth: null
             });
             line[kind] = 'attached';
             createInputs();
@@ -4831,13 +5168,13 @@
             const typeLabel = featureType === 'pillar' ? '柱' : featureType === 'recess' ? '堀込み' : '壁';
             let featureWidth = 0;
             if (featureType === 'pillar') {
-                const widthValue = popupWidth !== null ? popupWidth : prompt('柱の幅(mm)を入力してください', '300');
+                const widthValue = popupWidth !== null ? popupWidth : prompt('柱の幅(mm)を入力してください', '');
                 if (widthValue === null) return;
                 featureWidth = parseFloat(widthValue);
             }
             let featureDepth = commonWidth || dim.width || 180;
             if (featureType === 'pillar') {
-                const depthValue = popupDepth !== null ? popupDepth : prompt('柱の奥行(mm)を入力してください', String(featureWidth));
+                const depthValue = popupDepth !== null ? popupDepth : prompt('柱の奥行(mm)を入力してください', '');
                 if (depthValue === null) return;
                 featureDepth = parseFloat(depthValue);
             }
@@ -5578,6 +5915,39 @@
             }));
         }
 
+        function buildSlopeCapResultRows() {
+            return wallFeatures.filter(feature => feature.featureType === 'slope-cap' && positiveNumberOrNull(feature.slopeAngle)).map(feature => ({
+                id: feature.id,
+                name: lines.find(line => line.id === feature.lineId)?.name || '辺',
+                mode: feature.slopeMode === 'full' ? '辺全体' : '途中から',
+                angle: Number(feature.slopeAngle),
+                lowSide: getSlopeLowSideLabel(feature)
+            }));
+        }
+
+        function buildNotchResultRows() {
+            return wallFeatures.filter(feature => feature.featureType === 'notch').map(feature => {
+                const corner = corners?.[feature.cornerKey];
+                const names = (corner?.lines || []).map(ref => lines.find(line => line.id === ref.lineId)?.name).filter(Boolean);
+                const endpointLine = lines.find(line => line.id === feature.lineId);
+                const endpointName = feature.endpoint && endpointLine
+                    ? `${endpointLine.name}${feature.endpoint === 'start' ? '始点' : '終点'} 出隅`
+                    : null;
+                const edgeLength = positiveNumberOrNull(endpointLine ? dimensions[endpointLine.id]?.length : null);
+                const bodyExtension = positiveNumberOrNull(feature.bodyExtension ?? feature.capExtension);
+                return {
+                    id: feature.id,
+                    name: endpointName || (names.length ? names.join('━') : '出隅'),
+                    projection: Number(feature.projection),
+                    bodyExtension,
+                    edgeLength,
+                    extendedTotal: edgeLength && bodyExtension ? edgeLength + bodyExtension : null,
+                    side: feature.side === 'inside' || feature.side === 'right' ? '内側伸ばし' : '外側伸ばし',
+                    bodyWidth: positiveNumberOrNull(endpointLine ? (dimensions[endpointLine.id]?.width || commonWidth) : commonWidth)
+                };
+            });
+        }
+
         function buildCornerAngleRows() {
             detectCorners();
             return Object.entries(corners || {}).map(([cornerKey, corner]) => {
@@ -5654,6 +6024,8 @@
         
         function calculate() {
             const resultsContent = document.getElementById('results-content');
+            // 図面上で部品配置と寸法入力を並行できるため、旧「配置確定」段階は使用しない。
+            layoutConfirmed = true;
             if (!layoutConfirmed) {
                 updateWorkflowStage(1);
                 resultsContent.innerHTML = '<p style="color:#9a3412;text-align:center;font-weight:700;">壁・柱の配置を確定すると寸法入力と採寸結果の確認を開始できます</p>';
@@ -5760,6 +6132,15 @@
                     hasAll = false;
                     missingItems.push(`${lineName}の堀込高さ`);
                 }
+                if (wall.featureType === 'slope-cap' && !positiveNumberOrNull(wall.slopeAngle)) {
+                    hasAll = false;
+                    missingItems.push(`${lineName}の勾配角度`);
+                }
+                const notchProjection = Number(wall.projection);
+                if (wall.featureType === 'notch' && (!Number.isFinite(notchProjection) || notchProjection < 0 || !positiveNumberOrNull(wall.bodyExtension ?? wall.capExtension))) {
+                    hasAll = false;
+                    missingItems.push('出隅の躯体飛び出し・躯体伸び寸法');
+                }
                 if (wall.kind === 'middle' && !wall.split && (wall.position === null || wall.position === undefined || wall.position < 0)) {
                     hasAll = false;
                     missingItems.push(`${lineName}の壁位置`);
@@ -5771,6 +6152,10 @@
                 const resultRows = buildResultRows();
                 const stepResultRows = buildStepResultRows();
                 const recessResultRows = buildRecessResultRows();
+                const slopeCapResultRows = buildSlopeCapResultRows();
+                const notchResultRows = buildNotchResultRows();
+                const pillarWidthWarnings = buildPillarWidthWarnings();
+                const bodyWidthWarnings = buildBodyWidthWarnings();
                 const heightDetail = commonHeight <= 1100
                     ? `<div class="result-row-detail">1100 - 20 - ${commonHeight} = ${1100 - 20 - commonHeight}mm ／ 1100 - 30 - ${commonHeight} = ${1100 - 30 - commonHeight}mm</div>`
                     : '<div class="result-row-detail">現場実測値</div>';
@@ -5787,6 +6172,13 @@
                     </div>
                     <div class="result-table">
                 `;
+
+                pillarWidthWarnings.forEach(warning => {
+                    html += `<div class="result-row-enhanced" style="border:2px solid #f97316;background:#fff7ed;"><div class="result-row-title" style="color:#9a3412;">⚠ ${warning.lineName}：躯体幅 ${warning.bodyWidth}mm と柱 ${warning.pillarWidth || '-'}×${warning.pillarDepth}mm が異なります</div></div>`;
+                });
+                bodyWidthWarnings.forEach(warning => {
+                    html += `<div class="result-row-enhanced" style="border:2px solid #eab308;background:#fefce8;"><div class="result-row-title" style="color:#854d0e;">⚠ 接続する躯体の幅が異なります：${warning.detail}</div></div>`;
+                });
                 
                 resultRows.forEach(row => {
                     const pillarCenterHtml = row.pillarCenters.length
@@ -5838,6 +6230,14 @@
                             </div>
                         </div>
                     `;
+                });
+
+                slopeCapResultRows.forEach(item => {
+                    html += `<div class="result-row-enhanced" style="border-color:#c4b5fd;background:#f5f3ff;"><div class="result-row-main"><div><div class="result-row-title" style="color:#6d28d9;">${item.name} 勾配笠木（${item.mode}）</div><div class="result-row-detail">▽ ${item.lowSide}</div></div><div class="result-row-value" style="color:#7c3aed;">${item.angle}<span class="unit">°</span></div></div></div>`;
+                });
+
+                notchResultRows.forEach(item => {
+                    html += `<div class="result-row-enhanced" style="border-color:#fdba74;background:#fff7ed;"><div class="result-row-title" style="color:#9a3412;">${item.name} 出隅壁（躯体伸ばし）</div><div class="result-row-detail">${item.side} ／ 躯体幅 ${item.bodyWidth || '-'}mm ／ 壁からの躯体の飛び出し ${item.projection}mm ／ 辺からの躯体伸び ${item.bodyExtension || '-'}mm${item.extendedTotal ? `<br>元の辺寸法 ${item.edgeLength}mm<br><strong>${item.edgeLength}＋伸ばし ${item.bodyExtension}＝合計 ${item.extendedTotal}mm</strong>` : ''}</div></div>`;
                 });
                 
                 html += '</div>';
@@ -7010,6 +7410,7 @@
                 placedLabelRects,
                 placedLeaderSegments
             });
+            drawBodyWidthWarnings(ctx, resultTransform);
 
             // 90度でないコーナーは、現場入力した角度を図のコーナーから引っ張り表示する。
             buildCornerAngleRows().filter(row => row.angle).forEach(angleRow => {
@@ -7742,7 +8143,7 @@
                 document.getElementById('diagram-menu-title').textContent = '配置済みの柱を編集';
                 document.getElementById('diagram-menu-body').innerHTML = `
                     <p style="margin:10px 0 0;color:#64748b;font-size:13px;">柱寸法を変更するか、柱を削除できます。</p>
-                    ${pillarDimensionFields('edit-pillar', pillar.width || 300, pillar.depth || pillar.width || 300)}
+                    ${pillarDimensionFields('edit-pillar', pillar.width || '', pillar.depth || '')}
                     <div class="diagram-menu-actions">
                         <button onclick="updatePlacedPillar('${featureId}',document.getElementById('edit-pillar-width').value,document.getElementById('edit-pillar-depth').value)">寸法を変更</button>
                         <button onclick="deletePlacedFeature('pillar','${featureId}')" style="background:#dc2626;color:white;">柱を削除</button>
@@ -7801,6 +8202,37 @@
             rememberComponentState();
             recess.height = height;
             refreshAfterComponentChange('堀込み高さを変更しました。');
+        }
+
+        function updatePlacedSlopeCap(featureId, angleValue, lowSide = 'start') {
+            const feature = wallFeatures.find(item => item.id === featureId && item.featureType === 'slope-cap');
+            const slopeAngle = parseFloat(angleValue);
+            if (!feature || !Number.isFinite(slopeAngle) || slopeAngle <= 0 || slopeAngle >= 90) {
+                alert('勾配角度は0度より大きく90度未満で入力してください。');
+                return;
+            }
+            rememberComponentState();
+            feature.slopeAngle = slopeAngle;
+            feature.lowSide = lowSide === 'end' ? 'end' : 'start';
+            refreshAfterComponentChange('勾配笠木の角度を変更しました。');
+        }
+
+        function updatePlacedNotch(featureId, projectionValue, bodyExtensionValue, side) {
+            const feature = wallFeatures.find(item => item.id === featureId && item.featureType === 'notch');
+            const projection = parseFloat(projectionValue);
+            const bodyExtension = parseFloat(bodyExtensionValue);
+            if (!feature || !Number.isFinite(projection) || projection < 0 || !Number.isFinite(bodyExtension) || bodyExtension <= 0) {
+                alert('壁からの躯体の飛び出しと躯体伸び寸法を正しく入力してください。');
+                return;
+            }
+            rememberComponentState();
+            feature.projection = projection;
+            feature.bodyExtension = bodyExtension;
+            delete feature.capExtension;
+            delete feature.notchWidth;
+            delete feature.notchDepth;
+            feature.side = side === 'inside' ? 'inside' : 'outside';
+            refreshAfterComponentChange('出隅壁と躯体伸ばしの詳細を変更しました。');
         }
 
         function mergeSplitRecessLines(feature) {
@@ -7881,53 +8313,32 @@
                 wallFeatures = wallFeatures.filter(item => item.id !== featureId);
                 if (!feature.split) {
                     const line = lines.find(item => item.id === feature.lineId);
+                    if (feature.featureType === 'notch' && line && feature.endpoint) line[feature.endpoint] = 'end';
                     if (line && (feature.kind === 'start' || feature.kind === 'end')) line[feature.kind] = 'end';
                 }
             }
             renumberLineNames();
-            const deletedLabel = type === 'pillar' ? '柱' : feature.featureType === 'recess' ? '堀込み' : '壁';
+            const deletedLabel = type === 'pillar' ? '柱' : feature.featureType === 'recess' ? '堀込み' : feature.featureType === 'slope-cap' ? '勾配笠木' : feature.featureType === 'notch' ? '出隅' : '壁';
             refreshAfterComponentChange(`${deletedLabel}を削除しました。`);
         }
 
         function openLineDiagramMenu(lineId, selectedRatio = 0.5) {
             const line = lines.find(l => l.id === lineId);
             if (!line) return;
+            layoutConfirmed = true;
             selectedDiagramTarget = { type: 'line', lineId, ratio: selectedRatio };
             drawLines();
-            const modal = document.getElementById('diagram-menu-modal');
-            document.getElementById('diagram-menu-title').textContent = `${line.name}を編集`;
-            document.getElementById('diagram-menu-body').innerHTML = layoutConfirmed ? `
-                <p style="margin:10px 0 0;color:#64748b;font-size:13px;">寸法入力、または新しい部品の追加ができます。</p>
-                <div class="diagram-menu-actions">
-                    <button onclick="editLineDimensionFromDiagram('${line.id}')">寸法を入力</button>
-                    <button onclick="openLinePillarMenu('${line.id}',${selectedRatio})">この位置に柱</button>
-                    <button onclick="closeDiagramMenu(); splitLineWithFeature('${line.id}','wall',${selectedRatio})">この位置に壁</button>
-                    <button onclick="openLineRecessMenu('${line.id}',${selectedRatio})">この位置に堀込み</button>
-                    <button onclick="openTeeDirectionMenu('${line.id}',${selectedRatio},false)">この位置にT字</button>
-                    <button onclick="openTeeDirectionMenu('${line.id}',${selectedRatio},true)">この位置に段差T字</button>
-                    <button onclick="closeDiagramMenu(); scrollToInput('${line.id}')">詳細入力を開く</button>
-                </div>
-            ` : `
-                <p style="margin:10px 0 0;color:#64748b;font-size:13px;">先に壁・柱を配置してください。配置した位置で辺が分かれます。</p>
-                <div class="diagram-menu-actions">
-                    <button onclick="openLinePillarMenu('${line.id}',${selectedRatio})">この位置に柱</button>
-                    <button onclick="closeDiagramMenu(); splitLineWithFeature('${line.id}','wall',${selectedRatio})">この位置に壁</button>
-                    <button onclick="openLineRecessMenu('${line.id}',${selectedRatio})">この位置に堀込み</button>
-                    <button onclick="openTeeDirectionMenu('${line.id}',${selectedRatio},false)">この位置にT字</button>
-                    <button onclick="openTeeDirectionMenu('${line.id}',${selectedRatio},true)">この位置に段差T字</button>
-                </div>
-            `;
-            showDiagramMenu();
+            editLineDimensionFromDiagram(lineId, selectedRatio);
         }
 
-        function pillarDimensionFields(prefix, width = 300, depth = null) {
-            const defaultDepth = depth || width;
+        function pillarDimensionFields(prefix, width = '', depth = '') {
+            const defaultDepth = depth || '';
             return `
                 <div style="margin-top:12px;padding:11px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:9px;">
                     <label for="${prefix}-width" style="display:block;margin-bottom:5px;color:#334155;font-size:13px;font-weight:800;">柱幅 (mm)</label>
-                    <input id="${prefix}-width" type="number" min="1" value="${width}" inputmode="decimal" oninput="syncPillarSquare('${prefix}')" style="width:100%;padding:10px;border:2px solid #64748b;border-radius:7px;font-size:16px;">
+                    <input id="${prefix}-width" type="number" min="1" value="${width}" placeholder="柱幅を入力" inputmode="decimal" style="width:100%;padding:10px;border:2px solid #64748b;border-radius:7px;font-size:16px;">
                     <label for="${prefix}-depth" style="display:block;margin:10px 0 5px;color:#334155;font-size:13px;font-weight:800;">柱奥行 (mm)</label>
-                    <input id="${prefix}-depth" type="number" min="1" value="${defaultDepth}" data-custom="${depth && depth !== width ? 'true' : 'false'}" inputmode="decimal" oninput="markPillarDepthCustom('${prefix}')" style="width:100%;padding:10px;border:2px solid #64748b;border-radius:7px;font-size:16px;">
+                    <input id="${prefix}-depth" type="number" min="1" value="${defaultDepth}" placeholder="柱奥行を入力" inputmode="decimal" style="width:100%;padding:10px;border:2px solid #64748b;border-radius:7px;font-size:16px;">
                     <button type="button" onclick="resetPillarSquare('${prefix}')" style="margin-top:8px;padding:7px 10px;border:1px solid #cbd5e1;border-radius:7px;background:white;color:#475569;font-size:12px;font-weight:700;cursor:pointer;">幅と奥行を同じにする</button>
                 </div>
             `;
@@ -7984,6 +8395,102 @@
                 </div>
             `;
             showDiagramMenu();
+        }
+
+        function openSlopeCapMenu(lineId, selectedRatio, mode) {
+            const line = lines.find(item => item.id === lineId);
+            if (!line) return;
+            const modeLabel = mode === 'full' ? '辺全体' : 'この位置から';
+            document.getElementById('diagram-menu-title').textContent = `${line.name} 勾配笠木`;
+            const partialFields = mode === 'partial' ? `
+                <label style="display:block;color:#6d28d9;font-size:13px;font-weight:900;">勾配になる部分
+                    <select id="slope-part-side" style="width:100%;margin-top:5px;padding:10px;border:2px solid #8b5cf6;border-radius:7px;background:white;font-size:16px;">
+                        <option value="start">タップ位置から辺の始点側</option>
+                        <option value="end">タップ位置から辺の終点側</option>
+                    </select>
+                </label>
+            ` : '';
+            document.getElementById('diagram-menu-body').innerHTML = `
+                <p style="margin:10px 0 0;color:#64748b;font-size:13px;line-height:1.6;">${modeLabel}を勾配笠木として記録します。現地で測った勾配角度を入力してください。</p>
+                <form onsubmit="event.preventDefault();placeSlopeCap('${lineId}',${selectedRatio},'${mode}',document.getElementById('slope-cap-angle').value,document.getElementById('slope-part-side')?.value || 'full',document.getElementById('slope-low-side').value)">
+                    <div style="margin-top:12px;display:grid;gap:10px;padding:11px;background:#f5f3ff;border:1px solid #c4b5fd;border-radius:9px;">
+                        <label for="slope-cap-angle" style="display:block;margin-bottom:6px;color:#6d28d9;font-size:13px;font-weight:900;">勾配角度（度）</label>
+                        <input id="slope-cap-angle" type="number" min="0.1" max="89.9" step="0.1" value="" placeholder="角度を入力" inputmode="decimal" autofocus
+                               style="width:100%;padding:11px;border:2px solid #8b5cf6;border-radius:7px;font-size:18px;font-weight:700;">
+                        ${partialFields}
+                        <label style="display:block;color:#6d28d9;font-size:13px;font-weight:900;">勾配部分の低い側
+                            <select id="slope-low-side" style="width:100%;margin-top:5px;padding:10px;border:2px solid #8b5cf6;border-radius:7px;background:white;font-size:16px;">
+                                <option value="start">勾配辺の始点側</option>
+                                <option value="end">勾配辺の終点側</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="diagram-menu-actions">
+                        <button type="submit">勾配笠木を追加</button>
+                        <button type="button" onclick="editLineDimensionFromDiagram('${lineId}',${selectedRatio})">← 辺入力へ戻る</button>
+                    </div>
+                </form>
+            `;
+            showDiagramMenu();
+        }
+
+        function placeSlopeCap(lineId, selectedRatio, mode, angleValue, slopePartSide = 'full', lowSide = 'start') {
+            const line = lines.find(item => item.id === lineId);
+            const slopeAngle = parseFloat(angleValue);
+            if (!line || !Number.isFinite(slopeAngle) || slopeAngle <= 0 || slopeAngle >= 90) {
+                alert('勾配角度は0度より大きく90度未満で入力してください。');
+                return;
+            }
+            rememberComponentState();
+            const normalizedLowSide = lowSide === 'end' ? 'end' : 'start';
+            if (mode === 'full') {
+                wallFeatures = wallFeatures.filter(item => !(item.featureType === 'slope-cap' && item.lineId === lineId && item.slopeMode === 'full'));
+                wallFeatures.push({
+                    id: `slope-cap-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                    featureType: 'slope-cap', lineId, kind: 'detail', split: false,
+                    slopeMode: 'full', slopeAngle, lowSide: normalizedLowSide, positionRatio: 0.5,
+                    x: (line.x1 + line.x2) / 2, y: (line.y1 + line.y2) / 2
+                });
+            } else {
+                const ratio = Math.max(0.08, Math.min(0.92, Number(selectedRatio) || 0.5));
+                const lineIndex = lines.findIndex(item => item.id === lineId);
+                const centerX = line.x1 + (line.x2 - line.x1) * ratio;
+                const centerY = line.y1 + (line.y2 - line.y1) * ratio;
+                const firstId = makeSplitLineId(lineId, 'slope-1');
+                const secondId = makeSplitLineId(lineId, 'slope-2');
+                const originalDimension = dimensions[lineId] || { length: null, width: commonWidth };
+                const firstLine = { ...line, id: firstId, x2: centerX, y2: centerY, end: 'attached' };
+                const secondLine = { ...line, id: secondId, x1: centerX, y1: centerY, start: 'attached' };
+                lines.splice(lineIndex, 1, firstLine, secondLine);
+                delete dimensions[lineId];
+                dimensions[firstId] = { length: null, width: originalDimension.width || commonWidth };
+                dimensions[secondId] = { length: null, width: originalDimension.width || commonWidth };
+                [...pillars, ...wallFeatures].forEach(item => {
+                    if (item.lineId !== lineId) return;
+                    let itemRatio = Number(item.positionRatio);
+                    if (Number.isFinite(item.x) && Number.isFinite(item.y)) {
+                        const fullDx = line.x2 - line.x1;
+                        const fullDy = line.y2 - line.y1;
+                        const fullLengthSq = fullDx * fullDx + fullDy * fullDy;
+                        if (fullLengthSq > 0) itemRatio = ((item.x - line.x1) * fullDx + (item.y - line.y1) * fullDy) / fullLengthSq;
+                    }
+                    item.lineId = (Number.isFinite(itemRatio) ? itemRatio : 0.5) <= ratio ? firstId : secondId;
+                });
+                const slopeLineId = slopePartSide === 'end' ? secondId : firstId;
+                wallFeatures.push({
+                    id: `slope-cap-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                    featureType: 'slope-cap', lineId: slopeLineId, beforeLineId: firstId, afterLineId: secondId,
+                    kind: 'detail', split: true, slopeMode: 'partial', slopeAngle, lowSide: normalizedLowSide,
+                    slopePartSide: slopePartSide === 'end' ? 'end' : 'start', positionRatio: ratio, x: centerX, y: centerY
+                });
+                renumberLineNames();
+                detectCorners();
+                createInputs();
+            }
+            closeDiagramMenu();
+            drawLines();
+            calculate();
+            showAlert(mode === 'full' ? `${line.name}全体を勾配笠木にしました。` : 'タップ位置で通常部と勾配部の2辺に分けました。両方の辺寸法を入力してください。', 'success');
         }
 
         function teeDirectionLabel(x, y) {
@@ -8091,31 +8598,57 @@
             showAlert(`${stepped ? '段差T字' : 'T字'}を配置し、辺を分割しました。`, 'success');
         }
 
-        function editLineDimensionFromDiagram(lineId) {
+        function editLineDimensionFromDiagram(lineId, selectedRatio = 0.5) {
             const line = lines.find(l => l.id === lineId);
             if (!line) return;
             const current = dimensions[lineId]?.length || '';
+            const currentWidth = dimensions[lineId]?.width || commonWidth || '';
             const dimensionLabel = isLineDiagonal(line) ? '芯寸法' : '外法寸法';
+            const bodyWidthWarning = buildBodyWidthWarnings().find(warning => warning.lineIds.includes(lineId));
+            const bodyWidthWarningHtml = bodyWidthWarning
+                ? `<div style="margin-top:10px;padding:9px 11px;background:#fefce8;border:2px solid #eab308;border-radius:8px;color:#854d0e;font-size:12px;font-weight:900;">⚠ 接続する躯体の幅が異なります：${bodyWidthWarning.detail}</div>`
+                : '';
+            const widthField = useIndividualWidth ? `
+                <div style="margin-top:10px;padding:11px;background:#f0fdf4;border:1px solid #86efac;border-radius:9px;">
+                    <label for="direct-line-width" style="display:block;margin-bottom:6px;color:#166534;font-size:13px;font-weight:800;">この辺の躯体幅 (mm)</label>
+                    <input id="direct-line-width" type="number" min="1" value="${currentWidth}" placeholder="躯体幅を入力" inputmode="decimal"
+                           style="width:100%;padding:11px;border:2px solid #22c55e;border-radius:7px;font-size:18px;font-weight:700;">
+                </div>
+            ` : '';
             document.getElementById('diagram-menu-title').textContent = `${line.name}の寸法入力`;
             document.getElementById('diagram-menu-body').innerHTML = `
                 <p style="margin:10px 0 0;color:#64748b;font-size:13px;line-height:1.6;">図面上の辺ブロックから直接入力しています。</p>
-                <form onsubmit="event.preventDefault();applyLineDimensionFromDiagram('${lineId}',document.getElementById('direct-line-dimension').value)">
+                ${bodyWidthWarningHtml}
+                <form onsubmit="event.preventDefault();applyLineDimensionFromDiagram('${lineId}',document.getElementById('direct-line-dimension').value,document.getElementById('direct-line-width')?.value)">
                 <div style="margin-top:12px;padding:11px;background:#eff6ff;border:1px solid #93c5fd;border-radius:9px;">
                     <label for="direct-line-dimension" style="display:block;margin-bottom:6px;color:#1e40af;font-size:13px;font-weight:800;">${dimensionLabel} (mm)</label>
                     <input id="direct-line-dimension" type="number" min="1" value="${current}" placeholder="寸法を入力" inputmode="decimal" autofocus
                            style="width:100%;padding:11px;border:2px solid #3b82f6;border-radius:7px;font-size:18px;font-weight:700;">
                 </div>
+                ${widthField}
                 <div class="diagram-menu-actions">
                     <button type="submit">寸法を反映</button>
                     <button type="button" onclick="closeDiagramMenu()">キャンセル</button>
                 </div>
                 </form>
+                <details style="margin-top:12px;padding:10px;background:#fff7ed;border:1px solid #fed7aa;border-radius:9px;">
+                    <summary style="color:#9a3412;font-size:13px;font-weight:900;cursor:pointer;">この辺に部品・勾配を追加</summary>
+                    <div class="diagram-menu-actions">
+                        <button type="button" onclick="openLinePillarMenu('${line.id}',${selectedRatio})">この位置に柱</button>
+                        <button type="button" onclick="closeDiagramMenu();splitLineWithFeature('${line.id}','wall',${selectedRatio})">この位置に壁</button>
+                        <button type="button" onclick="openLineRecessMenu('${line.id}',${selectedRatio})">この位置に堀込み</button>
+                        <button type="button" onclick="openSlopeCapMenu('${line.id}',${selectedRatio},'partial')">この位置から勾配笠木</button>
+                        <button type="button" onclick="openSlopeCapMenu('${line.id}',0.5,'full')">この辺全体を勾配笠木</button>
+                        <button type="button" onclick="openTeeDirectionMenu('${line.id}',${selectedRatio},false)">この位置にT字</button>
+                        <button type="button" onclick="openTeeDirectionMenu('${line.id}',${selectedRatio},true)">この位置に段差T字</button>
+                    </div>
+                </details>
             `;
             showDiagramMenu();
             setTimeout(() => document.getElementById('direct-line-dimension')?.select(), 50);
         }
 
-        function applyLineDimensionFromDiagram(lineId, value) {
+        function applyLineDimensionFromDiagram(lineId, value, widthValue = null) {
             const line = lines.find(l => l.id === lineId);
             if (!line) return;
             const numeric = parseFloat(value);
@@ -8123,9 +8656,15 @@
                 alert('正しい寸法を入力してください。');
                 return;
             }
+            const numericWidth = useIndividualWidth ? parseFloat(widthValue) : null;
+            if (useIndividualWidth && (!Number.isFinite(numericWidth) || numericWidth <= 0)) {
+                alert('この辺の躯体幅を正しい数値で入力してください。');
+                return;
+            }
             updateDimension(lineId, 'length', numeric);
+            if (useIndividualWidth) updateDimension(lineId, 'width', numericWidth);
             closeDiagramMenu();
-            showAlert(`${line.name}の寸法を入力しました。`, 'success');
+            showAlert(`${line.name}の寸法${useIndividualWidth ? 'と躯体幅' : ''}を入力しました。`, 'success');
         }
 
         function openPointDiagramMenu(lineId, point) {
@@ -8155,10 +8694,54 @@
                     <button onclick="setPointStateFromDiagram('${line.id}','${point}','corner')">コーナー</button>
                     <button onclick="setPointStateFromDiagram('${line.id}','${point}','end')">エンド</button>
                     <button onclick="setPointStateFromDiagram('${line.id}','${point}','wall')">壁</button>
-                    <button onclick="openEndpointPillarMenu('${line.id}','${point}')">柱</button>
+                    <button onclick="openEndpointOutsideCornerMenu('${line.id}','${point}')" style="background:#fff7ed;border-color:#fb923c;color:#9a3412;">出隅壁（躯体伸ばし）</button>
                 </div>
             `;
             showDiagramMenu();
+        }
+
+        function openEndpointOutsideCornerMenu(lineId, point) {
+            const line = lines.find(item => item.id === lineId);
+            if (!line) return;
+            const pointLabel = point === 'start' ? '始点' : '終点';
+            const bodyWidth = dimensions[lineId]?.width || commonWidth || '';
+            document.getElementById('diagram-menu-title').textContent = `${line.name} ${pointLabel}の出隅壁（躯体伸ばし）`;
+            document.getElementById('diagram-menu-body').innerHTML = `
+                <p style="margin:10px 0 0;color:#64748b;font-size:13px;line-height:1.6;">出隅端部の寸法情報を登録します。「壁からの躯体の飛び出し」は、壁がすぐに折り返して飛び出しがない場合は0mmと入力できます。躯体幅${bodyWidth ? ` ${bodyWidth}mm` : ''}。</p>
+                <form onsubmit="event.preventDefault();placeEndpointOutsideCorner('${lineId}','${point}',document.getElementById('endpoint-notch-projection').value,document.getElementById('endpoint-notch-body-extension').value,document.getElementById('endpoint-notch-side').value)">
+                    <div style="margin-top:12px;display:grid;gap:9px;padding:11px;background:#fff7ed;border:1px solid #fdba74;border-radius:9px;">
+                        <label style="color:#9a3412;font-size:13px;font-weight:900;">壁からの躯体の飛び出し (mm)<input id="endpoint-notch-projection" type="number" min="0" placeholder="飛び出しなしは0" inputmode="decimal" autofocus style="width:100%;margin-top:5px;padding:10px;border:2px solid #f97316;border-radius:7px;font-size:16px;"></label>
+                        <label style="color:#9a3412;font-size:13px;font-weight:900;">${line.name}からの躯体伸び (mm)<input id="endpoint-notch-body-extension" type="number" min="1" placeholder="躯体伸び寸法を入力" inputmode="decimal" style="width:100%;margin-top:5px;padding:10px;border:2px solid #f97316;border-radius:7px;font-size:16px;"></label>
+                        <label style="color:#9a3412;font-size:13px;font-weight:900;">躯体の伸ばし方向<select id="endpoint-notch-side" style="width:100%;margin-top:5px;padding:10px;border:2px solid #f97316;border-radius:7px;background:white;font-size:16px;"><option value="outside">外側伸ばし</option><option value="inside">内側伸ばし</option></select></label>
+                    </div>
+                    <div class="diagram-menu-actions"><button type="submit">出隅壁と躯体伸ばしを設定</button><button type="button" onclick="openPointDiagramMenu('${lineId}','${point}')">← 端部選択へ戻る</button></div>
+                </form>
+            `;
+            showDiagramMenu();
+        }
+
+        function placeEndpointOutsideCorner(lineId, point, projectionValue, bodyExtensionValue, side) {
+            const line = lines.find(item => item.id === lineId);
+            const projection = parseFloat(projectionValue);
+            const bodyExtension = parseFloat(bodyExtensionValue);
+            if (!line || !Number.isFinite(projection) || projection < 0 || !Number.isFinite(bodyExtension) || bodyExtension <= 0) {
+                alert('壁からの躯体の飛び出しと躯体伸び寸法を正しく入力してください。');
+                return;
+            }
+            rememberComponentState();
+            wallFeatures = wallFeatures.filter(item => !(item.featureType === 'notch' && item.lineId === lineId && item.endpoint === point));
+            const x = point === 'start' ? line.x1 : line.x2;
+            const y = point === 'start' ? line.y1 : line.y2;
+            wallFeatures.push({
+                id: `notch-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                featureType: 'notch', lineId, endpoint: point, kind: 'detail', split: false,
+                projection, bodyExtension, side: side === 'inside' ? 'inside' : 'outside', x, y
+            });
+            line[point] = 'wall';
+            closeDiagramMenu();
+            drawLines();
+            calculate();
+            showAlert(`${line.name}${point === 'start' ? '始点' : '終点'}に出隅壁と躯体伸ばしを設定しました。`, 'success');
         }
 
         function openCornerDiagramMenu(cornerKey) {
@@ -8173,10 +8756,24 @@
             if (connected.length < 2) return;
             selectedDiagramTarget = { type: 'corner', cornerKey };
             drawLines();
+            const drawnAngle = getCornerAngleFromRefs(connected[0], refs[0].point, connected[1], refs[1].point);
+            const needsAngleInput = Number.isFinite(drawnAngle) && drawnAngle > 1 && drawnAngle < 179 && Math.abs(drawnAngle - 90) > 1;
+            const savedAngle = positiveNumberOrNull(corner.angle);
+            const angleField = needsAngleInput ? `
+                <form onsubmit="event.preventDefault();applyCornerAngleFromDiagram('${cornerKey}',document.getElementById('direct-corner-angle').value)"
+                      style="margin-top:12px;padding:11px;background:#f5f3ff;border:2px solid #a78bfa;border-radius:9px;">
+                    <label for="direct-corner-angle" style="display:block;margin-bottom:6px;color:#6d28d9;font-size:13px;font-weight:900;">📐 このコーナーの角度（度）</label>
+                    <input id="direct-corner-angle" type="number" min="1" max="179" step="0.1" value="${savedAngle || ''}"
+                           placeholder="図上の角度: ${Math.round(drawnAngle * 10) / 10}°" inputmode="decimal" autofocus
+                           style="width:100%;padding:11px;border:2px solid #8b5cf6;border-radius:7px;font-size:18px;font-weight:700;">
+                    <button type="submit" style="width:100%;margin-top:9px;padding:11px;border:0;border-radius:8px;background:#7c3aed;color:white;font-weight:900;cursor:pointer;">角度を反映</button>
+                </form>
+            ` : '';
             const modal = document.getElementById('diagram-menu-modal');
             document.getElementById('diagram-menu-title').textContent = `${connected[0].name}━${connected[1].name} コーナー部品`;
             document.getElementById('diagram-menu-body').innerHTML = `
-                <p style="margin:10px 0 0;color:#64748b;font-size:13px;line-height:1.6;">このコーナーへ追加する部品を選択してください。選択後、図へすぐ反映します。</p>
+                <p style="margin:10px 0 0;color:#64748b;font-size:13px;line-height:1.6;">${needsAngleInput ? 'このコーナーは90度ではありません。現地で測った角度を入力してください。' : 'このコーナーへ追加する部品を選択してください。'}</p>
+                ${angleField}
                 <div class="diagram-menu-actions">
                     <button onclick="setCornerComponent('${cornerKey}','corner')">部品を削除（通常コーナーへ）</button>
                     <button onclick="openCornerStepMenu('${cornerKey}')">段差コーナー</button>
@@ -8187,6 +8784,19 @@
                 </div>
             `;
             showDiagramMenu();
+        }
+
+        function applyCornerAngleFromDiagram(cornerKey, value) {
+            const corner = corners[cornerKey];
+            const numeric = parseFloat(value);
+            if (!corner || !Number.isFinite(numeric) || numeric <= 0 || numeric >= 180) {
+                alert('角度は1度以上179度以下で入力してください。');
+                return;
+            }
+            corner.angle = numeric;
+            calculate();
+            closeDiagramMenu();
+            showAlert(`コーナーの角度を${numeric}°に設定しました。`, 'success');
         }
 
         function openCornerPillarMenu(cornerKey) {
@@ -8398,9 +9008,9 @@
                 }
             }
             if (mode === 'pillar') {
-                const widthValue = popupPillarWidth !== null ? popupPillarWidth : prompt('柱の幅(mm)を入力してください', '300');
+                const widthValue = popupPillarWidth !== null ? popupPillarWidth : prompt('柱の幅(mm)を入力してください', '');
                 if (widthValue === null) return;
-                const depthValue = popupPillarDepth !== null ? popupPillarDepth : prompt('柱の奥行(mm)を入力してください', String(widthValue));
+                const depthValue = popupPillarDepth !== null ? popupPillarDepth : prompt('柱の奥行(mm)を入力してください', '');
                 if (depthValue === null) return;
                 requestedPillarWidth = parseFloat(widthValue);
                 requestedPillarDepth = parseFloat(depthValue);
@@ -8499,9 +9109,9 @@
         function addEndpointPillarFromDiagram(lineId, point, popupWidth = null, popupDepth = null) {
             const line = lines.find(l => l.id === lineId);
             if (!line) return;
-            const widthValue = popupWidth !== null ? popupWidth : prompt('柱の幅(mm)を入力してください', '300');
+            const widthValue = popupWidth !== null ? popupWidth : prompt('柱の幅(mm)を入力してください', '');
             if (widthValue === null) return;
-            const depthValue = popupDepth !== null ? popupDepth : prompt('柱の奥行(mm)を入力してください', String(widthValue));
+            const depthValue = popupDepth !== null ? popupDepth : prompt('柱の奥行(mm)を入力してください', '');
             if (depthValue === null) return;
             const width = parseFloat(widthValue);
             const depth = parseFloat(depthValue);
@@ -8938,7 +9548,18 @@
             const resultRows = buildResultRows();
             const stepResultRows = buildStepResultRows();
             const recessResultRows = buildRecessResultRows();
+            const slopeCapResultRows = buildSlopeCapResultRows();
+            const notchResultRows = buildNotchResultRows();
+            const pillarWidthWarnings = buildPillarWidthWarnings();
+            const bodyWidthWarnings = buildBodyWidthWarnings();
             let resultsHTML = '<div style="display: flex; flex-direction: column; gap: 8px;">';
+
+            pillarWidthWarnings.forEach(warning => {
+                resultsHTML += `<div class="pdf-result-card" style="padding:10px 12px;background:#fff7ed;border-radius:6px;border:2px solid #f97316;color:#9a3412;font-size:11px;font-weight:800;">⚠ ${warning.lineName}：躯体幅 ${warning.bodyWidth}mm と柱 ${warning.pillarWidth || '-'}×${warning.pillarDepth}mm が異なります</div>`;
+            });
+            bodyWidthWarnings.forEach(warning => {
+                resultsHTML += `<div class="pdf-result-card" style="padding:10px 12px;background:#fefce8;border-radius:6px;border:2px solid #eab308;color:#854d0e;font-size:11px;font-weight:800;">⚠ 接続する躯体の幅が異なります：${warning.detail}</div>`;
+            });
             
             resultRows.forEach(row => {
                 const pillarCenterHtml = row.pillarCenters.length
@@ -8976,6 +9597,14 @@
                         </div>
                     </div>
                 `;
+            });
+
+            slopeCapResultRows.forEach(item => {
+                resultsHTML += `<div class="pdf-result-card" style="padding:10px 12px;background:#f5f3ff;border-radius:6px;border:1px solid #c4b5fd;"><div style="display:flex;justify-content:space-between;gap:12px;align-items:center;"><span style="color:#6d28d9;font-weight:700;font-size:12px;">${item.name} 勾配笠木（${item.mode}）<br><span style="color:#dc2626;">▽ ${item.lowSide}</span></span><strong style="color:#7c3aed;font-size:20px;">${item.angle}°</strong></div></div>`;
+            });
+
+            notchResultRows.forEach(item => {
+                resultsHTML += `<div class="pdf-result-card" style="padding:10px 12px;background:#fff7ed;border-radius:6px;border:1px solid #fdba74;"><div style="color:#9a3412;font-weight:700;font-size:12px;">${item.name} 出隅壁（躯体伸ばし）</div><div style="margin-top:4px;color:#7c2d12;font-size:10px;">${item.side} ／ 躯体幅 ${item.bodyWidth || '-'}mm ／ 壁からの躯体の飛び出し ${item.projection}mm ／ 辺からの躯体伸び ${item.bodyExtension || '-'}mm${item.extendedTotal ? `<br>元の辺寸法 ${item.edgeLength}mm<br><strong>${item.edgeLength}＋伸ばし ${item.bodyExtension}＝合計 ${item.extendedTotal}mm</strong>` : ''}</div></div>`;
             });
             
             resultsHTML += '</div>';
