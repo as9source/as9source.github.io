@@ -2406,7 +2406,15 @@ if (document.readyState === 'loading') {
 }
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('saisun-sw.js').catch(() => {});
+  const swRefreshKey = 'saisun-sw-v2-reloaded';
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (sessionStorage.getItem(swRefreshKey)) return;
+    sessionStorage.setItem(swRefreshKey, '1');
+    window.location.reload();
+  });
+  navigator.serviceWorker.register('saisun-sw.js?v=2')
+    .then(registration => registration.update())
+    .catch(() => {});
 }
 </script>
 
