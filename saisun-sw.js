@@ -1,4 +1,4 @@
-const CACHE_NAME = 'saisun-v1';
+const CACHE_NAME = 'saisun-v2';
 const ASSETS = [
   '/saisun.html',
   '/saisun-manifest.json',
@@ -25,7 +25,9 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   event.respondWith(
-    fetch(event.request)
+    fetch(event.request.mode === 'navigate'
+      ? new Request(event.request, { cache: 'reload' })
+      : event.request)
       .then(res => {
         const clone = res.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
