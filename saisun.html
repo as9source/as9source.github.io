@@ -2249,7 +2249,12 @@ async function shareSheet(btn) {
     // ページを切らないようにする。
     const sheetRect = sheet.getBoundingClientRect();
     const topLevelBlocks = sheet.firstElementChild ? [...sheet.firstElementChild.children] : [];
-    const protectedBlocks = [...sheet.querySelectorAll('[style*="break-inside:avoid"]')];
+    const protectedBlocks = [
+      ...sheet.querySelectorAll('[style*="break-inside:avoid"]'),
+      // A large section may have to span pages, but its individual grid cards
+      // (including photo cards) must never be cut in half.
+      ...sheet.querySelectorAll('[style*="display:grid"] > *')
+    ];
     const pageBlocks = [...new Set([...topLevelBlocks, ...protectedBlocks])];
     const cssBlockRanges = pageBlocks.map(el => {
       const rect = el.getBoundingClientRect();
@@ -2258,10 +2263,6 @@ async function shareSheet(btn) {
         bottom: Math.max(0, rect.bottom - sheetRect.top)
       };
     }).filter(r => r.bottom - r.top > 4);
-    const cssBreakPoints = [...new Set(cssBlockRanges
-      .map(r => r.top)
-      .filter(y => y > 20))].sort((a,b) => a-b);
-
     const canvas = await html2canvas(sheet, {
       scale: 2, useCORS: true, backgroundColor: '#ffffff',
       width: 794, windowWidth: 794
@@ -2274,7 +2275,6 @@ async function shareSheet(btn) {
     const pageW = 210, pageH = 297, margin = 5;
     const maxW = pageW - margin * 2, maxH = pageH - margin * 2;
     const cssToCanvas = canvas.width / sheetRect.width;
-    const breakPoints = cssBreakPoints.map(y => Math.round(y * cssToCanvas));
     const blockRanges = cssBlockRanges.map(r => ({
       top: Math.round(r.top * cssToCanvas),
       bottom: Math.round(r.bottom * cssToCanvas)
@@ -2285,12 +2285,7 @@ async function shareSheet(btn) {
       const naturalEnd = Math.min(canvas.height, sliceTop + maxSliceH);
       let sliceEnd = naturalEnd;
       if (naturalEnd < canvas.height) {
-        // まずページの55%以降にある最後のブロック境界を候補にする。
-        const minUsefulEnd = sliceTop + maxSliceH * 0.55;
-        const candidates = breakPoints.filter(y => y >= minUsefulEnd && y <= naturalEnd);
-        if (candidates.length) sliceEnd = candidates[candidates.length - 1];
-
-        // 候補位置が項目・打ち合わせ欄・写真カードの途中なら、
+        // A4の自然な境界が項目・打ち合わせ欄・写真カードの途中なら、
         // そのブロックの手前まで戻して次ページへ送る。
         // 1ページより背の高いブロックだけは分割を許可する。
         let moved = true;
@@ -2302,7 +2297,9 @@ async function shareSheet(btn) {
                          r.bottom - r.top < maxSliceH * 0.96)
             .sort((a,b) => a.top - b.top);
           if (crossing.length) {
-            sliceEnd = crossing[0].top;
+            // 境界線や文字のアンチエイリアスも切らないよう、わずかな余白を取る。
+            const safeGap = Math.max(2, Math.round(cssToCanvas * 2));
+            sliceEnd = crossing[0].top - safeGap;
             moved = true;
           }
         }
