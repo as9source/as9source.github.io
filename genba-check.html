@@ -202,6 +202,7 @@ select{min-height:46px;border-width:1px;border-radius:11px;padding:11px 38px 11p
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="./cloud-backup.js"></script>
 </head>
 <body>
 
@@ -782,6 +783,13 @@ const dbPut=r=>tx('readwrite',s=>s.put(r));
 const dbAll=()=>tx('readonly',s=>s.getAll());
 const dbGet=id=>tx('readonly',s=>s.get(id));
 const dbDel=id=>tx('readwrite',s=>s.delete(id));
+function dbReplaceAll(records){
+  return db().then(d=>new Promise((res,rej)=>{
+    const t=d.transaction(STORE,'readwrite'),st=t.objectStore(STORE);st.clear();
+    (records||[]).forEach(record=>st.put(record));
+    t.oncomplete=()=>res();t.onerror=()=>rej(t.error);
+  }));
+}
 
 function onChange(){
   dirty=true;
@@ -1082,6 +1090,13 @@ window.addEventListener('beforeunload',e=>{if(dirty){saveNow(0);}});
     $('save-ind').textContent='新規';
   }
   if(!$('m_date').value)$('m_date').value=today();
+  await CloudBackup.mount({
+    appId:'genba-check',appName:'現場確認',mountSelector:'.toolbar',statusAfterSelector:'.toolbar',maxBytes:50*1024*1024,
+    collect:async()=>{await saveNow(0);return{records:await dbAll(),currentId:curId};},
+    restore:async data=>{const records=Array.isArray(data.records)?data.records:[];await dbReplaceAll(records);const target=records.find(r=>r.id===data.currentId)||records[0];if(target){curId=target.id;restore(target);localStorage.setItem('genba_last',curId);}else{curId=uid();restore({id:curId,meta:{date:today()},fields:{},photos:[],mapImg:null,geo:null});localStorage.setItem('genba_last',curId);}$('save-ind').textContent='復元済み';},
+    hasData:data=>(data.records||[]).some(r=>r.meta?.site||(r.photos||[]).length||r.mapImg||Object.keys(r.fphotos||{}).length),
+    fileName:data=>`現場確認_${(data.records||[]).find(r=>r.id===data.currentId)?.meta?.site||'保存現場一覧'}`
+  });
 })();
 </script>
 </body>

@@ -878,6 +878,7 @@ main{max-width:940px;padding:24px 20px 12px}
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
+<script src="./cloud-backup.js"></script>
 <script>
 // ======= State =======
 let currentType = '';
@@ -2406,16 +2407,24 @@ if (document.readyState === 'loading') {
 }
 
 if ('serviceWorker' in navigator) {
-  const swRefreshKey = 'saisun-sw-v2-reloaded';
+  const swRefreshKey = 'saisun-sw-v3-reloaded';
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (sessionStorage.getItem(swRefreshKey)) return;
     sessionStorage.setItem(swRefreshKey, '1');
     window.location.reload();
   });
-  navigator.serviceWorker.register('saisun-sw.js?v=2')
+  navigator.serviceWorker.register('saisun-sw.js?v=3')
     .then(registration => registration.update())
     .catch(() => {});
 }
+
+CloudBackup.mount({
+  appId:'doorimo-saisun',appName:'ドアリモ採寸',mountSelector:'.toolbar-right',statusAfterSelector:'.toolbar',maxBytes:5*1024*1024,
+  collect:()=>({records:getRecords(),current:collectState()}),
+  restore:data=>{putRecords(Array.isArray(data.records)?data.records:[]);clearAll(true);if(data.current)restoreState(data.current);renderRecordList();document.getElementById('save-status').textContent='復元済み';},
+  hasData:data=>!!((data.records||[]).length||data.current?.siteName||(data.current?.photos||[]).length),
+  fileName:data=>`ドアリモ_${data.current?.siteName||'保存現場一覧'}`
+}).catch(e=>console.warn('cloud backup',e));
 </script>
 
 </body>

@@ -620,6 +620,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- html2canvas ライブラリ（ページ全体キャプチャ用） -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="../cloud-backup.js"></script>
     
     <style>
         * {
@@ -10064,6 +10065,14 @@
                 closeManual();
             }
         }
+
+        CloudBackup.mount({
+            appId:'kutai-system',appName:'ハンドレール躯体採寸',mountSelector:'.home-actions',statusAfterSelector:'.home-actions',maxBytes:5*1024*1024,
+            collect:()=>({savedData:JSON.parse(localStorage.getItem('kutai_saved_data')||'[]'),savedPatterns:JSON.parse(localStorage.getItem('savedPatterns')||'{}')}),
+            restore:data=>{localStorage.setItem('kutai_saved_data',JSON.stringify(Array.isArray(data.savedData)?data.savedData:[]));localStorage.setItem('savedPatterns',JSON.stringify(data.savedPatterns&&typeof data.savedPatterns==='object'?data.savedPatterns:{}));displaySavedDataList();loadSavedPatterns();},
+            hasData:data=>!!((data.savedData||[]).length||Object.keys(data.savedPatterns||{}).length),
+            fileName:()=>`ハンドレール躯体採寸_保存現場一覧`
+        }).catch(e=>console.warn('cloud backup',e));
     </script>
 </body>
 </html>

@@ -1,9 +1,10 @@
-const CACHE_NAME = 'saisun-v2';
+const CACHE_NAME = 'saisun-v3';
 const ASSETS = [
   '/saisun.html',
   '/saisun-manifest.json',
   '/saisun-icon.png',
-  '/saisun-icon-192.png'
+  '/saisun-icon-192.png',
+  '/cloud-backup.js'
 ];
 
 self.addEventListener('install', event => {
