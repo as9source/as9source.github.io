@@ -33,6 +33,8 @@ body{font-family:'Hiragino Sans','Meiryo',sans-serif;background:var(--bg2);displ
 }
 .header h1{font-size:15px;font-weight:500;letter-spacing:.03em}
 .header p{font-size:11px;opacity:.65;margin-top:2px}
+.product-name{font-size:1.16em;font-weight:800;letter-spacing:.04em;margin-right:3px}
+.product-name.uchirimo{color:#9ac7ff}
 
 /* ツールバー */
 .toolbar{display:flex;align-items:center;gap:6px;padding:8px 12px;background:var(--bg2);border-bottom:0.5px solid var(--bd);flex-shrink:0}
@@ -125,6 +127,23 @@ select:focus{outline:none;border-color:var(--accent)}
 .min-dot{width:9px;height:9px;border-radius:2px;background:var(--min-bg);border:1.5px solid var(--min-bd);flex-shrink:0}
 .auto-note{display:none;font-size:11px;color:#7a4f0a;background:#fdf4e3;border:0.5px solid #e3c98d;border-radius:6px;padding:6px 10px;margin-top:5px;line-height:1.55}
 .auto-note.show{display:block}
+.measure-choice{display:grid;grid-template-columns:1fr;gap:10px}
+.measure-choice-intro{font-size:13px;color:var(--text2);line-height:1.65;margin-bottom:2px}
+.measure-dir-btn{width:100%;border:1.5px solid var(--bd);border-radius:12px;background:#fff;padding:14px 16px;display:flex;align-items:center;gap:13px;text-align:left;color:var(--text);font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.measure-dir-btn.primary{border-color:var(--accent);background:var(--accent2)}
+.measure-dir-arrow{font-size:32px;line-height:1;color:var(--accent);font-weight:700;min-width:38px;text-align:center}
+.measure-dir-copy{display:flex;flex-direction:column;gap:3px}
+.measure-dir-title{font-size:16px;font-weight:700;color:var(--accent)}
+.measure-dir-sub{font-size:11px;color:var(--text2);font-weight:400}
+.measure-panel{display:none}
+.measure-panel.show{display:block}
+.measure-banner{display:flex;align-items:center;justify-content:center;gap:12px;border-radius:12px;padding:13px 16px;margin-bottom:12px;font-size:18px;font-weight:700}
+.measure-banner.w{color:#174f86;background:#e8f2fc;border:1px solid #9fc4e8}
+.measure-banner.h{color:#98520b;background:#fff1df;border:1px solid #efc58d}
+.measure-banner .arrow{font-size:34px;line-height:1}
+.measure-switch{width:100%;margin-top:12px;border:1px solid var(--accent);border-radius:10px;background:#fff;color:var(--accent);padding:12px 14px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer}
+.measure-switch.next{background:var(--accent);color:#fff}
+.measure-reselect{width:100%;margin-top:10px;border:0;background:transparent;color:var(--text2);padding:8px;font-size:12px;font-family:inherit;cursor:pointer;text-decoration:underline}
 
 .sub-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
 .il{font-size:13px;color:var(--text2);white-space:nowrap}
@@ -208,6 +227,19 @@ body{font-size:15px;color:var(--text);line-height:1.65;background:#fff}
 .save-ind{font-size:13px;min-width:52px}
 .tbtn{min-height:44px;padding:9px 14px;border:1px solid var(--bd);border-radius:9px;font-size:14px;font-weight:600;box-shadow:0 1px 2px rgba(20,40,70,.04)}
 .top-section{padding:17px 18px;border-bottom:1px solid var(--bd)}
+.top-section.site-info-section{padding:0;overflow:hidden}
+.site-info-section details>summary{display:flex;align-items:center;gap:10px;min-height:54px;padding:10px 18px;cursor:pointer;list-style:none;color:var(--accent);font-weight:700;-webkit-tap-highlight-color:transparent}
+.site-info-section details>summary::-webkit-details-marker{display:none}
+.site-info-section details>summary:focus{outline:none}
+.site-info-section details>summary:focus-visible{box-shadow:inset 0 0 0 2px rgba(26,74,122,.22)}
+.site-info-section details>summary::before{content:"";width:4px;height:20px;border-radius:3px;background:var(--accent);flex-shrink:0}
+.site-info-section details[open]>summary{border-bottom:1px solid var(--bd)}
+.site-info-summary{min-width:0;flex:1;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.site-info-summary-title{font-size:15px;white-space:nowrap}
+.site-info-summary-value{min-width:0;color:var(--text2);font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.site-info-summary-action{margin-left:auto;color:var(--accent);font-size:12px;white-space:nowrap}
+.site-info-body{padding:16px 18px 18px}
+.site-info-done{width:100%;min-height:44px;margin-top:2px;border:1px solid var(--accent);border-radius:9px;background:var(--accent2);color:var(--accent);font:inherit;font-weight:700;cursor:pointer}
 .field{gap:6px;margin-bottom:13px}
 .field label{font-size:13px;font-weight:600;color:var(--text)}
 .tab-bar-wrap{border-bottom:1px solid var(--bd);background:#f6f8fb}
@@ -249,23 +281,27 @@ input[type=text]:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 
 <body>
 
 <div class="header">
-  <h1>内窓 現場調査シート</h1>
-  <p>ウチリモ 内窓</p>
+  <h1><span class="product-name uchirimo">ウチリモ</span> 現場調査シート</h1>
+  <p>内窓</p>
 </div>
 
 <div class="toolbar">
   <span class="save-ind" id="save-ind">未保存</span>
   <button class="tbtn" onclick="loadData()">📂 読込</button>
   <button class="tbtn" onclick="saveData()">💾 保存</button>
+  <button class="tbtn" onclick="newSite()">＋ 新規現場</button>
   <button class="tbtn pr" onclick="exportPDF()">📄 PDF</button>
   <button class="tbtn" onclick="forceReload()" title="キャッシュをクリアして最新版を読み込む">🔄</button>
 </div>
 
-<div class="top-section">
-  <div class="grid2">
-    <div class="field"><label>調査実施日</label><input type="text" id="survey-date" inputmode="numeric" placeholder="yyyy/mm/dd"></div>
-    <div class="field"><label>現場名</label><input type="text" id="site-name" placeholder="現場名"></div>
-  </div>
+<div class="top-section site-info-section">
+  <details id="site-info-details" open>
+    <summary><span class="site-info-summary"><span class="site-info-summary-title">現場情報</span><span class="site-info-summary-value" id="site-info-summary">現場名未入力</span></span><span class="site-info-summary-action">開閉</span></summary>
+    <div class="site-info-body"><div class="grid2">
+      <div class="field"><label>調査実施日</label><input type="text" id="survey-date" inputmode="numeric" placeholder="yyyy/mm/dd"></div>
+      <div class="field"><label>現場名</label><input type="text" id="site-name" placeholder="現場名"></div>
+    </div><button type="button" class="site-info-done" onclick="collapseSiteInfo()">入力完了・小さくする</button></div>
+  </details>
 </div>
 
 <div class="tab-bar-wrap">
@@ -482,6 +518,29 @@ function saveData(){
     toast('保存しました');
   }catch(e){toast(e&&e.name==='QuotaExceededError'?'写真を含む保存容量が上限に達しました。不要な写真を削除してください':'保存に失敗しました',1);}
 }
+function updateSiteInfoSummary(){
+  const name=document.getElementById('site-name').value.trim()||'現場名未入力';
+  const date=document.getElementById('survey-date').value.trim();
+  document.getElementById('site-info-summary').textContent=date?`${name} ・ ${date}`:name;
+}
+function collapseSiteInfo(){
+  updateSiteInfoSummary();
+  const details=document.getElementById('site-info-details');
+  details.open=false;
+  details.querySelector('summary')?.focus();
+}
+function newSite(){
+  if(!confirm('新しい現場を作成しますか？\n現在の画面で保存していない内容は戻せません。必要に応じて先に「保存」または「PDF」を行ってください。'))return;
+  wins=[];activeId=null;ctr=0;bulkSelected.clear();winPhotos.clear();updateBulkPanel();
+  document.getElementById('survey-date').value=todayText();
+  document.getElementById('site-name').value='';
+  document.getElementById('scroll-area').innerHTML='<div class="empty-state" id="empty-state"><p>窓がまだ登録されていません</p><button class="primary-btn" onclick="addWindow()">＋ 最初の窓を追加</button></div>';
+  document.getElementById('save-ind').textContent='新規現場';
+  document.getElementById('site-info-details').open=true;
+  updateSiteInfoSummary();
+  addWindow();
+  toast('新しい現場を作成しました');
+}
 function loadData(){
   try{
     const raw=localStorage.getItem('uchirimo_gencho_v2');
@@ -494,6 +553,8 @@ function restoreAll(data){
   wins=[];activeId=null;ctr=data.ctr||0;bulkSelected.clear();winPhotos.clear();updateBulkPanel();
   document.getElementById('survey-date').value=data.surveyDate||'';
   document.getElementById('site-name').value=data.siteName||'';
+  updateSiteInfoSummary();
+  document.getElementById('site-info-details').open=!data.siteName;
   const sa=document.getElementById('scroll-area');sa.innerHTML='';
   if(!data.winData||!data.winData.length){
     sa.innerHTML='<div class="empty-state" id="empty-state"><p>窓がありません</p><button class="primary-btn" onclick="addWindow()">＋ 窓を追加</button></div>';
@@ -971,6 +1032,27 @@ function toggleMochidashi(n){
   noteEl.innerHTML=msg;noteEl.style.display='block';
 }
 
+// ─── 採寸方向 ──────────────────────────────
+function selectMeasureDirection(n,dir){
+  const choice=document.getElementById('measure-choice-'+n);
+  const wPanel=document.getElementById('measure-w-'+n);
+  const hPanel=document.getElementById('measure-h-'+n);
+  if(choice)choice.style.display='none';
+  if(wPanel)wPanel.classList.toggle('show',dir==='w');
+  if(hPanel)hPanel.classList.toggle('show',dir==='h');
+  const panel=dir==='w'?wPanel:hPanel;
+  if(panel)panel.scrollIntoView({behavior:'smooth',block:'center'});
+}
+function resetMeasureDirection(n){
+  const choice=document.getElementById('measure-choice-'+n);
+  const wPanel=document.getElementById('measure-w-'+n);
+  const hPanel=document.getElementById('measure-h-'+n);
+  if(choice)choice.style.display='grid';
+  if(wPanel)wPanel.classList.remove('show');
+  if(hPanel)hPanel.classList.remove('show');
+  if(choice)choice.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
 // ─── パネル生成 ──────────────────────────
 function makePanel(n){
   const div=document.createElement('div');div.id='panel-'+n;div.className='tab-content';
@@ -1052,6 +1134,19 @@ function makePanel(n){
 
 <div class="section">
   <div class="sec-title">既設開口部 採寸</div>
+  <div class="measure-choice" id="measure-choice-${n}">
+    <p class="measure-choice-intro">採寸する方向を選ぶと、該当する入力欄が表示されます。現地では通常、横幅Wから採寸します。</p>
+    <button type="button" class="measure-dir-btn primary" onclick="selectMeasureDirection(${n},'w')">
+      <span class="measure-dir-arrow">↔</span>
+      <span class="measure-dir-copy"><span class="measure-dir-title">横幅 W を採寸する</span><span class="measure-dir-sub">通常はこちらから・上／中央／下</span></span>
+    </button>
+    <button type="button" class="measure-dir-btn" onclick="selectMeasureDirection(${n},'h')">
+      <span class="measure-dir-arrow">↕</span>
+      <span class="measure-dir-copy"><span class="measure-dir-title">高さ H を採寸する</span><span class="measure-dir-sub">左／中央／右</span></span>
+    </button>
+  </div>
+  <div class="measure-panel" id="measure-w-${n}">
+    <div class="measure-banner w"><span class="arrow">↔</span><span>横幅 W を採寸中</span></div>
   <table class="kw-table">
     <thead><tr><th></th><th>上</th><th>中</th><th>下</th></tr></thead>
     <tbody><tr id="kw-row-${n}">
@@ -1066,7 +1161,13 @@ function makePanel(n){
 小：<strong class="min-val"></strong>（取付基準幅）</span></div>
   <div id="kw-auto-${n}" class="auto-note"></div>
 
-  <table class="kw-table" style="margin-top:10px">
+    <button type="button" class="measure-switch next" onclick="selectMeasureDirection(${n},'h')">横幅Wの入力を終えて、高さHへ進む ↕</button>
+    <button type="button" class="measure-reselect" onclick="resetMeasureDirection(${n})">採寸方向の選択へ戻る</button>
+  </div>
+
+  <div class="measure-panel" id="measure-h-${n}">
+    <div class="measure-banner h"><span class="arrow">↕</span><span>高さ H を採寸中</span></div>
+  <table class="kw-table">
     <thead><tr><th></th><th>左</th><th>中</th><th>右</th></tr></thead>
     <tbody><tr id="kh-row-${n}">
       <td class="rh">KH<br><span style="font-size:10px;color:var(--text2)">高</span></td>
@@ -1078,6 +1179,9 @@ function makePanel(n){
   <div id="kh-err-${n}" class="err-msg">⚠ KH（左・中・右）の差が20㎜以上あります。開口部の変形・歪みを確認してください。</div>
   <div id="kh-min-${n}" class="min-note"><span class="min-dot"></span><span>KH 最小：<strong class="min-val"></strong>（取付基準高）</span></div>
   <div id="kh-auto-${n}" class="auto-note"></div>
+    <button type="button" class="measure-switch" onclick="selectMeasureDirection(${n},'w')">↔ 横幅Wへ戻る</button>
+    <button type="button" class="measure-reselect" onclick="resetMeasureDirection(${n})">採寸方向の選択へ戻る</button>
+  </div>
   <p class="note" style="margin-top:8px">※ KW は上・中・下、KH は左・中・右の最小値が取付寸法となります<br>※ 寸法差が ${AUTO_DIFF_MM}㎜以上の場合、備考欄へ自動記載されます</p>
   <div class="sub-row" style="margin-top:10px"><span class="il">対角</span>
     <div style="display:flex;align-items:center;gap:6px">
@@ -1275,10 +1379,14 @@ function forceReload(){
   });
 }
 
-document.getElementById('survey-date').value=(()=>{
+function todayText(){
   const d=new Date();
   return d.getFullYear()+'/'+(d.getMonth()+1).toString().padStart(2,'0')+'/'+d.getDate().toString().padStart(2,'0');
-})();
+}
+document.getElementById('survey-date').value=todayText();
+document.getElementById('survey-date').addEventListener('input',updateSiteInfoSummary);
+document.getElementById('site-name').addEventListener('input',updateSiteInfoSummary);
+updateSiteInfoSummary();
 
 // ─── クリック時全選択機能（Disto対応） ──────────────────────────────────────────
 function initAutoSelect() {
