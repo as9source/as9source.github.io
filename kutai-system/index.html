@@ -620,7 +620,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- html2canvas ライブラリ（ページ全体キャプチャ用） -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="../cloud-backup.js"></script>
+    <script src="../cloud-backup.js?v=3"></script>
     
     <style>
         * {
@@ -5349,6 +5349,7 @@
         // ========================================
         
         let currentSaveId = null; // 現在編集中のデータID
+        let kutaiBackup = null;
         
         // データを保存
         function saveCurrentData() {
@@ -5407,6 +5408,10 @@
         
         // 保存データリスト画面を表示
         function showSavedDataList() {
+            if (kutaiBackup) {
+                kutaiBackup.openManager();
+                return;
+            }
             document.getElementById('pattern-select-screen').style.display = 'none';
             document.getElementById('measurement-screen').style.display = 'none';
             document.getElementById('saved-data-screen').style.display = 'block';
@@ -10067,12 +10072,14 @@
         }
 
         CloudBackup.mount({
-            appId:'kutai-system',appName:'ハンドレール躯体採寸',mountSelector:'.home-actions',statusAfterSelector:'.home-actions',maxBytes:5*1024*1024,
-            collect:()=>({savedData:JSON.parse(localStorage.getItem('kutai_saved_data')||'[]'),savedPatterns:JSON.parse(localStorage.getItem('savedPatterns')||'{}')}),
-            restore:data=>{localStorage.setItem('kutai_saved_data',JSON.stringify(Array.isArray(data.savedData)?data.savedData:[]));localStorage.setItem('savedPatterns',JSON.stringify(data.savedPatterns&&typeof data.savedPatterns==='object'?data.savedPatterns:{}));displaySavedDataList();loadSavedPatterns();},
-            hasData:data=>!!((data.savedData||[]).length||Object.keys(data.savedPatterns||{}).length),
-            fileName:()=>`ハンドレール躯体採寸_保存現場一覧`
-        }).catch(e=>console.warn('cloud backup',e));
+            appId:'kutai-system',appName:'ハンドレール躯体採寸',manager:{
+                label:r=>r.siteName||'（現場名なし）',detail:r=>[r.sashColor,r.updatedAt?new Date(r.updatedAt).toLocaleDateString('ja-JP'):null].filter(Boolean).join(' ・ '),
+                load:r=>loadSavedData(r.id),remove:r=>{localStorage.setItem('kutai_saved_data',JSON.stringify(JSON.parse(localStorage.getItem('kutai_saved_data')||'[]').filter(x=>x.id!==r.id)));if(currentSaveId===r.id)currentSaveId=null;}
+            },maxBytes:5*1024*1024,
+            collectRecords:()=>JSON.parse(localStorage.getItem('kutai_saved_data')||'[]'),recordId:r=>r.id,
+            collectExtra:()=>({savedPatterns:JSON.parse(localStorage.getItem('savedPatterns')||'{}')}),
+            restoreRecords:(records,extra)=>{const current=JSON.parse(localStorage.getItem('kutai_saved_data')||'[]'),map=new Map(current.map(r=>[r.id,r]));records.forEach(r=>map.set(r.id,r));localStorage.setItem('kutai_saved_data',JSON.stringify([...map.values()]));if(extra?.savedPatterns){const old=JSON.parse(localStorage.getItem('savedPatterns')||'{}');localStorage.setItem('savedPatterns',JSON.stringify({...old,...extra.savedPatterns}));loadSavedPatterns();}}
+        }).then(c=>kutaiBackup=c).catch(e=>console.warn('cloud backup',e));
     </script>
 </body>
 </html>

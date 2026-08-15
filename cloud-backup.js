@@ -1,97 +1,29 @@
 (function(){
-  'use strict';
-
-  const FORMAT='as9-cloud-backup';
-  const VERSION=1;
-  const DAY=24*60*60*1000;
-
-  const byteSize=value=>new Blob([typeof value==='string'?value:JSON.stringify(value)]).size;
-  const fmt=bytes=>bytes>=1024*1024?`${(bytes/1024/1024).toFixed(1)}MB`:`${Math.max(1,Math.round(bytes/1024))}KB`;
-  const safeName=value=>String(value||'現場データ').replace(/[\\/:*?"<>|]/g,'_').replace(/\s+/g,'_').slice(0,60);
-  const stamp=()=>{const d=new Date();return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}_${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}`;};
-
-  function injectStyle(){
-    if(document.getElementById('cloud-backup-style'))return;
-    const style=document.createElement('style');style.id='cloud-backup-style';
-    style.textContent=`
-      .cloud-backup-btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:42px;padding:9px 13px;border:1px solid #b8c6d8;border-radius:9px;background:#fff;color:#1a4a7a;font:inherit;font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer;box-shadow:0 1px 2px rgba(20,40,70,.05)}
-      .cloud-backup-btn.restore{color:#445466;background:#f8fafc}
-      .cloud-backup-status{display:none;margin:8px 12px;padding:10px 13px;border:1px solid #b7cbe0;border-radius:9px;background:#eef5fc;color:#234d75;font-size:12px;line-height:1.55}
-      .cloud-backup-status.show{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-      .cloud-backup-status.warn{border-color:#e5c271;background:#fff7df;color:#7b5400}
-      .cloud-backup-status.danger{border-color:#e1a1a1;background:#fff0f0;color:#922b2b}
-      .cloud-backup-status strong{font-weight:800}
-      @media(max-width:560px){.cloud-backup-btn{padding:9px 11px;font-size:12px}.cloud-backup-status{margin:7px 8px}}
-    `;
-    document.head.appendChild(style);
-  }
-
-  class BackupController{
-    constructor(config){this.config=config;this.lastKey=`cloud_backup_last_${config.appId}`;this.refreshTimer=null;}
-    async mount(){
-      injectStyle();
-      const mount=document.querySelector(this.config.mountSelector);
-      if(!mount)throw new Error(`バックアップボタンの配置先が見つかりません: ${this.config.mountSelector}`);
-      const backup=document.createElement('button');backup.type='button';backup.className='cloud-backup-btn';backup.textContent='☁ バックアップ';backup.onclick=()=>this.backup();
-      const restore=document.createElement('button');restore.type='button';restore.className='cloud-backup-btn restore';restore.textContent='📥 復元';restore.onclick=()=>this.input.click();
-      mount.append(backup,restore);
-      this.input=document.createElement('input');this.input.type='file';this.input.accept='.json,application/json';this.input.hidden=true;this.input.onchange=e=>this.restoreFile(e.target.files&&e.target.files[0]);document.body.appendChild(this.input);
-      this.status=document.createElement('div');this.status.className='cloud-backup-status';
-      const statusParent=document.querySelector(this.config.statusAfterSelector||this.config.mountSelector)||mount;
-      statusParent.insertAdjacentElement('afterend',this.status);
-      await this.refresh();
-      this.refreshTimer=setInterval(()=>this.refresh(),60000);
-    }
-    async snapshot(){return await this.config.collect();}
-    hasData(data){return this.config.hasData?!!this.config.hasData(data):byteSize(data)>200;}
-    async refresh(){
-      try{
-        const data=await this.snapshot(),bytes=byteSize(data),max=this.config.maxBytes||5*1024*1024,ratio=bytes/max;
-        const last=Number(localStorage.getItem(this.lastKey)||0),age=last?Date.now()-last:Infinity,hasData=this.hasData(data);
-        this.status.className='cloud-backup-status';
-        if(!hasData){this.status.textContent='';return;}
-        let cls='',message='';
-        if(ratio>=.8){cls='danger';message=`保存容量が危険な状態です（約 ${fmt(bytes)}）。写真追加の前にバックアップしてください。`;}
-        else if(ratio>=.6){cls='warn';message=`保存容量が増えています（約 ${fmt(bytes)}）。早めのバックアップをおすすめします。`;}
-        else if(!last){cls='warn';message=`クラウド用バックアップがまだありません（約 ${fmt(bytes)}）。`;}
-        else if(age>=7*DAY){cls='warn';message=`最後のバックアップから${Math.floor(age/DAY)}日経過しています（約 ${fmt(bytes)}）。`;}
-        else{message=`最終バックアップ：${new Date(last).toLocaleString('ja-JP',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})} ・ データ約 ${fmt(bytes)}`;}
-        this.status.classList.add('show');if(cls)this.status.classList.add(cls);
-        this.status.innerHTML=`<strong>☁ ${message}</strong>`;
-      }catch(e){console.warn('backup status',e);}
-    }
-    async backup(){
-      try{
-        const data=await this.snapshot();
-        if(!this.hasData(data)&&!confirm('入力データがほとんどありません。この状態でバックアップしますか？'))return;
-        const payload={format:FORMAT,version:VERSION,appId:this.config.appId,appName:this.config.appName,exportedAt:new Date().toISOString(),data};
-        const json=JSON.stringify(payload),namePart=this.config.fileName?this.config.fileName(data):this.config.appName;
-        const file=new File([json],`${safeName(namePart)}_バックアップ_${stamp()}.json`,{type:'application/json'});
-        let completed=false;
-        if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
-          try{await navigator.share({title:`${this.config.appName} バックアップ`,text:'再編集用の完全バックアップです。Google DriveやOneDriveなどへ保存してください。',files:[file]});completed=true;}
-          catch(e){if(e.name==='AbortError')return;}
-        }
-        if(!completed){const url=URL.createObjectURL(file),a=document.createElement('a');a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),5000);completed=true;alert('バックアップファイルをダウンロードしました。Google DriveやOneDriveへ保存してください。');}
-        if(completed){try{localStorage.setItem(this.lastKey,String(Date.now()));}catch(_){}try{await navigator.storage?.persist?.();}catch(_){}await this.refresh();}
-      }catch(e){alert(`バックアップを作成できませんでした。${e&&e.message?'\n'+e.message:''}`);}
-    }
-    async restoreFile(file){
-      if(!file)return;
-      try{
-        const payload=JSON.parse(await file.text());
-        if(payload.format!==FORMAT||payload.appId!==this.config.appId)throw new Error(`${this.config.appName}用のバックアップファイルではありません。`);
-        if(!confirm('現在の保存データを、選択したバックアップの内容に置き換えます。よろしいですか？'))return;
-        await this.config.restore(payload.data);
-        try{localStorage.setItem(this.lastKey,String(Date.now()));}catch(_){}
-        alert('バックアップを復元しました。');
-        await this.refresh();
-      }catch(e){alert(`復元できませんでした。${e&&e.message?'\n'+e.message:''}`);}
-      finally{this.input.value='';}
-    }
-  }
-
-  window.CloudBackup={
-    async mount(config){const controller=new BackupController(config);await controller.mount();return controller;}
-  };
+'use strict';
+const FORMAT='as9-record-backup',VERSION=2,DAY=86400000;
+const bytes=v=>new Blob([JSON.stringify(v)]).size;
+const sizeText=n=>n>=1048576?`${(n/1048576).toFixed(1)}MB`:`${Math.max(1,Math.round(n/1024))}KB`;
+const safe=v=>String(v||'保存現場').replace(/[\\/:*?"<>|]/g,'_').replace(/\s+/g,'_').slice(0,60);
+const stamp=()=>{const d=new Date();return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}_${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}`;};
+const hash=v=>{const s=JSON.stringify(v);let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return (h>>>0).toString(16);};
+function style(){if(document.getElementById('cloud-backup-style'))return;const e=document.createElement('style');e.id='cloud-backup-style';e.textContent=`
+.cloud-backup-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.cloud-backup-btn{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:9px 13px;border:1px solid #b8c6d8;border-radius:9px;background:#fff;color:#1a4a7a;font:inherit;font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer}.cloud-backup-btn.full,.cloud-backup-btn.restore{color:#526274;background:#f8fafc}.cloud-backup-status{margin-top:9px;padding:10px 13px;border:1px solid #b7cbe0;border-radius:9px;background:#eef5fc;color:#234d75;font-size:12px;line-height:1.55}.cloud-backup-status.warn{border-color:#e5c271;background:#fff7df;color:#7b5400}.cloud-backup-status.danger{border-color:#e1a1a1;background:#fff0f0;color:#922b2b}.cloud-record-overlay{display:none;position:fixed;inset:0;z-index:1000;background:rgba(15,23,42,.52);align-items:flex-end;justify-content:center}.cloud-record-overlay.show{display:flex}.cloud-record-sheet{width:100%;max-width:680px;max-height:88vh;background:#fff;border-radius:18px 18px 0 0;display:flex;flex-direction:column;overflow:hidden}.cloud-record-head{padding:17px;border-bottom:1px solid #d7dee8}.cloud-record-headline{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}.cloud-record-headline h3{margin:0;font-size:18px;color:#1a4a7a}.cloud-record-close{border:0;border-radius:50%;width:36px;height:36px;background:#edf2f7;font-size:20px;cursor:pointer}.cloud-record-list{overflow:auto;padding:7px 0}.cloud-record-row{display:flex;align-items:center;gap:10px;padding:13px 17px;border-bottom:1px solid #e3e8ef}.cloud-record-main{flex:1;min-width:0;border:0;background:none;text-align:left;cursor:pointer}.cloud-record-name{font-weight:700;color:#172231}.cloud-record-detail{font-size:12px;color:#657487;margin-top:3px}.cloud-record-badge{display:inline-block;margin-left:7px;padding:2px 7px;border-radius:999px;background:#fff1c7;color:#765100;font-size:10px}.cloud-record-badge.done{background:#e7f4ec;color:#236342}.cloud-record-badge.changed{background:#fff0e4;color:#914d13}.cloud-record-delete{border:1px solid #e2b5b5;border-radius:8px;background:#fff;color:#a33;padding:7px 10px;cursor:pointer}.cloud-record-empty{padding:38px 18px;text-align:center;color:#657487}@media(max-width:560px){.cloud-backup-btn{padding:8px 10px;font-size:12px}.cloud-record-sheet{max-height:92vh}}
+`;document.head.appendChild(e);}
+class Controller{
+constructor(c){this.c=c;this.manifestKey=`cloud_backup_manifest_${c.appId}`;this.lastKey=`cloud_backup_last_${c.appId}`;}
+manifest(){try{return JSON.parse(localStorage.getItem(this.manifestKey)||'{}');}catch{return{};}}
+saveManifest(m){try{localStorage.setItem(this.manifestKey,JSON.stringify(m));}catch(_){}}
+id(r){return String(this.c.recordId(r));}
+state(r){const old=this.manifest()[this.id(r)],now=hash(r);return !old?'new':old===now?'done':'changed';}
+async records(){const r=await this.c.collectRecords();return Array.isArray(r)?r:[];}
+async mount(){style();if(this.c.manager)this.makeManager();else{const host=document.querySelector(this.c.mountSelector);if(!host)throw new Error('バックアップ操作の配置先が見つかりません');this.actions=document.createElement('div');this.actions.className='cloud-backup-actions';host.appendChild(this.actions);this.status=document.createElement('div');this.status.className='cloud-backup-status';(document.querySelector(this.c.statusAfterSelector||this.c.mountSelector)||host).insertAdjacentElement('afterend',this.status);this.makeButtons(this.actions);}await this.refresh();setInterval(()=>this.refresh(),60000);return this;}
+makeButtons(host){const pending=document.createElement('button');pending.type='button';pending.className='cloud-backup-btn';pending.textContent='☁ 未処理をバックアップ';pending.onclick=()=>this.backup(false);const full=document.createElement('button');full.type='button';full.className='cloud-backup-btn full';full.textContent='☁ 全件';full.onclick=()=>this.backup(true);const restore=document.createElement('button');restore.type='button';restore.className='cloud-backup-btn restore';restore.textContent='📥 復元';restore.onclick=()=>this.input.click();host.append(pending,full,restore);this.input=document.createElement('input');this.input.type='file';this.input.accept='.json,application/json';this.input.hidden=true;this.input.multiple=true;this.input.onchange=e=>this.restoreFiles([...e.target.files]);document.body.appendChild(this.input);}
+makeManager(){const o=document.createElement('div');o.className='cloud-record-overlay';o.innerHTML='<div class="cloud-record-sheet"><div class="cloud-record-head"><div class="cloud-record-headline"><h3>保存済み現場</h3><button class="cloud-record-close" type="button">×</button></div><div class="cloud-backup-actions"></div><div class="cloud-backup-status"></div></div><div class="cloud-record-list"></div></div>';o.onclick=e=>{if(e.target===o)o.classList.remove('show');};o.querySelector('.cloud-record-close').onclick=()=>o.classList.remove('show');document.body.appendChild(o);this.overlay=o;this.list=o.querySelector('.cloud-record-list');this.status=o.querySelector('.cloud-backup-status');this.actions=o.querySelector('.cloud-backup-actions');this.makeButtons(this.actions);}
+async openManager(){if(!this.overlay)return;await this.refresh();await this.renderManager();this.overlay.classList.add('show');}
+async renderManager(){const rs=await this.records();this.list.innerHTML='';if(!rs.length){this.list.innerHTML='<div class="cloud-record-empty">保存された現場がありません</div>';return;}for(const r of rs){const st=this.state(r),row=document.createElement('div');row.className='cloud-record-row';const main=document.createElement('button');main.type='button';main.className='cloud-record-main';const name=document.createElement('div');name.className='cloud-record-name';name.textContent=this.c.manager.label(r);const badge=document.createElement('span');badge.className=`cloud-record-badge ${st==='done'?'done':st==='changed'?'changed':''}`;badge.textContent=st==='done'?'書き出し済み':st==='changed'?'変更あり':'未バックアップ';name.appendChild(badge);const detail=document.createElement('div');detail.className='cloud-record-detail';detail.textContent=this.c.manager.detail?this.c.manager.detail(r):'';main.append(name,detail);main.onclick=async()=>{await this.c.manager.load(r);this.overlay.classList.remove('show');};row.appendChild(main);if(this.c.manager.remove){const del=document.createElement('button');del.type='button';del.className='cloud-record-delete';del.textContent='削除';del.onclick=async()=>{if(confirm('この保存済み現場を削除しますか？')){await this.c.manager.remove(r);await this.renderManager();await this.refresh();}};row.appendChild(del);}this.list.appendChild(row);}}
+async refresh(){try{const rs=await this.records(),m=this.manifest(),pending=rs.filter(r=>m[this.id(r)]!==hash(r)),n=bytes(rs),max=this.c.maxBytes||5242880,ratio=n/max,last=Number(localStorage.getItem(this.lastKey)||0);let cls='',msg='';if(ratio>=.8){cls='danger';msg=`容量が危険です。未処理 ${pending.length}件・約 ${sizeText(n)}`;}else if(ratio>=.6){cls='warn';msg=`容量が増えています。未処理 ${pending.length}件・約 ${sizeText(n)}`;}else if(pending.length){cls='warn';msg=`未バックアップまたは変更あり：${pending.length}件・約 ${sizeText(n)}`;}else if(rs.length){msg=`全${rs.length}件を書き出し済み${last?'・最終 '+new Date(last).toLocaleString('ja-JP',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):''}`;}else msg='保存済み現場はありません';if(last&&Date.now()-last>7*DAY&&rs.length){cls='warn';msg=`最後のバックアップから${Math.floor((Date.now()-last)/DAY)}日経過しています。`;}this.status.className=`cloud-backup-status${cls?' '+cls:''}`;this.status.textContent='☁ '+msg;}catch(e){console.warn('backup status',e);}}
+async backup(full){try{const all=await this.records(),m=this.manifest(),selected=full?all:all.filter(r=>m[this.id(r)]!==hash(r));if(!selected.length){alert(full?'保存済み現場がありません。':'新規または変更された保存済み現場はありません。');return;}const extra=this.c.collectExtra?await this.c.collectExtra():undefined,payload={format:FORMAT,version:VERSION,appId:this.c.appId,appName:this.c.appName,exportedAt:new Date().toISOString(),full,records:selected,extra};const json=JSON.stringify(payload),file=new File([json],`${safe(this.c.appName)}_${full?'全件':'追加分'}_${stamp()}.json`,{type:'application/json'});let ok=false;if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({title:`${this.c.appName} バックアップ`,text:`保存済み現場 ${selected.length}件の再編集用バックアップです。`,files:[file]});ok=true;}catch(e){if(e.name==='AbortError')return;}}if(!ok){const u=URL.createObjectURL(file),a=document.createElement('a');a.href=u;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(u),5000);alert('バックアップファイルを書き出しました。クラウドへ保存してください。');ok=true;}if(ok){selected.forEach(r=>m[this.id(r)]=hash(r));this.saveManifest(m);try{localStorage.setItem(this.lastKey,String(Date.now()));}catch(_){}await this.refresh();if(this.overlay)await this.renderManager();}}catch(e){alert('バックアップを作成できませんでした。\n'+(e.message||e));}}
+async restoreFiles(files){if(!files.length)return;try{if(!confirm('バックアップ内の現場を一覧へ追加・更新します。既存の他の現場は残ります。よろしいですか？'))return;let imported=[];for(const file of files){const p=JSON.parse(await file.text());if(p.format!==FORMAT||p.appId!==this.c.appId)throw new Error(`${file.name} は${this.c.appName}用ではありません。`);await this.c.restoreRecords(p.records||[],p.extra);imported.push(...(p.records||[]));}const m=this.manifest();imported.forEach(r=>m[this.id(r)]=hash(r));this.saveManifest(m);try{localStorage.setItem(this.lastKey,String(Date.now()));}catch(_){}alert(`${imported.length}件を追加・更新しました。`);await this.refresh();if(this.overlay)await this.renderManager();}catch(e){alert('復元できませんでした。\n'+(e.message||e));}finally{this.input.value='';}}
+}
+window.CloudBackup={async mount(c){const x=new Controller(c);return await x.mount();}};
 })();

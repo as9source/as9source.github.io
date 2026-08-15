@@ -366,7 +366,7 @@ main{max-width:940px;padding:24px 20px 12px}
 <div class="toolbar">
   <div class="toolbar-left" id="save-status">未保存</div>
   <div class="toolbar-right">
-    <button class="tool-btn" onclick="openRecords()">📂 読込</button>
+    <button class="tool-btn" onclick="openRecords()">📂 一覧</button>
     <button class="tool-btn" onclick="saveRecord()">💾 保存</button>
     <button class="tool-btn" onclick="exportYkkTransfer()">🔗 リモNAVi転記</button>
     <button class="tool-btn primary" id="share-btn" onclick="shareSheet(this)">📄 PDF</button>
@@ -878,7 +878,7 @@ main{max-width:940px;padding:24px 20px 12px}
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="./cloud-backup.js"></script>
+<script src="./cloud-backup.js?v=3"></script>
 <script>
 // ======= State =======
 let currentType = '';
@@ -1896,6 +1896,7 @@ function restoreState(state) {
 // ======= Save / Load =======
 function getRecords() { try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); } catch { return []; } }
 function putRecords(arr) { localStorage.setItem(LS_KEY, JSON.stringify(arr)); }
+let doorimoBackup=null;
 
 function saveRecord() {
   const siteName = document.getElementById('site-name').value.trim();
@@ -1918,6 +1919,7 @@ function saveRecord() {
 }
 
 function openRecords() {
+  if(doorimoBackup){doorimoBackup.openManager();return;}
   renderRecordList();
   document.getElementById('modal-records').classList.add('show');
 }
@@ -2407,24 +2409,25 @@ if (document.readyState === 'loading') {
 }
 
 if ('serviceWorker' in navigator) {
-  const swRefreshKey = 'saisun-sw-v3-reloaded';
+  const swRefreshKey = 'saisun-sw-v4-reloaded';
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (sessionStorage.getItem(swRefreshKey)) return;
     sessionStorage.setItem(swRefreshKey, '1');
     window.location.reload();
   });
-  navigator.serviceWorker.register('saisun-sw.js?v=3')
+  navigator.serviceWorker.register('saisun-sw.js?v=4')
     .then(registration => registration.update())
     .catch(() => {});
 }
 
 CloudBackup.mount({
-  appId:'doorimo-saisun',appName:'ドアリモ採寸',mountSelector:'.toolbar-right',statusAfterSelector:'.toolbar',maxBytes:5*1024*1024,
-  collect:()=>({records:getRecords(),current:collectState()}),
-  restore:data=>{putRecords(Array.isArray(data.records)?data.records:[]);clearAll(true);if(data.current)restoreState(data.current);renderRecordList();document.getElementById('save-status').textContent='復元済み';},
-  hasData:data=>!!((data.records||[]).length||data.current?.siteName||(data.current?.photos||[]).length),
-  fileName:data=>`ドアリモ_${data.current?.siteName||'保存現場一覧'}`
-}).catch(e=>console.warn('cloud backup',e));
+  appId:'doorimo-saisun',appName:'ドアリモ採寸',manager:{
+    label:r=>r.siteName||'（現場名なし）',detail:r=>[r.siteDate,`${(r.photos||[]).length}枚`].filter(Boolean).join(' ・ '),
+    load:r=>loadRecord(r.id),remove:r=>putRecords(getRecords().filter(x=>x.id!==r.id))
+  },maxBytes:5*1024*1024,
+  collectRecords:()=>getRecords(),recordId:r=>r.id,
+  restoreRecords:records=>{const map=new Map(getRecords().map(r=>[r.id,r]));records.forEach(r=>map.set(r.id,r));putRecords([...map.values()]);renderRecordList();}
+}).then(c=>doorimoBackup=c).catch(e=>console.warn('cloud backup',e));
 </script>
 
 </body>

@@ -276,7 +276,7 @@ input[type=text]:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-<script src="../cloud-backup.js"></script>
+<script src="../cloud-backup.js?v=3"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
@@ -288,7 +288,7 @@ input[type=text]:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 
 
 <div class="toolbar">
   <span class="save-ind" id="save-ind">未保存</span>
-  <button class="tbtn" onclick="loadData()">📂 読込</button>
+  <button class="tbtn" onclick="loadData()">📂 一覧</button>
   <button class="tbtn" onclick="saveData()">💾 保存</button>
   <button class="tbtn" onclick="newSite()">＋ 新規現場</button>
   <button class="tbtn pr" onclick="exportPDF()">📄 PDF</button>
@@ -512,9 +512,15 @@ function collectAll(){
 }
 
 // ─── 保存 / 読み込み ─────────────────────
+const UCHI_RECORDS_KEY='uchirimo_gencho_records_v1';
+let currentRecordId=null,uchirimoBackup=null;
+function getUchirimoRecords(){try{return JSON.parse(localStorage.getItem(UCHI_RECORDS_KEY)||'[]');}catch{return[];}}
+function putUchirimoRecords(records){localStorage.setItem(UCHI_RECORDS_KEY,JSON.stringify(records));}
 function saveData(){
   try{
-    localStorage.setItem('uchirimo_gencho_v2',JSON.stringify(collectAll()));
+    const data=collectAll();data.id=currentRecordId||Date.now().toString();data.updatedAt=new Date().toISOString();currentRecordId=data.id;
+    const records=getUchirimoRecords(),index=records.findIndex(r=>r.id===data.id);if(index>=0)records[index]=data;else records.push(data);
+    putUchirimoRecords(records);localStorage.setItem('uchirimo_gencho_v2',JSON.stringify(data));
     const d=new Date();document.getElementById('save-ind').textContent='保存済み '+d.getHours()+':'+String(d.getMinutes()).padStart(2,'0');
     toast('保存しました');
   }catch(e){toast(e&&e.name==='QuotaExceededError'?'写真を含む保存容量が上限に達しました。不要な写真を削除してください':'保存に失敗しました',1);}
@@ -532,7 +538,7 @@ function collapseSiteInfo(){
 }
 function newSite(){
   if(!confirm('新しい現場を作成しますか？\n現在の画面で保存していない内容は戻せません。必要に応じて先に「保存」または「PDF」を行ってください。'))return;
-  wins=[];activeId=null;ctr=0;bulkSelected.clear();winPhotos.clear();updateBulkPanel();
+  wins=[];activeId=null;ctr=0;currentRecordId=null;bulkSelected.clear();winPhotos.clear();updateBulkPanel();
   document.getElementById('survey-date').value=todayText();
   document.getElementById('site-name').value='';
   document.getElementById('scroll-area').innerHTML='<div class="empty-state" id="empty-state"><p>窓がまだ登録されていません</p><button class="primary-btn" onclick="addWindow()">＋ 最初の窓を追加</button></div>';
@@ -543,15 +549,11 @@ function newSite(){
   toast('新しい現場を作成しました');
 }
 function loadData(){
-  try{
-    const raw=localStorage.getItem('uchirimo_gencho_v2');
-    if(!raw){toast('保存データがありません',1);return;}
-    restoreAll(JSON.parse(raw));toast('読み込みました');
-  }catch(e){toast('読み込みに失敗しました',1);}
+  uchirimoBackup?.openManager();
 }
 
 function restoreAll(data){
-  wins=[];activeId=null;ctr=data.ctr||0;bulkSelected.clear();winPhotos.clear();updateBulkPanel();
+  wins=[];activeId=null;ctr=data.ctr||0;currentRecordId=data.id||null;bulkSelected.clear();winPhotos.clear();updateBulkPanel();
   document.getElementById('survey-date').value=data.surveyDate||'';
   document.getElementById('site-name').value=data.siteName||'';
   updateSiteInfoSummary();
@@ -1406,17 +1408,20 @@ if (document.readyState === 'loading') {
 }
 
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw.js?v=2').catch(()=>{});
+  navigator.serviceWorker.register('./sw.js?v=3').catch(()=>{});
 }
 
+(()=>{const records=getUchirimoRecords();if(records.length)return;try{const legacy=JSON.parse(localStorage.getItem('uchirimo_gencho_v2')||'null');if(legacy&&(legacy.siteName||(legacy.winData||[]).some(w=>w.memo||(w.photos||[]).length))){legacy.id=legacy.id||Date.now().toString();legacy.updatedAt=legacy.updatedAt||new Date().toISOString();putUchirimoRecords([legacy]);}}catch(_){}})();
 addWindow();
 CloudBackup.mount({
-  appId:'uchirimo-gencho',appName:'ウチリモ現場調査',mountSelector:'.toolbar',statusAfterSelector:'.toolbar',maxBytes:5*1024*1024,
-  collect:()=>collectAll(),
-  restore:data=>{restoreAll(data);localStorage.setItem('uchirimo_gencho_v2',JSON.stringify(data));},
-  hasData:data=>!!(data.siteName||(data.winData||[]).some(w=>w.memo||(w.photos||[]).length||(w.kw||[]).some(Boolean)||(w.kh||[]).some(Boolean))),
-  fileName:data=>`ウチリモ_${data.siteName||'現場名未入力'}`
-}).catch(e=>console.warn('cloud backup',e));
+  appId:'uchirimo-gencho',appName:'ウチリモ現場調査',manager:{
+    label:r=>r.siteName||'（現場名なし）',detail:r=>[r.surveyDate,`${(r.winData||[]).length}窓`].filter(Boolean).join(' ・ '),
+    load:r=>{restoreAll(r);localStorage.setItem('uchirimo_gencho_v2',JSON.stringify(r));toast('読み込みました');},
+    remove:r=>putUchirimoRecords(getUchirimoRecords().filter(x=>x.id!==r.id))
+  },maxBytes:5*1024*1024,
+  collectRecords:()=>getUchirimoRecords(),recordId:r=>r.id,
+  restoreRecords:records=>{const all=getUchirimoRecords(),map=new Map(all.map(r=>[r.id,r]));records.forEach(r=>map.set(r.id,r));putUchirimoRecords([...map.values()]);}
+}).then(c=>uchirimoBackup=c).catch(e=>console.warn('cloud backup',e));
 </script>
 </body>
 </html>

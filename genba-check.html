@@ -202,7 +202,7 @@ select{min-height:46px;border-width:1px;border-radius:11px;padding:11px 38px 11p
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="./cloud-backup.js"></script>
+<script src="./cloud-backup.js?v=3"></script>
 </head>
 <body>
 
@@ -378,6 +378,7 @@ const REQUIRED=['pk_ari','wt_ari','el_ari','wk_ari','rd_width','rd_size','cr_w',
 // ══════════════════════════════════════════════════════
 const PDF_W=760;
 let curId=null;          // 現在編集中のレコードID
+let genbaBackup=null;
 let photos=[];           // [{id,data,cap}] 全体写真
 let fphotos={};          // {フィールドid:[{id,data,cap}]} 項目別写真
 let curPhotoField=null;
@@ -837,6 +838,7 @@ function closeSheet(e){
 function hideSheet(){$('sheet-overlay').classList.remove('show');}
 
 async function openRecords(){
+  if(genbaBackup){await genbaBackup.openManager();return;}
   await saveNow(0);
   let recs=[];
   try{recs=await dbAll();}catch(e){toast('読み込みに失敗しました',1);return;}
@@ -1090,12 +1092,13 @@ window.addEventListener('beforeunload',e=>{if(dirty){saveNow(0);}});
     $('save-ind').textContent='新規';
   }
   if(!$('m_date').value)$('m_date').value=today();
-  await CloudBackup.mount({
-    appId:'genba-check',appName:'現場確認',mountSelector:'.toolbar',statusAfterSelector:'.toolbar',maxBytes:50*1024*1024,
-    collect:async()=>{await saveNow(0);return{records:await dbAll(),currentId:curId};},
-    restore:async data=>{const records=Array.isArray(data.records)?data.records:[];await dbReplaceAll(records);const target=records.find(r=>r.id===data.currentId)||records[0];if(target){curId=target.id;restore(target);localStorage.setItem('genba_last',curId);}else{curId=uid();restore({id:curId,meta:{date:today()},fields:{},photos:[],mapImg:null,geo:null});localStorage.setItem('genba_last',curId);}$('save-ind').textContent='復元済み';},
-    hasData:data=>(data.records||[]).some(r=>r.meta?.site||(r.photos||[]).length||r.mapImg||Object.keys(r.fphotos||{}).length),
-    fileName:data=>`現場確認_${(data.records||[]).find(r=>r.id===data.currentId)?.meta?.site||'保存現場一覧'}`
+  genbaBackup=await CloudBackup.mount({
+    appId:'genba-check',appName:'現場確認',manager:{
+      label:r=>r.meta?.site||'（現場名なし）',detail:r=>[r.meta?.date,`${(r.photos||[]).length}枚`].filter(Boolean).join(' ・ '),
+      load:r=>loadRecord(r.id),remove:r=>dbDel(r.id)
+    },maxBytes:50*1024*1024,
+    collectRecords:async()=>(await dbAll()).filter(r=>r.id!==curId),recordId:r=>r.id,
+    restoreRecords:async records=>{const map=new Map((await dbAll()).map(r=>[r.id,r]));records.forEach(r=>map.set(r.id,r));await dbReplaceAll([...map.values()]);}
   });
 })();
 </script>
