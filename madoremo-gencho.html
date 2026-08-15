@@ -349,11 +349,11 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 .tab-item{flex-shrink:0;display:flex;align-items:stretch;background:var(--bg2)}
 .tab-select{display:flex;align-items:center;gap:4px;padding:0 0 0 9px;margin:0;font-size:11px;color:var(--text2);font-weight:600;white-space:nowrap}
 .tab-select .win-select{margin:0}
-.tab-btn{flex-shrink:0;display:flex;align-items:center;padding:10px 9px 10px 12px;font-size:14px;font-weight:600;color:var(--text2);border:0;border-bottom:3px solid transparent;border-radius:0;background:none;white-space:nowrap}
+.tab-btn{flex-shrink:0;display:flex;align-items:center;padding:10px 8px 10px 14px;font-size:12px;font-weight:500;color:var(--text2);border:0;border-bottom:2px solid transparent;border-radius:0;background:none;white-space:nowrap}
 .tab-btn.active{color:var(--accent);background:var(--bg);border-bottom-color:var(--accent)}
 .tab-del{align-self:center;display:flex;align-items:center;justify-content:center;width:20px;min-width:20px;height:20px;min-height:20px;margin:0 9px 0 0;padding:0;border:0;border-radius:50%;background:var(--bg3);color:var(--text2);font-size:11px}
 .tab-item.active .tab-del{background:var(--danger2);color:var(--danger)}
-.panel>.blue{position:static;flex-shrink:0;min-height:48px;height:auto;padding:10px 15px;border:0;border-radius:0;background:var(--bg2);font-weight:600}
+.panel>.blue{position:static;flex-shrink:0;min-height:0;height:auto;padding:10px 14px;border:0;border-radius:0;background:var(--bg2);color:var(--accent);font-size:12px;font-weight:500}
 .panel-actions{display:flex;justify-content:flex-end;margin:2px 0 14px}
 .duplicate-btn{min-height:44px;padding:9px 15px;border:1px solid var(--accent);border-radius:9px;background:var(--accent2);color:var(--accent);font:inherit;font-weight:700;cursor:pointer}
 .app-subtitle{font-size:13px;opacity:.88;margin:3px 0 0;color:#fff}
@@ -393,8 +393,9 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 <body>
 <header><div class="bar"><div><h1><span class="product-name madorimo">マドリモ</span> 現場調査シート</h1><p class="app-subtitle">外窓交換・断熱窓</p></div></div></header>
 <div class="toolbar no-print"><span class="save-ind" id="save-ind">未保存</span><div class="actions"><button class="tbtn" onclick="App.loadSaved()">📂 一覧</button><button class="tbtn" onclick="App.save()">💾 保存</button><button class="tbtn danger" onclick="App.clearAll()">＋ 新規現場</button><button class="tbtn primary" onclick="App.preparePrint();window.print()">📄 PDF</button></div></div>
-<main><div class="layout"><aside class="panel no-print"><h2>窓リスト</h2><div id="windowList"></div><button class="blue" style="width:100%;margin-top:8px" onclick="App.addWindow()">窓を追加</button><div class="note warn">PDF化するときは「PDF印刷」を押してください。各窓の結果表がページ途中で分断されないようにしています。</div></aside><div id="editor">
+<main><div class="layout"><div id="editor">
 <section class="site-info-section"><details id="siteInfoDetails" open><summary><span class="site-info-summary"><span class="site-info-summary-title">現場情報</span><span class="site-info-summary-value" id="siteInfoSummary">現場名未入力</span></span><span class="site-info-summary-action">開閉</span></summary><div class="site-info-body"><div class="grid3"><p><label>現場調査名</label><input id="projectName" placeholder="例）山田様邸"></p><p><label>調査日</label><input id="surveyDate" type="date"></p></div><p><label>躯体構造</label><select id="building"><option>木造（3階以下）</option><option>RC造（3階以下・要納まり確認）</option><option>その他（要確認）</option></select></p><p><label>共通メモ</label><textarea id="siteMemo" placeholder="シーリング切れ、外壁割れ、漏水跡など"></textarea></p><div class="note">資料確認: 防火仕様の設定がない商品があります。防火設備の設置義務がある部位では使用可否を別途確認してください。単位はmmで入力します。</div><button type="button" class="site-info-done" onclick="App.collapseSiteInfo()">入力完了・小さくする</button></div></details></section>
+<aside class="panel no-print"><h2>窓リスト</h2><div id="windowList"></div><button class="blue" style="width:100%;margin-top:8px" onclick="App.addWindow()">＋ 追加</button><div class="note warn">PDF化するときは「PDF印刷」を押してください。各窓の結果表がページ途中で分断されないようにしています。</div></aside>
 <section id="winEditor"><h2 id="winHeading">窓 1</h2><p><label>部屋名</label><input id="placeMemo" placeholder="例）1階リビング南・浴室・寝室"></p><div class="grid3"><p><label>リフォーム場所</label><select id="place"></select></p><p><label>既設窓</label><select id="existing"></select></p><p><label>窓の納まり</label><select id="fit"></select></p></div><p><label>既設窓まわり</label><select id="around"><option>修復不必要</option><option>修復必要</option><option>不可</option><option>保留</option></select></p><h3>3点計測</h3><div class="grid"><div><label>幅 W（上・中・下）</label><div class="row"><input id="w1" type="number" min="1" placeholder="上"><input id="w2" type="number" min="1" placeholder="中"><input id="w3" type="number" min="1" placeholder="下"></div></div><div><label>高さ H（左・中・右）</label><div class="row"><input id="h1" type="number" min="1" placeholder="左"><input id="h2" type="number" min="1" placeholder="中"><input id="h3" type="number" min="1" placeholder="右"></div></div></div><div id="sizeNote" class="note hidden"></div><h3>仕様</h3><div class="grid3"><p><label>シリーズ</label><select id="series"></select></p><p><label>新設窓候補</label><select id="newWindow"></select></p><p><label>ガラス</label><select id="glass"></select></p></div><div id="newWindowReason" class="note warn hidden"></div><div class="grid3"><p><label>外観色</label><select id="outerColor"></select></p><p><label>内観色</label><select id="innerColor"></select></p><p><label>内額縁</label><select id="edge"></select></p></div><div id="edgeNote" class="note warn hidden"></div><div class="grid3"><p><label>網戸</label><select id="screen"><option value="no">なし</option><option value="yes">あり</option></select></p><p><label>外部モール</label><select id="mool"><option>なし</option><option>四方</option><option>二方</option></select></p><p><label>上枠見付</label><select id="upper"><option>未確認</option><option>小（21-30mm）</option><option>大（31-40mm）</option></select></p></div><p><label>窓別メモ</label><textarea id="memo"></textarea></p><div id="matchNote" class="note"></div><div class="actions edit-only"><button class="ghost" onclick="App.duplicateWindow()">この窓を複製</button><button class="danger" onclick="App.deleteWindow()">この窓を削除</button></div></section>
 <section><h2>結果確認</h2><div id="summary"></div></section></div></div><div id="printArea" class="hidden"></div></main>
 <script src="./cloud-backup.js?v=3"></script>
@@ -774,6 +775,7 @@ const App = {
     }).join('');
     this.updateBulkPanel();
   },
+  focusActiveTab(){windowList.querySelector('.tab-btn.active')?.scrollIntoView({behavior:'smooth',block:'nearest',inline:'nearest'});},
   toggleBulk(i,checked){
     if(checked) bulkSelected.add(i); else bulkSelected.delete(i);
     this.updateBulkPanel();
@@ -837,9 +839,9 @@ const App = {
     }).join('');
     summary.innerHTML = `<div class="print-sheet"><div class="print-title">現場情報</div><table class="result">${siteRows}</table></div>${sheets}`;
   },
-  selectWindow(i){this.capture(); state.current=i; this.render();},
-  addWindow(){this.capture(); state.windows.push(blankWindow()); state.current=state.windows.length-1; this.render();},
-  duplicateWindow(){this.capture(); const insertAt=state.current+1,copy=JSON.parse(JSON.stringify(state.windows[state.current])); copy.photos=[]; bulkSelected=new Set([...bulkSelected].map(i=>i>=insertAt?i+1:i)); state.windows.splice(insertAt,0,copy); state.current++; this.render();},
+  selectWindow(i){this.capture();state.current=i;this.render();this.focusActiveTab();},
+  addWindow(){this.capture();state.windows.push(blankWindow());state.current=state.windows.length-1;this.render();this.focusActiveTab();},
+  duplicateWindow(){this.capture();const insertAt=state.current+1,copy=JSON.parse(JSON.stringify(state.windows[state.current]));copy.photos=[];bulkSelected=new Set([...bulkSelected].map(i=>i>=insertAt?i+1:i));state.windows.splice(insertAt,0,copy);state.current++;this.render();this.focusActiveTab();},
   deleteWindow(){this.deleteWindowAt(state.current);},
   deleteWindowAt(index){
     if(state.windows.length===1)return alert('最低1件は残してください');
@@ -848,7 +850,7 @@ const App = {
     bulkSelected=new Set([...bulkSelected].filter(i=>i!==index).map(i=>i>index?i-1:i));
     state.windows.splice(index,1);
     state.current=Math.min(state.current>index?state.current-1:state.current,state.windows.length-1);
-    this.render();this.save(false);
+    this.render();this.focusActiveTab();this.save(false);
   },
   save(show=true){try{if(show){currentRecordId=currentRecordId||Date.now().toString();state._recordId=currentRecordId;state._updatedAt=new Date().toISOString();const records=getMadoremoRecords(),copy=JSON.parse(JSON.stringify(state)),index=records.findIndex(r=>r._recordId===currentRecordId);if(index>=0)records[index]=copy;else records.push(copy);putMadoremoRecords(records);localStorage.setItem(SAVED_STORE,JSON.stringify(copy));}const serialized=JSON.stringify(state);localStorage.setItem(STORE,serialized);saveErrorShown=false;const ind=document.getElementById('save-ind');if(ind){const d=new Date();ind.textContent=(show?'保存済み ':'編集中 ')+d.getHours()+':'+String(d.getMinutes()).padStart(2,'0');}if(show)alert('保存しました。「一覧」からこの現場へ戻れます。');return true;}catch(e){if(show||!saveErrorShown){alert('写真を含む保存容量が上限に達しました。不要な写真を削除してください。');saveErrorShown=true;}return false;}},
   loadSaved(){
