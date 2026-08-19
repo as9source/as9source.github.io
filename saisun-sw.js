@@ -1,4 +1,4 @@
-const CACHE_NAME = 'saisun-v4';
+const CACHE_NAME = 'saisun-v5';
 const ASSETS = [
   '/saisun.html',
   '/saisun-manifest.json',
