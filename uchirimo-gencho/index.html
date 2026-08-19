@@ -276,7 +276,7 @@ input[type=text]:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-<script src="../cloud-backup.js?v=3"></script>
+<script src="../cloud-backup.js?v=4"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
@@ -1408,7 +1408,7 @@ if (document.readyState === 'loading') {
 }
 
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw.js?v=3').catch(()=>{});
+  navigator.serviceWorker.register('./sw.js?v=4').catch(()=>{});
 }
 
 (()=>{const records=getUchirimoRecords();if(records.length)return;try{const legacy=JSON.parse(localStorage.getItem('uchirimo_gencho_v2')||'null');if(legacy&&(legacy.siteName||(legacy.winData||[]).some(w=>w.memo||(w.photos||[]).length))){legacy.id=legacy.id||Date.now().toString();legacy.updatedAt=legacy.updatedAt||new Date().toISOString();putUchirimoRecords([legacy]);}}catch(_){}})();
