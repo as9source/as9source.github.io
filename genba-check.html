@@ -127,9 +127,11 @@ select:focus{outline:none;border-color:var(--accent)}
 .pdf-report td.warn{background:#fdf4e3;color:#7a4f0a;font-weight:500}
 .pdf-report .ph-row{display:flex;gap:8px}
 .pdf-report .ph-box{flex:1;border:1px solid #ccc;border-radius:4px;overflow:hidden;background:#fff}
-.pdf-report .ph-box img{width:100%;height:230px;object-fit:contain;display:block;background:#f4f4f4}
+.pdf-report .ph-box .ph-img{width:100%;height:230px;display:flex;align-items:center;justify-content:center;background:#f4f4f4;overflow:hidden}
+.pdf-report .ph-box .ph-img img{max-width:100%;max-height:100%;display:block}
 .pdf-report .ph-box .cap{font-size:10px;padding:4px 6px;border-top:0.5px solid #ddd;color:#333}
-.pdf-report .map-box img{width:100%;max-height:300px;object-fit:contain;display:block;background:#f4f4f4}
+.pdf-report .map-box .ph-img{width:100%;max-height:300px;display:flex;align-items:center;justify-content:center;background:#f4f4f4;overflow:hidden}
+.pdf-report .map-box .ph-img img{max-width:100%;max-height:300px;display:block}
 .pdf-report .gap{height:6px}
 
 /* ボトムシート */
@@ -922,7 +924,7 @@ function reportHTML(){
     +'</table></div><div class="gap"></div>';
 
   if(mapImg){
-    out+='<div class="blk map-box"><div class="bh">地図</div><img src="'+mapImg+'" alt="地図"></div><div class="gap"></div>';
+    out+='<div class="blk map-box"><div class="bh">地図</div><div class="ph-img"><img src="'+mapImg+'" alt="地図"></div></div><div class="gap"></div>';
   }
 
   SCHEMA.forEach(sec=>{
@@ -934,7 +936,7 @@ function reportHTML(){
       for(let i=0;i<arr.length;i+=2){
         const pair=arr.slice(i,i+2);
         out+='<div class="blk"><div class="bh">'+esc(f.label)+(arr.length>2?'（'+(i+1)+'〜）':'')+'</div><div class="ph-row">'
-          +pair.map(p=>'<div class="ph-box"><img src="'+p.data+'"><div class="cap">'+esc(p.cap||'　')+'</div></div>').join('')
+          +pair.map(p=>'<div class="ph-box"><div class="ph-img"><img src="'+p.data+'"></div><div class="cap">'+esc(p.cap||'　')+'</div></div>').join('')
           +(pair.length===1?'<div style="flex:1"></div>':'')
           +'</div></div><div class="gap"></div>';
       }
@@ -945,7 +947,7 @@ function reportHTML(){
     for(let i=0;i<photos.length;i+=2){
       const pair=photos.slice(i,i+2);
       out+='<div class="blk"><div class="bh">写真 '+(i+1)+(pair.length>1?'・'+(i+2):'')+'</div><div class="ph-row">'
-        +pair.map(p=>'<div class="ph-box"><img src="'+p.data+'"><div class="cap">'+esc(p.cap||'　')+'</div></div>').join('')
+        +pair.map(p=>'<div class="ph-box"><div class="ph-img"><img src="'+p.data+'"></div><div class="cap">'+esc(p.cap||'　')+'</div></div>').join('')
         +(pair.length===1?'<div style="flex:1"></div>':'')
         +'</div></div><div class="gap"></div>';
     }
