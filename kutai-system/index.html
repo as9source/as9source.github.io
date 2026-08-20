@@ -5389,21 +5389,29 @@
             
             // 既存データの取得
             let savedDataList = JSON.parse(localStorage.getItem('kutai_saved_data') || '[]');
-            
+
             // 上書きまたは新規追加
             const existingIndex = savedDataList.findIndex(data => data.id === saveData.id);
-            if (existingIndex >= 0) {
+            const isOverwrite = existingIndex >= 0;
+            if (isOverwrite) {
                 saveData.savedAt = savedDataList[existingIndex].savedAt; // 作成日時は保持
                 savedDataList[existingIndex] = saveData;
-                alert('データを上書き保存しました');
             } else {
                 savedDataList.push(saveData);
-                currentSaveId = saveData.id;
-                alert('データを保存しました');
             }
-            
+
             // 保存
-            localStorage.setItem('kutai_saved_data', JSON.stringify(savedDataList));
+            try {
+                localStorage.setItem('kutai_saved_data', JSON.stringify(savedDataList));
+            } catch (e) {
+                alert('データを保存できませんでした。保存容量が上限に達している可能性があります。不要な現場データを削除してからもう一度お試しください。');
+                return;
+            }
+
+            if (!isOverwrite) {
+                currentSaveId = saveData.id;
+            }
+            alert(isOverwrite ? 'データを上書き保存しました' : 'データを保存しました');
         }
         
         // 保存データリスト画面を表示
