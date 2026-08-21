@@ -938,7 +938,7 @@ function selectTsuke(t) {
 function syncKHmin() {
   const pts = ['kh_l','kh_c','kh_r'].map(id => parseFloat(val(id))).filter(n => !isNaN(n));
   if (pts.length > 0) {
-    document.getElementById('kh').value = Math.min(...pts);
+    document.getElementById('kh').value = Math.floor(Math.min(...pts));
   } else {
     document.getElementById('kh').value = '';
   }
@@ -949,7 +949,7 @@ function syncKHmin() {
 function syncKWmin() {
   const pts = ['kw_t','kw_c','kw_b'].map(id => parseFloat(val(id))).filter(n => !isNaN(n));
   if (pts.length > 0) {
-    document.getElementById('kw').value = Math.min(...pts);
+    document.getElementById('kw').value = Math.floor(Math.min(...pts));
   } else {
     document.getElementById('kw').value = '';
   }
@@ -1080,13 +1080,13 @@ function checkKWvsKH() {
 // ======= Calc =======
 function getKHmin() {
   const pts = ['kh_l','kh_c','kh_r'].map(id => parseFloat(val(id))).filter(n => !isNaN(n));
-  if (pts.length > 0) return Math.min(...pts);
+  if (pts.length > 0) return Math.floor(Math.min(...pts));
   const m = parseFloat(val('kh'));
   return isNaN(m) ? null : m;
 }
 function getKW() {
   const pts = ['kw_t','kw_c','kw_b'].map(id => parseFloat(val(id))).filter(n => !isNaN(n));
-  if (pts.length > 0) return Math.min(...pts);
+  if (pts.length > 0) return Math.floor(Math.min(...pts));
   const m = parseFloat(val('kw'));
   return isNaN(m) ? null : m;
 }

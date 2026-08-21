@@ -425,7 +425,7 @@ function updateMin(inputs,noteEl){
   if(pairs.length<2){if(noteEl)noteEl.classList.remove('show');return;}
   const minV=Math.min(...pairs.map(p=>p.v));
   pairs.filter(p=>p.v===minV).forEach(p=>p.el.classList.add('is-min'));
-  if(noteEl){noteEl.classList.add('show');noteEl.querySelector('.min-val').textContent=minV+'㎜ が取付基準寸法';}
+  if(noteEl){noteEl.classList.add('show');noteEl.querySelector('.min-val').textContent=Math.floor(minV)+'㎜ が取付基準寸法';}
 }
 
 // ─── 寸法差の自動記載文 ───────────────────
@@ -439,7 +439,7 @@ function diffNote(vals,labels,name){
   const d=Math.round((Math.max(...nums)-Math.min(...nums))*10)/10;
   if(d<AUTO_DIFF_MM)return null;
   const parts=vals.map((s,i)=>labels[i]+' '+((s&&String(s).trim())?String(s).trim():'—')).join(' / ');
-  return name+' 寸法差 '+d+'㎜（'+parts+'）→ 最小 '+Math.min(...nums)+'㎜ を採用'
+  return name+' 寸法差 '+d+'㎜（'+parts+'）→ 最小 '+Math.floor(Math.min(...nums))+'㎜ を採用'
     +(d>=20?' ／ 変形・歪みの確認要':'');
 }
 
@@ -604,8 +604,8 @@ function buildCards(){
   const cards=data.winData.map(wd=>{
     const kwVals=wd.kw.map(s=>parseFloat(s)).filter(v=>!isNaN(v));
     const khVals=wd.kh.map(s=>parseFloat(s)).filter(v=>!isNaN(v));
-    const kwMin=kwVals.length?Math.min(...kwVals):null;
-    const khMin=khVals.length?Math.min(...khVals):null;
+    const kwMin=kwVals.length?Math.floor(Math.min(...kwVals)):null;
+    const khMin=khVals.length?Math.floor(Math.min(...khVals)):null;
     const kwLabels=['上','中','下'];
     const kwMinCell=kwMin!==null?`<span style="background:#1a4a7a;color:#fff;font-weight:700;border-radius:4px;padding:2px 8px;margin-right:8px;font-size:13px;">${kwMin}㎜</span>`:'';
     const kwSubCells=wd.kw.map((s,i)=>`<span style="color:#aaa;font-size:9px;">${kwLabels[i]}</span><span style="font-size:10px;color:#555;">${s||'—'}</span>`).join('<span style="color:#ddd;font-size:9px;"> / </span>');
