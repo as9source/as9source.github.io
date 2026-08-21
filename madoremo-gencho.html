@@ -600,8 +600,8 @@ function compressPhoto(file){
 function calc(w){
   const ww = w.w.filter(v => Number.isFinite(v));
   const hh = w.h.filter(v => Number.isFinite(v));
-  const wMin = ww.length ? Math.min(...ww) : null;
-  const hMin = hh.length ? Math.min(...hh) : null;
+  const wMin = ww.length ? Math.floor(Math.min(...ww)) : null;
+  const hMin = hh.length ? Math.floor(Math.min(...hh)) : null;
   const selectedWindow = byId(DATA.newWindows,w.newWindowId);
   const target = selectedWindow?.catalogAdd ? {catalogAdd:true, source:selectedWindow.source} : DATA.targets.find(t => String(t.placeId)===String(w.placeId) && String(t.existingId)===String(w.existingId) && String(t.fitId)===String(w.fitId) && String(t.newWindowId)===String(w.newWindowId));
   const wr = DATA.widthRanges.find(r => wMin != null && wMin >= r.min && wMin <= r.max);
