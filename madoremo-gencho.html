@@ -396,7 +396,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 <main><div class="layout"><div id="editor">
 <section class="site-info-section"><details id="siteInfoDetails" open><summary><span class="site-info-summary"><span class="site-info-summary-title">現場情報</span><span class="site-info-summary-value" id="siteInfoSummary">現場名未入力</span></span><span class="site-info-summary-action">開閉</span></summary><div class="site-info-body"><div class="grid3"><p><label>現場調査名</label><input id="projectName" placeholder="例）山田様邸"></p><p><label>調査日</label><input id="surveyDate" type="date"></p></div><p><label>躯体構造</label><select id="building"><option>木造（3階以下）</option><option>RC造（3階以下・要納まり確認）</option><option>その他（要確認）</option></select></p><p><label>共通メモ</label><textarea id="siteMemo" placeholder="シーリング切れ、外壁割れ、漏水跡など"></textarea></p><div class="note">資料確認: 防火仕様の設定がない商品があります。防火設備の設置義務がある部位では使用可否を別途確認してください。単位はmmで入力します。</div><button type="button" class="site-info-done" onclick="App.collapseSiteInfo()">入力完了・小さくする</button></div></details></section>
 <aside class="panel no-print"><h2>窓リスト</h2><div id="windowList"></div><button class="blue" style="width:100%;margin-top:8px" onclick="App.addWindow()">＋ 追加</button><div class="note warn">PDF化するときは「PDF印刷」を押してください。各窓の結果表がページ途中で分断されないようにしています。</div></aside>
-<section id="winEditor"><h2 id="winHeading">窓 1</h2><p><label>部屋名</label><input id="placeMemo" placeholder="例）1階リビング南・浴室・寝室"></p><div class="grid3"><p><label>リフォーム場所</label><select id="place"></select></p><p><label>既設窓</label><select id="existing"></select></p><p><label>窓の納まり</label><select id="fit"></select></p></div><p><label>既設窓まわり</label><select id="around"><option>修復不必要</option><option>修復必要</option><option>不可</option><option>保留</option></select></p><h3>3点計測</h3><div class="grid"><div><label>幅 W（上・中・下）</label><div class="row"><input id="w1" type="number" min="1" placeholder="上"><input id="w2" type="number" min="1" placeholder="中"><input id="w3" type="number" min="1" placeholder="下"></div></div><div><label>高さ H（左・中・右）</label><div class="row"><input id="h1" type="number" min="1" placeholder="左"><input id="h2" type="number" min="1" placeholder="中"><input id="h3" type="number" min="1" placeholder="右"></div></div></div><div id="sizeNote" class="note hidden"></div><h3>仕様</h3><div class="grid3"><p><label>シリーズ</label><select id="series"></select></p><p><label>新設窓候補</label><select id="newWindow"></select></p><p><label>ガラス</label><select id="glass"></select></p></div><div id="newWindowReason" class="note warn hidden"></div><div class="grid3"><p><label>外観色</label><select id="outerColor"></select></p><p><label>内観色</label><select id="innerColor"></select></p><p><label>内額縁</label><select id="edge"></select></p></div><div id="edgeNote" class="note warn hidden"></div><div class="grid3"><p><label>網戸</label><select id="screen"><option value="no">なし</option><option value="yes">あり</option></select></p><p><label>外部モール</label><select id="mool"><option>なし</option><option>四方</option><option>二方</option></select></p><p><label>上枠見付</label><select id="upper"><option>未確認</option><option>小（21-30mm）</option><option>大（31-40mm）</option></select></p></div><p><label>窓別メモ</label><textarea id="memo"></textarea></p><div id="matchNote" class="note"></div><div class="actions edit-only"><button class="ghost" onclick="App.duplicateWindow()">この窓を複製</button><button class="danger" onclick="App.deleteWindow()">この窓を削除</button></div></section>
+<section id="winEditor"><h2 id="winHeading">窓 1</h2><p><label>部屋名</label><input id="placeMemo" placeholder="例）1階リビング南・浴室・寝室"></p><div class="grid3"><p><label>リフォーム場所</label><select id="place"></select></p><p><label>既設窓</label><select id="existing"></select></p><p><label>窓の納まり</label><select id="fit"></select></p></div><p><label>既設窓まわり</label><select id="around"><option>修復不必要</option><option>修復必要</option><option>不可</option><option>保留</option></select></p><p><label>既設下枠 立ち上がり寸法（樹脂窓ハイブリッド専用枠の場合のみ関係）</label><input id="sillRise" type="number" min="0" placeholder="例）48"></p><div id="sillRiseNote" class="note hidden"></div><h3>3点計測</h3><div class="grid"><div><label>幅 W（上・中・下）</label><div class="row"><input id="w1" type="number" min="1" placeholder="上"><input id="w2" type="number" min="1" placeholder="中"><input id="w3" type="number" min="1" placeholder="下"></div></div><div><label>高さ H（左・中・右）</label><div class="row"><input id="h1" type="number" min="1" placeholder="左"><input id="h2" type="number" min="1" placeholder="中"><input id="h3" type="number" min="1" placeholder="右"></div></div></div><div id="sizeNote" class="note hidden"></div><h3>仕様</h3><div class="grid3"><p><label>シリーズ</label><select id="series"></select></p><p><label>新設窓候補</label><select id="newWindow"></select></p><p><label>ガラス</label><select id="glass"></select></p></div><div id="newWindowReason" class="note warn hidden"></div><div class="grid3"><p><label>外観色</label><select id="outerColor"></select></p><p><label>内観色</label><select id="innerColor"></select></p><p><label>内額縁</label><select id="edge"></select></p></div><div id="edgeNote" class="note warn hidden"></div><div class="grid3"><p><label>網戸</label><select id="screen"><option value="no">なし</option><option value="yes">あり</option></select></p><p><label>外部モール</label><select id="mool"><option>なし</option><option>四方</option><option>二方</option></select></p><p><label>上枠見付</label><select id="upper"><option>未確認</option><option>小（21-30mm）</option><option>大（31-40mm）</option></select></p></div><p><label>窓別メモ</label><textarea id="memo"></textarea></p><div id="matchNote" class="note"></div><div class="actions edit-only"><button class="ghost" onclick="App.duplicateWindow()">この窓を複製</button><button class="danger" onclick="App.deleteWindow()">この窓を削除</button></div></section>
 <section><h2>結果確認</h2><div id="summary"></div></section></div></div><div id="printArea" class="hidden"></div></main>
 <script src="./cloud-backup.js?v=4"></script>
 <script>
@@ -513,6 +513,20 @@ function edgeCondition(edgeId,w){
   }
   return body ? `${suffix}: ${body}` : '';
 }
+function sillRiseCondition(w){
+  const v=Number(w.sillRise);
+  if(!Number.isFinite(v)||v<=0) return '';
+  if(v>=37&&v<45) return `既設下枠立ち上がり寸法 ${v}mm: 樹脂窓ハイブリッド専用枠の下枠補強材 対応範囲（37〜45mm）内です。標準の向きで調整してください。`;
+  if(v>=45&&v<=53) return `既設下枠立ち上がり寸法 ${v}mm: 樹脂窓ハイブリッド専用枠の下枠補強材 対応範囲（45〜53mm）内です。プレートを180°回転させて調整してください。`;
+  return `既設下枠立ち上がり寸法 ${v}mm: 樹脂窓ハイブリッド専用枠の下枠補強材 対応範囲（37〜53mm）外です。既設下枠の切断対応が必要です。現場調査説明書「既設枠の確認（樹脂窓 ハイブリッド専用枠）」P.49-51を参照してください。`;
+}
+function updateSillRiseNote(){
+  const note = document.getElementById('sillRiseNote');
+  if(!note) return;
+  const message = sillRiseCondition({sillRise:sillRise.value});
+  note.classList.toggle('hidden', !message);
+  note.innerHTML = message ? `<b>下枠補強材の確認（ハイブリッド専用枠を選ぶ場合）:</b> ${esc(message)}` : '';
+}
 function updateEdgeNote(){
   const note = document.getElementById('edgeNote');
   if(!note) return;
@@ -562,14 +576,14 @@ const byId = (arr,id) => arr.find(x => String(x.id) === String(id));
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const text = v => esc(v || '－').split('\n').join(' / ');
 const MAX_PHOTOS=2;
-const blankWindow = () => ({placeId:'',existingId:'',fitId:'',around:'修復不必要',floor:'',roomType:'',roomDetail:'',placeMemo:'',w:[null,null,null],h:[null,null,null],seriesId:'',newWindowId:'',glassId:'',outerColor:'',innerColor:'',edgeId:'',screen:'no',mool:'なし',upper:'未確認',memo:'',photos:[]});
+const blankWindow = () => ({placeId:'',existingId:'',fitId:'',around:'修復不必要',sillRise:'',floor:'',roomType:'',roomDetail:'',placeMemo:'',w:[null,null,null],h:[null,null,null],seriesId:'',newWindowId:'',glassId:'',outerColor:'',innerColor:'',edgeId:'',screen:'no',mool:'なし',upper:'未確認',memo:'',photos:[]});
 let state = {current:0,site:{projectName:'',surveyDate:new Date().toISOString().slice(0,10),building:'木造（3階以下）',siteMemo:''},windows:[blankWindow()]};
 let bulkSelected = new Set();
 let saveErrorShown=false;
 let currentRecordId=null,madoremoBackup=null;
 function getMadoremoRecords(){try{return JSON.parse(localStorage.getItem(MADOREMO_RECORDS_STORE)||'[]');}catch{return[];}}
 function putMadoremoRecords(records){localStorage.setItem(MADOREMO_RECORDS_STORE,JSON.stringify(records));}
-const ids = ['projectName','surveyDate','building','around','siteMemo','place','existing','fit','roomFloor','roomType','roomDetail','placeMemo','w1','w2','w3','h1','h2','h3','series','newWindow','glass','outerColor','innerColor','edge','screen','mool','upper','memo'];
+const ids = ['projectName','surveyDate','building','around','sillRise','siteMemo','place','existing','fit','roomFloor','roomType','roomDetail','placeMemo','w1','w2','w3','h1','h2','h3','series','newWindow','glass','outerColor','innerColor','edge','screen','mool','upper','memo'];
 function opt(v,t){return `<option value="${esc(v ?? '')}">${esc(t ?? '')}</option>`}
 function fillSelect(id,items,labeler,empty='選択してください'){document.getElementById(id).innerHTML = opt('',empty) + items.map(x => opt(x.id,labeler(x))).join('')}
 function readNum(id){const v=parseInt(document.getElementById(id).value,10);return Number.isFinite(v)?v:null}
@@ -702,7 +716,7 @@ const App = {
     const w=state.windows[state.current]; if(!w) return;
     const floor=roomFloor.value, room=roomType.value, detail=roomDetail.value.trim();
     placeMemo.value=[floor,room,detail].filter(Boolean).join('・');
-    Object.assign(w,{placeId:place.value,existingId:existing.value,fitId:fit.value,around:around.value,floor,roomType:room,roomDetail:detail,placeMemo:placeMemo.value,w:[readNum('w1'),readNum('w2'),readNum('w3')],h:[readNum('h1'),readNum('h2'),readNum('h3')],seriesId:series.value,newWindowId:newWindow.value,glassId:glass.value,outerColor:outerColor.value,innerColor:innerColor.value,edgeId:edge.value,screen:screen.value,mool:mool.value,upper:upper.value,memo:memo.value});
+    Object.assign(w,{placeId:place.value,existingId:existing.value,fitId:fit.value,around:around.value,sillRise:readNum('sillRise'),floor,roomType:room,roomDetail:detail,placeMemo:placeMemo.value,w:[readNum('w1'),readNum('w2'),readNum('w3')],h:[readNum('h1'),readNum('h2'),readNum('h3')],seriesId:series.value,newWindowId:newWindow.value,glassId:glass.value,outerColor:outerColor.value,innerColor:innerColor.value,edgeId:edge.value,screen:screen.value,mool:mool.value,upper:upper.value,memo:memo.value});
     this.updateDependent(); this.save(false); this.renderList(); this.renderSummary(); this.updateSiteInfoSummary();
   },
   updateSiteInfoSummary(){
@@ -736,6 +750,7 @@ const App = {
     fillSelect('outerColor', colorList.filter(c => c.side==='外観色'), c => c.name, '未選択'); outerColor.value=w.outerColor || '';
     fillSelect('innerColor', colorList.filter(c => c.side==='内観色'), c => c.name, '未選択'); innerColor.value=w.innerColor || '';
     updateEdgeNote();
+    updateSillRiseNote();
     const c=calc(w);
     sizeNote.classList.toggle('hidden', !(c.wMin && c.hMin));
     sizeNote.innerHTML = c.wMin && c.hMin ? `使用寸法: 幅 <b>${c.wMin}mm</b> / 高さ <b>${c.hMin}mm</b>（3点計測の最小値）${c.spreadWarn ? `<br><b>警告:</b> 3点計測値の差が20mm以上あります。入力間違いがないか確認してください。（幅差 ${c.wSpread}mm / 高さ差 ${c.hSpread}mm）` : ''}` : '';
@@ -760,7 +775,7 @@ const App = {
   loadWindow(){
     const w=state.windows[state.current]; winHeading.textContent=`窓 ${state.current+1}`;
     if(w.floor==null && w.roomType==null && w.roomDetail==null){w.floor=''; w.roomType=''; w.roomDetail=w.placeMemo||'';}
-    place.value=w.placeId||''; existing.value=w.existingId||''; fit.value=w.fitId||''; around.value=w.around||state.site.around||'修復不必要'; roomFloor.value=w.floor||''; roomType.value=w.roomType||''; roomDetail.value=w.roomDetail||''; placeMemo.value=roomName(w);
+    place.value=w.placeId||''; existing.value=w.existingId||''; fit.value=w.fitId||''; around.value=w.around||state.site.around||'修復不必要'; sillRise.value=w.sillRise??''; roomFloor.value=w.floor||''; roomType.value=w.roomType||''; roomDetail.value=w.roomDetail||''; placeMemo.value=roomName(w);
     ['w1','w2','w3'].forEach((id,i)=>document.getElementById(id).value=w.w[i]||''); ['h1','h2','h3'].forEach((id,i)=>document.getElementById(id).value=w.h[i]||'');
     series.value=w.seriesId||''; edge.value=w.edgeId||''; screen.value=w.screen||'no'; mool.value=w.mool||'なし'; upper.value=w.upper||'未確認'; memo.value=w.memo||'';
     this.updateDependent(); this.renderPhotos(); resetMeasureDirection();
@@ -835,7 +850,7 @@ const App = {
       const check = `${c.target?.catalogAdd ? 'PDF追加候補・要確認' : (c.target ? '組み合わせOK' : '組み合わせ要確認')} / ${c.sizeOk ? '寸法帯OK' : '寸法帯要確認'}${c.spreadWarn ? ' / 3点計測差要確認' : ''}`;
       const photos=Array.isArray(w.photos)?w.photos:[];
       const photoBlock=photos.length?`<div class="print-photos">${photos.map((src,j)=>`<img src="${esc(src)}" alt="窓 ${i+1} 写真 ${j+1}">`).join('')}</div>`:'';
-      return `<div class="print-sheet"><div class="print-title">窓 ${i+1} ${esc(nw?.name || '')}</div><table class="result"><tr><th>部屋名</th><td>${text(roomName(w))}</td></tr><tr><th>リフォーム場所</th><td>${text(pl?.name)}</td></tr><tr><th>既設窓 / 納まり</th><td>${text(ex?.name)} / ${text(ft?.name)}</td></tr><tr><th>既設窓まわり</th><td>${text(w.around||state.site.around||'修復不必要')}</td></tr><tr><th>使用寸法</th><td>${c.wMin&&c.hMin ? `${c.wMin} x ${c.hMin} mm` : '－'}</td></tr><tr><th>シリーズ / 新設窓</th><td>${text(ser?.name)} / ${text(nw?.name)}</td></tr><tr><th>ガラス</th><td>${gl ? text((gl.type ? gl.type + ' / ' : '') + gl.name) : '－'}</td></tr><tr><th>色</th><td>外観: ${text(byId(DATA.colors,w.outerColor)?.name)} / 内観: ${text(byId(DATA.colors,w.innerColor)?.name)}</td></tr><tr><th>内額縁</th><td>${text(ed?.name)}</td></tr><tr><th>網戸 / 外部モール / 上枠</th><td>${w.screen==='yes'?'あり':'なし'} / ${text(w.mool)} / ${text(w.upper)}</td></tr><tr><th>照合</th><td>${text(check)}</td></tr><tr><th>メモ</th><td>${text(w.memo)}</td></tr></table>${photoBlock}</div>`;
+      return `<div class="print-sheet"><div class="print-title">窓 ${i+1} ${esc(nw?.name || '')}</div><table class="result"><tr><th>部屋名</th><td>${text(roomName(w))}</td></tr><tr><th>リフォーム場所</th><td>${text(pl?.name)}</td></tr><tr><th>既設窓 / 納まり</th><td>${text(ex?.name)} / ${text(ft?.name)}</td></tr><tr><th>既設窓まわり</th><td>${text(w.around||state.site.around||'修復不必要')}</td></tr><tr><th>既設下枠 立ち上がり寸法</th><td>${w.sillRise ? text(w.sillRise+'mm') : '－'}</td></tr><tr><th>使用寸法</th><td>${c.wMin&&c.hMin ? `${c.wMin} x ${c.hMin} mm` : '－'}</td></tr><tr><th>シリーズ / 新設窓</th><td>${text(ser?.name)} / ${text(nw?.name)}</td></tr><tr><th>ガラス</th><td>${gl ? text((gl.type ? gl.type + ' / ' : '') + gl.name) : '－'}</td></tr><tr><th>色</th><td>外観: ${text(byId(DATA.colors,w.outerColor)?.name)} / 内観: ${text(byId(DATA.colors,w.innerColor)?.name)}</td></tr><tr><th>内額縁</th><td>${text(ed?.name)}</td></tr><tr><th>網戸 / 外部モール / 上枠</th><td>${w.screen==='yes'?'あり':'なし'} / ${text(w.mool)} / ${text(w.upper)}</td></tr><tr><th>照合</th><td>${text(check)}</td></tr><tr><th>メモ</th><td>${text(w.memo)}</td></tr></table>${photoBlock}</div>`;
     }).join('');
     summary.innerHTML = `<div class="print-sheet"><div class="print-title">現場情報</div><table class="result">${siteRows}</table></div>${sheets}`;
   },
