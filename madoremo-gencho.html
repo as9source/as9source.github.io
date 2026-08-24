@@ -682,7 +682,7 @@ const App = {
     bulkOuterColor.innerHTML = opt('','変更しない') + colorNames('外観色').map(name=>opt(name,name)).join('');
     bulkInnerColor.innerHTML = opt('','変更しない') + colorNames('内観色').map(name=>opt(name,name)).join('');
     fillSelect('place',DATA.places,x=>x.name);
-    document.getElementById('existing').innerHTML = opt('','選択してください') + DATA.existing.map(x => opt(x.id,`${x.category ? x.category + ' / ' : ''}${x.name}`)).join('');
+    document.getElementById('existing').innerHTML = opt('','選択してください') + DATA.existing.slice().sort((a,b)=>(a.seq||0)-(b.seq||0)).map(x => opt(x.id,`${x.category ? x.category + ' / ' : ''}${x.name}`)).join('');
     fillSelect('fit',DATA.fits,x=>x.name);
     fillSelect('series',DATA.series,x=>x.name,'未選択');
     fillSelect('edge',DATA.edges,x=>x.name + (x.desc ? ' - ' + x.desc : ''),'未選択');
