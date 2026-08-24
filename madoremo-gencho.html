@@ -396,7 +396,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 <main><div class="layout"><div id="editor">
 <section class="site-info-section"><details id="siteInfoDetails" open><summary><span class="site-info-summary"><span class="site-info-summary-title">現場情報</span><span class="site-info-summary-value" id="siteInfoSummary">現場名未入力</span></span><span class="site-info-summary-action">開閉</span></summary><div class="site-info-body"><div class="grid3"><p><label>現場調査名</label><input id="projectName" placeholder="例）山田様邸"></p><p><label>調査日</label><input id="surveyDate" type="date"></p></div><p><label>躯体構造</label><select id="building"><option>木造（3階以下）</option><option>RC造（3階以下・要納まり確認）</option><option>その他（要確認）</option></select></p><p><label>共通メモ</label><textarea id="siteMemo" placeholder="シーリング切れ、外壁割れ、漏水跡など"></textarea></p><div class="note">資料確認: 防火仕様の設定がない商品があります。防火設備の設置義務がある部位では使用可否を別途確認してください。単位はmmで入力します。</div><button type="button" class="site-info-done" onclick="App.collapseSiteInfo()">入力完了・小さくする</button></div></details></section>
 <aside class="panel no-print"><h2>窓リスト</h2><div id="windowList"></div><button class="blue" style="width:100%;margin-top:8px" onclick="App.addWindow()">＋ 追加</button><div class="note warn">PDF化するときは「PDF印刷」を押してください。各窓の結果表がページ途中で分断されないようにしています。</div></aside>
-<section id="winEditor"><h2 id="winHeading">窓 1</h2><p><label>部屋名</label><input id="placeMemo" placeholder="例）1階リビング南・浴室・寝室"></p><div class="grid3"><p><label>リフォーム場所</label><select id="place"></select></p><p><label>既設窓</label><select id="existing"></select></p><p><label>窓の納まり</label><select id="fit"></select></p></div><p><label>既設窓まわり</label><select id="around"><option>修復不必要</option><option>修復必要</option><option>不可</option><option>保留</option></select></p><p><label>既設下枠 立ち上がり寸法（樹脂窓ハイブリッド専用枠の場合のみ関係）</label><input id="sillRise" type="number" min="0" placeholder="例）48"></p><div id="sillRiseNote" class="note hidden"></div><h3>3点計測</h3><div class="grid"><div><label>幅 W（上・中・下）</label><div class="row"><input id="w1" type="number" min="1" placeholder="上"><input id="w2" type="number" min="1" placeholder="中"><input id="w3" type="number" min="1" placeholder="下"></div></div><div><label>高さ H（左・中・右）</label><div class="row"><input id="h1" type="number" min="1" placeholder="左"><input id="h2" type="number" min="1" placeholder="中"><input id="h3" type="number" min="1" placeholder="右"></div></div></div><div id="sizeNote" class="note hidden"></div><h3>仕様</h3><div class="grid3"><p><label>シリーズ</label><select id="series"></select></p><p><label>新設窓候補</label><select id="newWindow"></select></p><p><label>ガラス</label><select id="glass"></select></p></div><div id="newWindowReason" class="note warn hidden"></div><div class="grid3"><p><label>外観色</label><select id="outerColor"></select></p><p><label>内観色</label><select id="innerColor"></select></p><p><label>内外同色（同じ色で発注する場合）</label><select id="sameColor"></select></p><p><label>内額縁</label><select id="edge"></select></p></div><div id="edgeNote" class="note warn hidden"></div><div class="grid3"><p><label>網戸</label><select id="screen"><option value="no">なし</option><option value="yes">あり</option></select></p><p><label>外部モール</label><select id="mool"><option>なし</option><option>四方</option><option>二方</option></select></p><p><label>上枠見付</label><select id="upper"><option>未確認</option><option>小（21-30mm）</option><option>大（31-40mm）</option></select></p></div><p><label>窓別メモ</label><textarea id="memo"></textarea></p><div id="matchNote" class="note"></div><div class="actions edit-only"><button class="ghost" onclick="App.duplicateWindow()">この窓を複製</button><button class="danger" onclick="App.deleteWindow()">この窓を削除</button></div></section>
+<section id="winEditor"><h2 id="winHeading">窓 1</h2><p><label>部屋名</label><input id="placeMemo" placeholder="例）1階リビング南・浴室・寝室"></p><div class="grid3"><p><label>リフォーム場所</label><select id="place"></select></p><p><label>既設窓</label><select id="existing"></select></p><p><label>窓の納まり</label><select id="fit"></select></p></div><p><label>既設窓まわり</label><select id="around"><option>修復不必要</option><option>修復必要</option><option>不可</option><option>保留</option></select></p><p><label>既設下枠 立ち上がり寸法（樹脂窓ハイブリッド専用枠の場合のみ関係）</label><input id="sillRise" type="number" min="0" placeholder="例）48"></p><div id="sillRiseNote" class="note hidden"></div><h3>3点計測</h3><div class="grid"><div><label>幅 W（上・中・下）</label><div class="row"><input id="w1" type="number" min="1" placeholder="上"><input id="w2" type="number" min="1" placeholder="中"><input id="w3" type="number" min="1" placeholder="下"></div></div><div><label>高さ H（左・中・右）</label><div class="row"><input id="h1" type="number" min="1" placeholder="左"><input id="h2" type="number" min="1" placeholder="中"><input id="h3" type="number" min="1" placeholder="右"></div></div></div><div id="sizeNote" class="note hidden"></div><h3>仕様</h3><div class="grid3"><p><label>シリーズ</label><select id="series"></select></p><p><label>新設窓候補</label><select id="newWindow"></select></p><p><label>ガラス</label><select id="glass"></select></p></div><div id="newWindowReason" class="note warn hidden"></div><div class="grid3"><p><label>外観色</label><select id="outerColor"></select></p><p><label>内観色</label><select id="innerColor"></select></p><p><label>内外同色（同じ色で発注する場合）</label><select id="sameColor"></select></p><div id="colorNote" class="note hidden"></div><p><label>内額縁</label><select id="edge"></select></p></div><div id="edgeNote" class="note warn hidden"></div><div class="grid3"><p><label>網戸</label><select id="screen"><option value="no">なし</option><option value="yes">あり</option></select></p><p><label>外部モール</label><select id="mool"><option>なし</option><option>四方</option><option>二方</option></select></p><p><label>上枠見付</label><select id="upper"><option>未確認</option><option>小（21-30mm）</option><option>大（31-40mm）</option></select></p></div><p><label>窓別メモ</label><textarea id="memo"></textarea></p><div id="matchNote" class="note"></div><div class="actions edit-only"><button class="ghost" onclick="App.duplicateWindow()">この窓を複製</button><button class="danger" onclick="App.deleteWindow()">この窓を削除</button></div></section>
 <section><h2>結果確認</h2><div id="summary"></div></section></div></div><div id="printArea" class="hidden"></div></main>
 <script src="./cloud-backup.js?v=4"></script>
 <script>
@@ -527,6 +527,17 @@ function updateSillRiseNote(){
   note.classList.toggle('hidden', !message);
   note.innerHTML = message ? `<b>下枠補強材の確認（ハイブリッド専用枠を選ぶ場合）:</b> ${esc(message)}` : '';
 }
+function updateColorNote(){
+  const note = document.getElementById('colorNote');
+  if(!note) return;
+  const w = state.windows[state.current];
+  const restrictMap = w ? COLOR_COMBO_RESTRICT[String(w.seriesId)] : null;
+  const outerSel = w ? byId(DATA.colors, w.outerColor) : null;
+  const allowed = (restrictMap && outerSel) ? restrictMap[outerSel.name] : null;
+  const message = allowed ? `外観色「${outerSel.name}」は内観色「${allowed.join('・')}」のみ選べます（他の内観色との組み合わせは対応不可）。` : '';
+  note.classList.toggle('hidden', !message);
+  note.innerHTML = message ? `<b>色の組み合わせ:</b> ${esc(message)}` : '';
+}
 function updateEdgeNote(){
   const note = document.getElementById('edgeNote');
   if(!note) return;
@@ -575,6 +586,10 @@ const MADOREMO_RECORDS_STORE = 'madoremo-survey-records-v1';
 const byId = (arr,id) => arr.find(x => String(x.id) === String(id));
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const text = v => esc(v || '－').split('\n').join(' / ');
+const COLOR_COMBO_RESTRICT = {
+  '2': {'ホワイト':['ホワイト'],'ブラウン':['ホワイト','ナチュラル','クリア','ダークブラウン'],'プラチナステン':['ホワイト','ナチュラル','クリア','ダークブラウン'],'ブラック':['ホワイト','ブラック']},
+  '6': {'ホワイト':['ホワイト'],'ブラウン':['ホワイト','ナチュラル','クリア','ダークブラウン'],'プラチナステン':['ホワイト','ナチュラル','クリア','ダークブラウン'],'ブラック':['ホワイト','ブラック']}
+};
 const MAX_PHOTOS=2;
 const blankWindow = () => ({placeId:'',existingId:'',fitId:'',around:'修復不必要',sillRise:'',floor:'',roomType:'',roomDetail:'',placeMemo:'',w:[null,null,null],h:[null,null,null],seriesId:'',newWindowId:'',glassId:'',outerColor:'',innerColor:'',edgeId:'',screen:'no',mool:'なし',upper:'未確認',memo:'',photos:[]});
 let state = {current:0,site:{projectName:'',surveyDate:new Date().toISOString().slice(0,10),building:'木造（3階以下）',siteMemo:''},windows:[blankWindow()]};
@@ -755,9 +770,17 @@ const App = {
     fillSelect('glass', DATA.glass.filter(g => String(g.seriesId)===String(sid)), g => (g.type ? g.type + ' / ' : '') + g.name, '未選択'); glass.value=w.glassId || '';
     const colorList = DATA.colors.filter(c => String(c.seriesId)===String(sid));
     fillSelect('outerColor', colorList.filter(c => c.side==='外観色'), c => c.name, '未選択'); outerColor.value=w.outerColor || '';
-    fillSelect('innerColor', colorList.filter(c => c.side==='内観色'), c => c.name, '未選択'); innerColor.value=w.innerColor || '';
+    {
+      const innerAll = colorList.filter(c => c.side==='内観色');
+      const outerSel = byId(DATA.colors, w.outerColor);
+      const restrict = COLOR_COMBO_RESTRICT[String(sid)] && outerSel ? COLOR_COMBO_RESTRICT[String(sid)][outerSel.name] : null;
+      const innerOptions = restrict ? innerAll.filter(c => restrict.includes(c.name)) : innerAll;
+      fillSelect('innerColor', innerOptions, c => c.name, '未選択');
+      innerColor.value = innerOptions.some(c => String(c.id)===String(w.innerColor)) ? w.innerColor : '';
+    }
     {const sameColors=colorList.filter(c => c.side==='内外同系色'); fillSelect('sameColor', sameColors, c => c.name, '－ 個別に選択 －'); const sameP=sameColors.find(c=>String(c.id)===String(w.outerColor)&&String(c.id)===String(w.innerColor)); sameColor.value=sameP?sameP.id:''; const sameWrap=sameColor.closest('p'); if(sameWrap) sameWrap.classList.toggle('hidden', !sameColors.length);}
     updateEdgeNote();
+    updateColorNote();
     updateSillRiseNote();
     const c=calc(w);
     sizeNote.classList.toggle('hidden', !(c.wMin && c.hMin));
