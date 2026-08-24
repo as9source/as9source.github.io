@@ -825,7 +825,7 @@
 
         .home-actions {
             display: grid;
-            grid-template-columns: 1.35fr 1fr 1fr;
+            grid-template-columns: 1.35fr 1fr 1fr 1fr;
             gap: 10px;
             margin: 16px 0 32px;
         }
@@ -1874,6 +1874,10 @@
                 <button class="home-action" onclick="window.location.href='https://as9source.github.io/'">
                     <span class="home-action-icon">←</span>
                     <span><strong>目次へ戻る</strong><small>ツール一覧を表示</small></span>
+                </button>
+                <button class="home-action" onclick="forceReload()">
+                    <span class="home-action-icon">⟳</span>
+                    <span><strong>最新版に更新</strong><small>キャッシュをクリアして再読み込み</small></span>
                 </button>
             </nav>
 
@@ -10118,6 +10122,18 @@
             }
         }
 
+        function forceReload(){
+            if('serviceWorker' in navigator){
+                navigator.serviceWorker.getRegistrations().then(regs=>{
+                    regs.forEach(r=>r.unregister());
+                });
+            }
+            caches.keys().then(keys=>{
+                keys.forEach(k=>caches.delete(k));
+            }).then(()=>{
+                location.href=location.href.split('?')[0]+'?v='+Date.now();
+            });
+        }
         CloudBackup.mount({
             appId:'kutai-system',appName:'ハンドレール躯体採寸',manager:{
                 label:r=>r.siteName||'（現場名なし）',detail:r=>[r.sashColor,r.updatedAt?new Date(r.updatedAt).toLocaleDateString('ja-JP'):null].filter(Boolean).join(' ・ '),
