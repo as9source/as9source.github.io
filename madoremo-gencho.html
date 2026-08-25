@@ -249,6 +249,7 @@ textarea{min-height:72px;resize:vertical}
 .result th{width:28%;background:var(--bg2);color:var(--text2);font-weight:500}
 .muted{color:var(--text2)}
 .hidden{display:none!important}
+.measure-diff{color:#b3261e!important;border-color:#b3261e!important;font-weight:700}
 .print-sheet{background:#fff;border:1px solid var(--bd);border-radius:8px;padding:14px;margin:12px 0;break-inside:avoid;page-break-inside:avoid}
 .print-title{font-weight:700;color:var(--accent);margin-bottom:8px}
 .status{font-weight:700;color:#207245}
@@ -267,8 +268,12 @@ textarea{min-height:72px;resize:vertical}
   .layout{display:block}
   #editor{display:none}
   #printArea{display:block!important}
-  .print-sheet{border:1px solid #999;margin:0 0 6mm;padding:4mm;border-radius:0}
-  .result th,.result td{padding:4px 6px}
+  .print-sheet{border:1px solid #999;margin:0 0 2.5mm;padding:2.5mm;border-radius:0}
+  .print-title{margin-bottom:3px;line-height:1.3}
+  .result{line-height:1.3}
+  .result th,.result td{padding:2px 5px}
+  .print-photos{gap:3px;margin-top:5px}
+  .print-photos img{max-height:80px}
 }
 /* ===== 視認性向上：現調アプリ共通トーン ===== */
 :root{
@@ -342,7 +347,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 .measure-banner.h{color:#98520b;background:#fff1df;border:1px solid #efc58d}
 .measure-banner .arrow{font-size:34px;line-height:1}
 .measure-switch{width:100%;margin-top:12px;border:1px solid var(--accent);border-radius:10px;background:#fff;color:var(--accent);padding:12px 14px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer}
-.measure-switch.next{background:var(--accent);color:#fff}
+.measure-switch.next{background:#98520b;color:#fff;border-color:#98520b}
+.measure-switch.prev{color:#174f86;border-color:#174f86}
 .measure-reselect{width:100%;margin-top:8px;border:0;background:transparent;color:var(--text2);padding:8px;font-size:12px;font-family:inherit;cursor:pointer;text-decoration:underline}
 .panel{display:flex;align-items:stretch;background:var(--bg2)}
 #windowList{flex:1;padding-right:0}
@@ -394,7 +400,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 <header><div class="bar"><div><h1><span class="product-name madorimo">マドリモ</span> 現場調査シート</h1><p class="app-subtitle">外窓交換・断熱窓</p></div></div></header>
 <div class="toolbar no-print"><span class="save-ind" id="save-ind">未保存</span><div class="actions"><button class="tbtn" onclick="App.loadSaved()">📂 一覧</button><button class="tbtn" onclick="App.save()">💾 保存</button><button class="tbtn danger" onclick="App.clearAll()">＋ 新規現場</button><button class="tbtn primary" onclick="App.preparePrint();window.print()">📄 PDF</button><button class="tbtn" onclick="forceReload()" title="キャッシュをクリアして最新版を読み込む">♻️</button></div></div>
 <main><div class="layout"><div id="editor">
-<section class="site-info-section"><details id="siteInfoDetails" open><summary><span class="site-info-summary"><span class="site-info-summary-title">現場情報</span><span class="site-info-summary-value" id="siteInfoSummary">現場名未入力</span></span><span class="site-info-summary-action">開閉</span></summary><div class="site-info-body"><div class="grid3"><p><label>現場調査名</label><input id="projectName" placeholder="例）山田様邸"></p><p><label>調査日</label><input id="surveyDate" type="date"></p></div><p><label>躯体構造</label><select id="building"><option>木造（3階以下）</option><option>RC造（3階以下・要納まり確認）</option><option>その他（要確認）</option></select></p><p><label>共通メモ</label><textarea id="siteMemo" placeholder="シーリング切れ、外壁割れ、漏水跡など"></textarea></p><div class="note">資料確認: 防火仕様の設定がない商品があります。防火設備の設置義務がある部位では使用可否を別途確認してください。単位はmmで入力します。</div><button type="button" class="site-info-done" onclick="App.collapseSiteInfo()">入力完了・小さくする</button></div></details></section>
+<section class="site-info-section"><details id="siteInfoDetails" open><summary><span class="site-info-summary"><span class="site-info-summary-title">現場情報</span><span class="site-info-summary-value" id="siteInfoSummary">現場名未入力</span></span><span class="site-info-summary-action">開閉</span></summary><div class="site-info-body"><div class="grid3"><p><label>現場調査名</label><input id="projectName" placeholder="例）山田様邸"></p><p><label>調査日</label><input id="surveyDate" type="date"></p></div><p><label>躯体構造</label><select id="building"><option>木造（3階以下）</option><option>RC造（3階以下・要納まり確認）</option><option>その他（要確認）</option></select></p><div class="note">資料確認: 防火仕様の設定がない商品があります。防火設備の設置義務がある部位では使用可否を別途確認してください。単位はmmで入力します。</div><button type="button" class="site-info-done" onclick="App.collapseSiteInfo()">入力完了・小さくする</button></div></details></section>
 <aside class="panel no-print"><h2>窓リスト</h2><div id="windowList"></div><button class="blue" style="width:100%;margin-top:8px" onclick="App.addWindow()">＋ 追加</button><div class="note warn">PDF化するときは「PDF印刷」を押してください。各窓の結果表がページ途中で分断されないようにしています。</div></aside>
 <section id="winEditor"><h2 id="winHeading">窓 1</h2><p><label>部屋名</label><input id="placeMemo" placeholder="例）1階リビング南・浴室・寝室"></p><div class="grid3"><p><label>リフォーム場所</label><select id="place"></select></p><p><label>既設窓</label><select id="existing"></select></p><p><label>窓の納まり</label><select id="fit"></select></p></div><p><label>既設窓まわり</label><select id="around"><option>修復不必要</option><option>修復必要</option><option>不可</option><option>保留</option></select></p><p><label>既設下枠 立ち上がり寸法（樹脂窓ハイブリッド専用枠の場合のみ関係）</label><input id="sillRise" type="number" min="0" placeholder="例）48"></p><div id="sillRiseNote" class="note hidden"></div><h3>3点計測</h3><div class="grid"><div><label>幅 W（上・中・下）</label><div class="row"><input id="w1" type="number" min="1" placeholder="上"><input id="w2" type="number" min="1" placeholder="中"><input id="w3" type="number" min="1" placeholder="下"></div></div><div><label>高さ H（左・中・右）</label><div class="row"><input id="h1" type="number" min="1" placeholder="左"><input id="h2" type="number" min="1" placeholder="中"><input id="h3" type="number" min="1" placeholder="右"></div></div></div><div id="sizeNote" class="note hidden"></div><h3>仕様</h3><div class="grid3"><p><label>シリーズ</label><select id="series"></select></p><p><label>新設窓候補</label><select id="newWindow"></select></p><p><label>ガラス</label><select id="glass"></select></p></div><div id="newWindowReason" class="note warn hidden"></div><div class="grid3"><p><label>外観色</label><select id="outerColor"></select></p><p><label>内観色</label><select id="innerColor"></select></p><p><label>内外同色（同じ色で発注する場合）</label><select id="sameColor"></select></p><div id="colorNote" class="note hidden"></div><p><label>内額縁</label><select id="edge"></select></p></div><div id="edgeNote" class="note warn hidden"></div><div class="grid3"><p><label>網戸</label><select id="screen"><option value="no">なし</option><option value="yes">あり</option></select></p><p><label>外部モール</label><select id="mool"><option>なし</option><option>四方</option><option>二方</option></select></p><p><label>上枠見付</label><select id="upper"><option>未確認</option><option>小（21-30mm）</option><option>大（31-40mm）</option></select></p></div><p><label>窓別メモ</label><textarea id="memo"></textarea></p><div id="matchNote" class="note"></div><div class="actions edit-only"><button class="ghost" onclick="App.duplicateWindow()">この窓を複製</button><button class="danger" onclick="App.deleteWindow()">この窓を削除</button></div></section>
 <section><h2>結果確認</h2><div id="summary"></div></section></div></div><div id="printArea" class="hidden"></div></main>
@@ -513,19 +519,31 @@ function edgeCondition(edgeId,w){
   }
   return body ? `${suffix}: ${body}` : '';
 }
+function markMeasureDiff(ids, values, active){
+  const nums = values.map(v=>Number(v)).filter(Number.isFinite);
+  const maxV = active && nums.length ? Math.max(...nums) : null;
+  const minV = active && nums.length ? Math.min(...nums) : null;
+  ids.forEach((id,i)=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    const v = Number(values[i]);
+    const isExtreme = active && Number.isFinite(v) && (v===maxV || v===minV);
+    el.classList.toggle('measure-diff', !!isExtreme);
+  });
+}
 function sillRiseCondition(w){
   const v=Number(w.sillRise);
   if(!Number.isFinite(v)||v<=0) return '';
-  if(v>=37&&v<45) return `既設下枠立ち上がり寸法 ${v}mm: 樹脂窓ハイブリッド専用枠の下枠補強材 対応範囲（37〜45mm）内です。標準の向きで調整してください。`;
-  if(v>=45&&v<=53) return `既設下枠立ち上がり寸法 ${v}mm: 樹脂窓ハイブリッド専用枠の下枠補強材 対応範囲（45〜53mm）内です。プレートを180°回転させて調整してください。`;
-  return `既設下枠立ち上がり寸法 ${v}mm: 樹脂窓ハイブリッド専用枠の下枠補強材 対応範囲（37〜53mm）外です。既設下枠の切断対応が必要です。現場調査説明書「既設枠の確認（樹脂窓 ハイブリッド専用枠）」P.49-51を参照してください。`;
+  if(v>=37&&v<45) return `既設下枠立ち上がり寸法 ${v}mm: 下枠補強材の対応範囲（37〜45mm）内の可能性があります。標準の向きで調整できるか、選定した型材や現調用カードで確認してください。`;
+  if(v>=45&&v<=53) return `既設下枠立ち上がり寸法 ${v}mm: 下枠補強材の対応範囲（45〜53mm）内の可能性があります。プレートを180°回転させて調整できるか、選定した型材や現調用カードで確認してください。`;
+  return `既設下枠立ち上がり寸法 ${v}mm: 下枠補強材の対応範囲（37〜53mm）外の可能性があります。既設下枠の切断対応が必要かどうか、選定した型材や現調用カードで確認してください。`;
 }
 function updateSillRiseNote(){
   const note = document.getElementById('sillRiseNote');
   if(!note) return;
   const message = sillRiseCondition({sillRise:sillRise.value});
   note.classList.toggle('hidden', !message);
-  note.innerHTML = message ? `<b>下枠補強材の確認（ハイブリッド専用枠を選ぶ場合）:</b> ${esc(message)}` : '';
+  note.innerHTML = message ? `<b>下枠の段差の確認（型材・現調用カードで要確認）:</b> ${esc(message)}` : '';
 }
 function updateColorNote(){
   const note = document.getElementById('colorNote');
@@ -592,13 +610,13 @@ const COLOR_COMBO_RESTRICT = {
 };
 const MAX_PHOTOS=2;
 const blankWindow = () => ({placeId:'',existingId:'',fitId:'',around:'修復不必要',sillRise:'',floor:'',roomType:'',roomDetail:'',placeMemo:'',w:[null,null,null],h:[null,null,null],seriesId:'',newWindowId:'',glassId:'',outerColor:'',innerColor:'',edgeId:'',screen:'no',mool:'なし',upper:'未確認',memo:'',photos:[]});
-let state = {current:0,site:{projectName:'',surveyDate:new Date().toISOString().slice(0,10),building:'木造（3階以下）',siteMemo:''},windows:[blankWindow()]};
+let state = {current:0,site:{projectName:'',surveyDate:new Date().toISOString().slice(0,10),building:'木造（3階以下）'},windows:[blankWindow()]};
 let bulkSelected = new Set();
 let saveErrorShown=false;
 let currentRecordId=null,madoremoBackup=null;
 function getMadoremoRecords(){try{return JSON.parse(localStorage.getItem(MADOREMO_RECORDS_STORE)||'[]');}catch{return[];}}
 function putMadoremoRecords(records){localStorage.setItem(MADOREMO_RECORDS_STORE,JSON.stringify(records));}
-const ids = ['projectName','surveyDate','building','around','sillRise','siteMemo','place','existing','fit','roomFloor','roomType','roomDetail','placeMemo','w1','w2','w3','h1','h2','h3','series','newWindow','glass','outerColor','innerColor','edge','screen','mool','upper','memo'];
+const ids = ['projectName','surveyDate','building','around','sillRise','place','existing','fit','roomFloor','roomType','roomDetail','placeMemo','w1','w2','w3','h1','h2','h3','series','newWindow','glass','outerColor','innerColor','edge','screen','mool','upper','memo'];
 function opt(v,t){return `<option value="${esc(v ?? '')}">${esc(t ?? '')}</option>`}
 function fillSelect(id,items,labeler,empty='選択してください'){document.getElementById(id).innerHTML = opt('',empty) + items.map(x => opt(x.id,labeler(x))).join('')}
 function readNum(id){const v=parseInt(document.getElementById(id).value,10);return Number.isFinite(v)?v:null}
@@ -669,7 +687,7 @@ function setupMeasurementDirection(){
   wPanel.insertAdjacentHTML('afterbegin','<div class="measure-banner w"><span class="arrow">↔</span><span>横幅 W を採寸中</span></div>');
   wPanel.insertAdjacentHTML('beforeend','<button type="button" class="measure-switch next" onclick="selectMeasureDirection(\'h\')">横幅Wの入力を終えて、高さHへ進む ↕</button><button type="button" class="measure-reselect" onclick="resetMeasureDirection()">採寸方向の選択へ戻る</button>');
   hPanel.insertAdjacentHTML('afterbegin','<div class="measure-banner h"><span class="arrow">↕</span><span>高さ H を採寸中</span></div>');
-  hPanel.insertAdjacentHTML('beforeend','<button type="button" class="measure-switch" onclick="selectMeasureDirection(\'w\')">↔ 横幅Wへ戻る</button><button type="button" class="measure-reselect" onclick="resetMeasureDirection()">採寸方向の選択へ戻る</button>');
+  hPanel.insertAdjacentHTML('beforeend','<button type="button" class="measure-switch prev" onclick="selectMeasureDirection(\'w\')">↔ 横幅Wへ戻る</button><button type="button" class="measure-reselect" onclick="resetMeasureDirection()">採寸方向の選択へ戻る</button>');
 }
 function selectMeasureDirection(dir){
   const choice=document.getElementById('measureChoice');
@@ -681,11 +699,11 @@ function selectMeasureDirection(dir){
   const panel=dir==='w'?wPanel:hPanel;
   if(panel)panel.scrollIntoView({behavior:'smooth',block:'center'});
 }
-function resetMeasureDirection(){
+function resetMeasureDirection(scroll=true){
   const choice=document.getElementById('measureChoice');
   document.getElementById('measureWPanel')?.classList.remove('show');
   document.getElementById('measureHPanel')?.classList.remove('show');
-  if(choice){choice.classList.remove('hidden');choice.scrollIntoView({behavior:'smooth',block:'center'});}
+  if(choice){choice.classList.remove('hidden');if(scroll)choice.scrollIntoView({behavior:'smooth',block:'center'});}
 }
 function alignWindowActions(){
   const duplicateButton=document.querySelector('#winEditor .actions.edit-only .ghost');
@@ -734,7 +752,7 @@ const App = {
     this.render();
   },
   capture(){
-    state.site.projectName=projectName.value; state.site.surveyDate=surveyDate.value; state.site.building=building.value; state.site.siteMemo=siteMemo.value;
+    state.site.projectName=projectName.value; state.site.surveyDate=surveyDate.value; state.site.building=building.value;
     const w=state.windows[state.current]; if(!w) return;
     const floor=roomFloor.value, room=roomType.value, detail=roomDetail.value.trim();
     placeMemo.value=[floor,room,detail].filter(Boolean).join('・');
@@ -784,8 +802,10 @@ const App = {
     updateSillRiseNote();
     const c=calc(w);
     sizeNote.classList.toggle('hidden', !(c.wMin && c.hMin));
-    sizeNote.innerHTML = c.wMin && c.hMin ? `使用寸法: 幅 <b>${c.wMin}mm</b> / 高さ <b>${c.hMin}mm</b>（3点計測の最小値）${c.spreadWarn ? `<br><b>警告:</b> 3点計測値の差が20mm以上あります。入力間違いがないか確認してください。（幅差 ${c.wSpread}mm / 高さ差 ${c.hSpread}mm）` : ''}` : '';
+    sizeNote.innerHTML = c.wMin && c.hMin ? `使用寸法: 幅 <b>${c.wMin}mm</b> / 高さ <b>${c.hMin}mm</b>（3点計測の最小値）${c.spreadWarn ? `<br><b>警告:</b> 3点計測値の差が20mm以上あります。<span class="measure-diff">赤字の欄</span>の入力間違いがないか確認してください。（幅差 ${c.wSpread}mm / 高さ差 ${c.hSpread}mm）` : ''}` : '';
     sizeNote.className = c.spreadWarn ? 'note warn' : 'note';
+    markMeasureDiff(['w1','w2','w3'], w.w, c.wSpread>=20);
+    markMeasureDiff(['h1','h2','h3'], w.h, c.hSpread>=20);
     let msg='選択内容をExcelマスターと照合しています。'; matchNote.className='note';
     if(w.placeId && w.existingId && w.fitId){
       msg = `新設窓候補: <b>${candidates.length}</b>件`;
@@ -797,7 +817,7 @@ const App = {
     matchNote.innerHTML = msg;
   },
   render(){
-    projectName.value=state.site.projectName||''; surveyDate.value=state.site.surveyDate||''; building.value=state.site.building||'木造（3階以下）'; siteMemo.value=state.site.siteMemo||'';
+    projectName.value=state.site.projectName||''; surveyDate.value=state.site.surveyDate||''; building.value=state.site.building||'木造（3階以下）';
     this.updateSiteInfoSummary();
     const details=document.getElementById('siteInfoDetails');
     if(details&&!details.dataset.initialized){details.open=!state.site.projectName;details.dataset.initialized='1';}
@@ -809,7 +829,7 @@ const App = {
     place.value=w.placeId||''; existing.value=w.existingId||''; fit.value=w.fitId||''; around.value=w.around||state.site.around||'修復不必要'; sillRise.value=w.sillRise??''; roomFloor.value=w.floor||''; roomType.value=w.roomType||''; roomDetail.value=w.roomDetail||''; placeMemo.value=roomName(w);
     ['w1','w2','w3'].forEach((id,i)=>document.getElementById(id).value=w.w[i]||''); ['h1','h2','h3'].forEach((id,i)=>document.getElementById(id).value=w.h[i]||'');
     series.value=w.seriesId||''; edge.value=w.edgeId||''; screen.value=w.screen||'no'; mool.value=w.mool||'なし'; upper.value=w.upper||'未確認'; memo.value=w.memo||'';
-    this.updateDependent(); this.renderPhotos(); resetMeasureDirection();
+    this.updateDependent(); this.renderPhotos(); resetMeasureDirection(false);
   },
   renderList(){
     windowList.innerHTML = state.windows.map((w,i) => {
@@ -875,7 +895,7 @@ const App = {
     document.querySelector('label[for="photoInput"]')?.classList.toggle('disabled',photos.length>=MAX_PHOTOS);
   },
   renderSummary(){
-    const siteRows = `<tr><th>現場調査名</th><td>${text(state.site.projectName)}</td></tr><tr><th>調査日</th><td>${text(state.site.surveyDate)}</td></tr><tr><th>躯体構造</th><td>${text(state.site.building)}</td></tr><tr><th>共通メモ</th><td>${text(state.site.siteMemo)}</td></tr>`;
+    const siteRows = `<tr><th>現場調査名</th><td>${text(state.site.projectName)}</td></tr><tr><th>調査日</th><td>${text(state.site.surveyDate)}</td></tr><tr><th>躯体構造</th><td>${text(state.site.building)}</td></tr>`;
     const sheets = state.windows.map((w,i) => {
       const c=calc(w), nw=byId(DATA.newWindows,w.newWindowId), ser=byId(DATA.series,w.seriesId || nw?.seriesId), pl=byId(DATA.places,w.placeId), ex=byId(DATA.existing,w.existingId), ft=byId(DATA.fits,w.fitId), ed=byId(DATA.edges,w.edgeId), gl=byId(DATA.glass,w.glassId);
       const check = `${c.target?.catalogAdd ? 'PDF追加候補・要確認' : (c.target ? '組み合わせOK' : '組み合わせ要確認')} / ${c.sizeOk ? '寸法帯OK' : '寸法帯要確認'}${c.spreadWarn ? ' / 3点計測差要確認' : ''}`;
@@ -902,7 +922,7 @@ const App = {
   loadSaved(){
     madoremoBackup?.openManager();
   },
-  clearAll(){if(confirm('新しい現場を作成しますか？\n現在編集中の内容は消去されます。保存ボタンで確定した現場は「一覧」から戻せます。')){bulkSelected.clear();currentRecordId=null;state={current:0,site:{projectName:'',surveyDate:new Date().toISOString().slice(0,10),building:'木造（3階以下）',siteMemo:''},windows:[blankWindow()]};localStorage.setItem(STORE,JSON.stringify(state));this.render();const details=document.getElementById('siteInfoDetails');if(details)details.open=true;const ind=document.getElementById('save-ind');if(ind)ind.textContent='新規現場';}},
+  clearAll(){if(confirm('新しい現場を作成しますか？\n現在編集中の内容は消去されます。保存ボタンで確定した現場は「一覧」から戻せます。')){bulkSelected.clear();currentRecordId=null;state={current:0,site:{projectName:'',surveyDate:new Date().toISOString().slice(0,10),building:'木造（3階以下）'},windows:[blankWindow()]};localStorage.setItem(STORE,JSON.stringify(state));this.render();const details=document.getElementById('siteInfoDetails');if(details)details.open=true;const ind=document.getElementById('save-ind');if(ind)ind.textContent='新規現場';}},
   preparePrint(){this.capture(); printArea.innerHTML=summary.innerHTML;}
 };
 function forceReload(){
