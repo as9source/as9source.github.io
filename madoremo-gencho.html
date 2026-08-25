@@ -980,16 +980,37 @@ function forceReload(){
   });
 }
 const PDF_STAGE_W=760;
-function showMadoremoPdf(){
+const PDF_PHOTO_MAX_H=80;
+async function fixPdfPhotoRatios(container){
+  const imgs=[...container.querySelectorAll('.print-photos img')];
+  await Promise.all(imgs.map(img=>{
+    if(img.complete&&img.naturalWidth)return Promise.resolve();
+    return new Promise(res=>{img.addEventListener('load',res,{once:true});img.addEventListener('error',res,{once:true});});
+  }));
+  imgs.forEach(img=>{
+    if(!img.naturalWidth||!img.naturalHeight)return;
+    const cellW=img.getBoundingClientRect().width||img.parentElement.clientWidth/2;
+    const ratio=img.naturalHeight/img.naturalWidth;
+    const h=Math.min(PDF_PHOTO_MAX_H,cellW*ratio);
+    const w=h/ratio;
+    img.style.width=w+'px';
+    img.style.height=h+'px';
+  });
+}
+async function showMadoremoPdf(){
   App.capture();
   App.renderSummary();
   const html=summary.innerHTML;
-  document.getElementById('pdf-report').innerHTML=html;
-  document.getElementById('pdf-stage-report').innerHTML=html;
+  const reportEl=document.getElementById('pdf-report');
+  const stageEl=document.getElementById('pdf-stage-report');
+  reportEl.innerHTML=html;
+  stageEl.innerHTML=html;
   const ov=document.getElementById('pdf-overlay');
   ov.classList.add('show');
   document.getElementById('pdf-body').scrollTop=0;
   setTimeout(fitMadoremoPreview,0);
+  await Promise.all([fixPdfPhotoRatios(reportEl),fixPdfPhotoRatios(stageEl)]);
+  fitMadoremoPreview();
 }
 function closeMadoremoPdf(){document.getElementById('pdf-overlay').classList.remove('show');}
 function fitMadoremoPreview(){
@@ -1005,8 +1026,8 @@ async function buildMadoremoPdfFile(){
   if(!window.jspdf||!window.jspdf.jsPDF){alert('PDFライブラリを読み込み中です。少し待ってから再度お試しください。');return null;}
   if(!window.html2canvas){alert('html2canvasが読み込まれていません。');return null;}
   const {jsPDF}=window.jspdf;
-  showMadoremoPdf();
-  await new Promise(r=>setTimeout(r,400));
+  await showMadoremoPdf();
+  await new Promise(r=>setTimeout(r,100));
   const site=(state.site.projectName||'').trim()||'無題';
 
   const pageW=210,pageH=297,mgn=8;
