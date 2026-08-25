@@ -167,6 +167,8 @@ select:focus{outline:none;border-color:var(--accent)}
 .pdf-toolbar h2{flex:1;font-size:14px;font-weight:500;margin:0}
 .pdf-back{display:flex;align-items:center;gap:4px;padding:7px 12px;background:rgba(255,255,255,.18);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
 .pdf-share{display:flex;align-items:center;gap:4px;padding:7px 14px;background:#fff;border:none;border-radius:8px;color:var(--accent);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
+.pdf-toolbar-zip{padding:0 12px 10px;background:var(--accent)}
+.pdf-zip-btn{width:100%;justify-content:center}
 .pdf-body{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:12px}
 
 /* レポート本体は画面幅に依存しない固定幅（PDF_W）でレイアウトする */
@@ -278,6 +280,7 @@ input[type=text]:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="../cloud-backup.js?v=4"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="../pdf-zip-lock.js?v=1"></script>
 </head>
 <body>
 
@@ -333,6 +336,7 @@ input[type=text]:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 
     <h2>現場調査シート</h2>
     <button class="pdf-share" onclick="sharePdf()">PDF ダウンロード ↓</button>
   </div>
+  <div class="pdf-toolbar-zip"><button class="pdf-share pdf-zip-btn" onclick="sharePdfZip()">🔒 パスワード付きZIPで送信</button></div>
   <div class="pdf-body" id="pdf-body">
     <div class="pdf-scale-wrap" id="pdf-scale-wrap">
       <div class="pdf-report" id="pdf-report"></div>
@@ -745,14 +749,14 @@ function closePdfPreview(){
   document.getElementById('pdf-overlay').classList.remove('show');
 }
 
-async function sharePdf(){
+async function buildPdfFile(){
   if(!window.jspdf||!window.jspdf.jsPDF){
     toast('ライブラリ読み込み中です。少し待ってから再度お試しください',1);
-    return;
+    return null;
   }
   if(!window.html2canvas){
     toast('html2canvasが読み込まれていません',1);
-    return;
+    return null;
   }
 
   const {jsPDF}=window.jspdf;
@@ -780,7 +784,7 @@ async function sharePdf(){
   const headerEl=reportEl.querySelector('.rh');
   const cardEls=[...reportEl.querySelectorAll('.wc')];
 
-  if(cardEls.length===0){toast('カードが見つかりません',1);return;}
+  if(cardEls.length===0){toast('カードが見つかりません',1);return null;}
 
   // html2canvas は visibility:hidden の要素を描画しないため、撮影中だけ可視化する。
   // pdf-overlay（z-index:200・不透明）が前面にあるので画面には見えない。
@@ -840,26 +844,37 @@ async function sharePdf(){
     const pdfBlob=doc.output('blob');
     const fileName='内窓現場調査_'+site+'.pdf';
     const pdfFile=new File([pdfBlob],fileName,{type:'application/pdf'});
-
-    if(navigator.share&&navigator.canShare&&navigator.canShare({files:[pdfFile]})){
-      try{
-        await navigator.share({files:[pdfFile],title:'内窓 現場調査シート - '+site});
-      }catch(e){
-        if(e.name!=='AbortError') toast('共有に失敗しました',1);
-      }
-    } else {
-      const url=URL.createObjectURL(pdfBlob);
-      const a=document.createElement('a');
-      a.href=url;a.download=fileName;a.click();
-      setTimeout(()=>URL.revokeObjectURL(url),5000);
-      toast('PDFをダウンロードしました');
-    }
+    return{file:pdfFile,name:fileName,site};
   }catch(e){
     console.error(e);
     toast('PDF生成に失敗しました: '+e.message,1);
+    return null;
   }finally{
     stage.style.visibility='hidden';
   }
+}
+
+async function sharePdf(){
+  const built=await buildPdfFile();
+  if(!built)return;
+  const{file,name,site}=built;
+  if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+    try{
+      await navigator.share({files:[file],title:'内窓 現場調査シート - '+site});
+    }catch(e){
+      if(e.name!=='AbortError') toast('共有に失敗しました',1);
+    }
+  } else {
+    const url=URL.createObjectURL(file);
+    const a=document.createElement('a');
+    a.href=url;a.download=name;a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),5000);
+    toast('PDFをダウンロードしました');
+  }
+}
+
+function sharePdfZip(){
+  PdfZipLock.run({getPdf:buildPdfFile,shareTitle:'内窓 現場調査シート'});
 }
 
 // ─── タブ管理 ─────────────────────────────

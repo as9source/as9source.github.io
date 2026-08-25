@@ -621,7 +621,8 @@
     <!-- html2canvas ライブラリ（ページ全体キャプチャ用） -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="../cloud-backup.js?v=4"></script>
-    
+    <script src="../pdf-zip-lock.js?v=1"></script>
+
     <style>
         * {
             margin: 0;
@@ -6274,6 +6275,9 @@
                         <button onclick="shareResultsAsPDF()" style="flex: 1; min-width: 140px; padding: 12px 20px; background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
                             📤 PDFを共有
                         </button>
+                        <button onclick="shareResultsAsPasswordZip()" style="flex: 1; min-width: 140px; padding: 12px 20px; background: linear-gradient(135deg, #8e44ad 0%, #6c3483 100%); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            🔒 パスワード付きZIPで送信
+                        </button>
                     </div>
                 ` + html;
                 
@@ -9922,7 +9926,17 @@
                 alert('PDFの共有準備に失敗しました: ' + error.message);
             }
         }
-        
+
+        async function shareResultsAsPasswordZip() {
+            await PdfZipLock.run({
+                getPdf: async () => {
+                    const file = await downloadAsPDF({ returnFile: true });
+                    return file ? { file, name: file.name } : null;
+                },
+                shareTitle: '躯体採寸結果'
+            });
+        }
+
         async function downloadAsPNG() {
             const resultsContent = document.getElementById('results-content');
             if (!resultsContent || !resultsContent.innerHTML || resultsContent.innerHTML.includes('入力が完了していません')) {

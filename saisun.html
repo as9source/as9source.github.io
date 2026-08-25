@@ -279,8 +279,8 @@
     padding: 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px;
     color: var(--text-sub); line-height: 1.9; white-space: pre-wrap; margin-bottom: 12px;
   }
-  .modal-actions { display: flex; gap: 8px; }
-  .modal-actions .tool-btn { flex: 1; justify-content: center; padding: 10px; }
+  .modal-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .modal-actions .tool-btn { flex: 1; min-width: 110px; justify-content: center; padding: 10px; }
 
   /* ── Record list ── */
   .record-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
@@ -370,6 +370,7 @@ main{max-width:940px;padding:24px 20px 12px}
     <button class="tool-btn" onclick="saveRecord()">💾 保存</button>
     <button class="tool-btn" onclick="exportYkkTransfer()">🔗 リモNAVi転記</button>
     <button class="tool-btn primary" id="share-btn" onclick="shareSheet(this)">📄 PDF</button>
+    <button class="tool-btn" onclick="shareSheetZip(this)">🔒 ZIP送信</button>
     <button class="tool-btn" onclick="clearAll()">＋ 新規現場</button>
     <button class="tool-btn" onclick="forceReload()" title="キャッシュをクリアして最新版を読み込む">♻️</button>
   </div>
@@ -859,6 +860,7 @@ main{max-width:940px;padding:24px 20px 12px}
     <div class="copy-block" id="copy-block"></div>
     <div class="modal-actions">
       <button class="tool-btn primary" onclick="shareSheet(this)">📄 PDF共有</button>
+      <button class="tool-btn" onclick="shareSheetZip(this)">🔒 ZIP送信</button>
       <button class="tool-btn" onclick="copyText()">テキストをコピー</button>
     </div>
   </div>
@@ -880,6 +882,7 @@ main{max-width:940px;padding:24px 20px 12px}
 <div class="toast" id="toast"></div>
 
 <script src="./cloud-backup.js?v=4"></script>
+<script src="./pdf-zip-lock.js?v=1"></script>
 <script>
 // ======= State =======
 let currentType = '';
@@ -2224,11 +2227,7 @@ ${photoHtml}
 }
 
 // ======= PDF =======
-async function shareSheet(btn) {
-  const origText = btn.textContent;
-  btn.textContent = '⏳ 生成中…';
-  btn.disabled = true;
-  try {
+async function buildPdfFile() {
     const siteName   = document.getElementById('site-name').value.trim() || '採寸';
     const siteDate   = document.getElementById('site-date').value.replace(/-/g,'/') || '―';
     const kengu      = getKenguText() || '―';
@@ -2323,11 +2322,19 @@ async function shareSheet(btn) {
     const fileName = `${pdfTitle}_${siteName}_${siteDate.replace(/\//g,'-')}.pdf`;
     const pdfBlob  = pdf.output('blob');
     const pdfFile  = new File([pdfBlob], fileName, { type: 'application/pdf' });
+    return { file: pdfFile, name: fileName };
+}
 
+async function shareSheet(btn) {
+  const origText = btn.textContent;
+  btn.textContent = '⏳ 生成中…';
+  btn.disabled = true;
+  try {
+    const { file: pdfFile, name: fileName } = await buildPdfFile();
     if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
       await navigator.share({ files: [pdfFile], title: fileName });
     } else {
-      const url = URL.createObjectURL(pdfBlob);
+      const url = URL.createObjectURL(pdfFile);
       const a = document.createElement('a');
       a.href = url; a.download = fileName; a.click();
       URL.revokeObjectURL(url);
@@ -2335,6 +2342,20 @@ async function shareSheet(btn) {
     }
   } catch(e) {
     if (e.name !== 'AbortError') showToast('⚠ PDF生成に失敗しました', true);
+  } finally {
+    btn.textContent = origText;
+    btn.disabled = false;
+  }
+}
+
+async function shareSheetZip(btn) {
+  const origText = btn.textContent;
+  btn.textContent = '⏳ 準備中…';
+  btn.disabled = true;
+  try {
+    await PdfZipLock.run({ getPdf: buildPdfFile, shareTitle: getPdfTitle() });
+  } catch(e) {
+    showToast('⚠ 準備に失敗しました', true);
   } finally {
     btn.textContent = origText;
     btn.disabled = false;
