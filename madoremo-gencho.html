@@ -394,6 +394,13 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
   .panel{position:relative;top:auto}.grid,.grid3{grid-template-columns:1fr}section{margin:8px 8px 0;padding:18px 15px}
   .measure-panel .row{grid-template-columns:repeat(3,minmax(0,1fr))}.measure-panel input{font-size:15px}
 }
+@media print{
+  body{font-size:11px}
+  .result{font-size:13px}
+  .result th,.result td{padding:2px 5px}
+  .print-photos{gap:3px;margin-top:5px}
+  .print-photos img{max-height:80px}
+}
 </style>
 </head>
 <body>
