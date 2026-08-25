@@ -264,7 +264,13 @@ textarea{min-height:72px;resize:vertical}
 .pdf-zip-btn{width:100%;justify-content:center}
 .pdf-body{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:12px;background:var(--bg2)}
 .pdf-scale-wrap{width:760px;transform-origin:top left}
-#pdf-report,#pdf-stage-report{width:760px;background:#fff}
+#pdf-report,#pdf-stage-report{width:760px;background:#fff;font-size:11px}
+#pdf-report .print-sheet,#pdf-stage-report .print-sheet{border:1px solid #999;margin:0 0 2.5mm;padding:2.5mm;border-radius:0}
+#pdf-report .print-title,#pdf-stage-report .print-title{margin-bottom:3px;line-height:1.3}
+#pdf-report .result,#pdf-stage-report .result{font-size:13px;line-height:1.3;border-radius:0}
+#pdf-report .result th,#pdf-report .result td,#pdf-stage-report .result th,#pdf-stage-report .result td{padding:2px 5px}
+#pdf-report .print-photos,#pdf-stage-report .print-photos{gap:3px;margin-top:5px}
+#pdf-report .print-photos img,#pdf-stage-report .print-photos img{max-height:80px}
 #pdf-stage{position:fixed;top:0;left:0;width:760px;background:#fff;z-index:-1;visibility:hidden;pointer-events:none}
 @media(max-width:900px){
   .bar{align-items:flex-start;flex-direction:column;gap:8px}
