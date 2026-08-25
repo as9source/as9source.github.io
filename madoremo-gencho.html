@@ -253,6 +253,18 @@ textarea{min-height:72px;resize:vertical}
 .print-sheet{background:#fff;border:1px solid var(--bd);border-radius:8px;padding:14px;margin:12px 0;break-inside:avoid;page-break-inside:avoid}
 .print-title{font-weight:700;color:var(--accent);margin-bottom:8px}
 .status{font-weight:700;color:#207245}
+.pdf-overlay{display:none;position:fixed;inset:0;z-index:200;background:#fff;flex-direction:column}
+.pdf-overlay.show{display:flex}
+.pdf-toolbar{display:flex;align-items:center;gap:8px;padding:calc(10px + var(--safe-top)) 12px 10px;background:var(--accent);color:#fff;flex-shrink:0}
+.pdf-toolbar h2{flex:1;font-size:14px;font-weight:500;margin:0;color:#fff}
+.pdf-back,.pdf-share{display:flex;align-items:center;gap:4px;min-height:0;padding:7px 12px;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;-webkit-tap-highlight-color:transparent}
+.pdf-back{background:rgba(255,255,255,.18);color:#fff}
+.pdf-share{background:#fff;color:var(--accent)}
+.pdf-toolbar-zip{padding:0 12px 10px;background:var(--accent)}
+.pdf-zip-btn{width:100%;justify-content:center}
+.pdf-body{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:12px;background:var(--bg2)}
+.pdf-scale-wrap{width:760px;transform-origin:top left}
+#pdf-report,#pdf-stage-report{width:760px;background:#fff}
 #pdf-stage{position:fixed;top:0;left:0;width:760px;background:#fff;z-index:-1;visibility:hidden;pointer-events:none}
 @media(max-width:900px){
   .bar{align-items:flex-start;flex-direction:column;gap:8px}
@@ -406,12 +418,25 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 </head>
 <body>
 <header><div class="bar"><div><h1><span class="product-name madorimo">マドリモ</span> 現場調査シート</h1><p class="app-subtitle">外窓交換・断熱窓</p></div></div></header>
-<div class="toolbar no-print"><span class="save-ind" id="save-ind">未保存</span><div class="actions"><button class="tbtn" onclick="App.loadSaved()">📂 一覧</button><button class="tbtn" onclick="App.save()">💾 保存</button><button class="tbtn danger" onclick="App.clearAll()">＋ 新規現場</button><button class="tbtn primary" onclick="App.preparePrint();window.print()">📄 PDF</button><button class="tbtn" onclick="shareMadoremoZip()">🔒 パスワード付きZIPで送信</button><button class="tbtn" onclick="forceReload()" title="キャッシュをクリアして最新版を読み込む">♻️</button></div></div>
+<div class="toolbar no-print"><span class="save-ind" id="save-ind">未保存</span><div class="actions"><button class="tbtn" onclick="App.loadSaved()">📂 一覧</button><button class="tbtn" onclick="App.save()">💾 保存</button><button class="tbtn danger" onclick="App.clearAll()">＋ 新規現場</button><button class="tbtn primary" onclick="showMadoremoPdf()">📄 PDF</button><button class="tbtn" onclick="forceReload()" title="キャッシュをクリアして最新版を読み込む">♻️</button></div></div>
 <main><div class="layout"><div id="editor">
 <section class="site-info-section"><details id="siteInfoDetails" open><summary><span class="site-info-summary"><span class="site-info-summary-title">現場情報</span><span class="site-info-summary-value" id="siteInfoSummary">現場名未入力</span></span><span class="site-info-summary-action">開閉</span></summary><div class="site-info-body"><div class="grid3"><p><label>現場調査名</label><input id="projectName" placeholder="例）山田様邸"></p><p><label>調査日</label><input id="surveyDate" type="date"></p></div><p><label>躯体構造</label><select id="building"><option>木造（3階以下）</option><option>RC造（3階以下・要納まり確認）</option><option>その他（要確認）</option></select></p><div class="note">資料確認: 防火仕様の設定がない商品があります。防火設備の設置義務がある部位では使用可否を別途確認してください。単位はmmで入力します。</div><button type="button" class="site-info-done" onclick="App.collapseSiteInfo()">入力完了・小さくする</button></div></details></section>
-<aside class="panel no-print"><h2>窓リスト</h2><div id="windowList"></div><button class="blue" style="width:100%;margin-top:8px" onclick="App.addWindow()">＋ 追加</button><div class="note warn">PDF化するときは「PDF印刷」を押してください。各窓の結果表がページ途中で分断されないようにしています。</div></aside>
+<aside class="panel no-print"><h2>窓リスト</h2><div id="windowList"></div><button class="blue" style="width:100%;margin-top:8px" onclick="App.addWindow()">＋ 追加</button><div class="note warn">PDF化するときは「📄 PDF」を押してください。各窓の結果表がページ途中で分断されないようにしています。</div></aside>
 <section id="winEditor"><h2 id="winHeading">窓 1</h2><p><label>部屋名</label><input id="placeMemo" placeholder="例）1階リビング南・浴室・寝室"></p><div class="grid3"><p><label>リフォーム場所</label><select id="place"></select></p><p><label>既設窓</label><select id="existing"></select></p><p><label>窓の納まり</label><select id="fit"></select></p></div><p><label>既設窓まわり</label><select id="around"><option>修復不必要</option><option>修復必要</option><option>不可</option><option>保留</option></select></p><p><label>既設下枠 立ち上がり寸法（下枠の段差。対応可否は型材・現調用カードで確認）</label><input id="sillRise" type="number" min="0" placeholder="例）48"></p><div id="sillRiseNote" class="note hidden"></div><h3>3点計測</h3><div class="grid"><div><label>幅 W（上・中・下）</label><div class="row"><input id="w1" type="number" min="1" placeholder="上"><input id="w2" type="number" min="1" placeholder="中"><input id="w3" type="number" min="1" placeholder="下"></div></div><div><label>高さ H（左・中・右）</label><div class="row"><input id="h1" type="number" min="1" placeholder="左"><input id="h2" type="number" min="1" placeholder="中"><input id="h3" type="number" min="1" placeholder="右"></div></div></div><div id="sizeNote" class="note hidden"></div><h3>仕様</h3><div class="grid3"><p><label>シリーズ</label><select id="series"></select></p><p><label>新設窓候補</label><select id="newWindow"></select></p><p><label>ガラス</label><select id="glass"></select></p></div><div id="newWindowReason" class="note warn hidden"></div><div class="grid3"><p><label>外観色</label><select id="outerColor"></select></p><p><label>内観色</label><select id="innerColor"></select></p><p><label>内外同色（同じ色で発注する場合）</label><select id="sameColor"></select></p><div id="colorNote" class="note hidden"></div><p><label>内額縁</label><select id="edge"></select></p></div><div id="edgeNote" class="note warn hidden"></div><div class="grid3"><p><label>網戸</label><select id="screen"><option value="no">なし</option><option value="yes">あり</option></select></p><p><label>外部モール</label><select id="mool"><option>なし</option><option>四方</option><option>二方</option></select></p><p><label>上枠見付</label><select id="upper"><option>未確認</option><option>小（21-30mm）</option><option>大（31-40mm）</option></select></p></div><p><label>窓別メモ</label><textarea id="memo"></textarea></p><div id="matchNote" class="note"></div><div class="actions edit-only"><button class="ghost" onclick="App.duplicateWindow()">この窓を複製</button><button class="danger" onclick="App.deleteWindow()">この窓を削除</button></div></section>
-<section><h2>結果確認</h2><div id="summary"></div></section></div></div><div id="printArea" class="hidden"></div><div id="pdf-stage" aria-hidden="true"></div></main>
+<section><h2>結果確認</h2><div id="summary"></div></section></div></div><div id="printArea" class="hidden"></div>
+<div class="pdf-overlay" id="pdf-overlay">
+  <div class="pdf-toolbar">
+    <button class="pdf-back" onclick="closeMadoremoPdf()">← 戻る</button>
+    <h2>マドリモ 現場調査シート</h2>
+    <button class="pdf-share" onclick="downloadMadoremoPdf()">PDF ダウンロード ↓</button>
+  </div>
+  <div class="pdf-toolbar-zip"><button class="pdf-share pdf-zip-btn" onclick="shareMadoremoZip()">🔒 パスワード付きZIPで送信</button></div>
+  <div class="pdf-body" id="pdf-body">
+    <div class="pdf-scale-wrap" id="pdf-scale-wrap"><div id="pdf-report"></div></div>
+  </div>
+</div>
+<div id="pdf-stage" aria-hidden="true"><div id="pdf-stage-report"></div></div>
+</main>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="./cloud-backup.js?v=4"></script>
@@ -948,12 +973,34 @@ function forceReload(){
     location.href=location.href.split('?')[0]+'?v='+Date.now();
   });
 }
+const PDF_STAGE_W=760;
+function showMadoremoPdf(){
+  App.capture();
+  App.renderSummary();
+  const html=summary.innerHTML;
+  document.getElementById('pdf-report').innerHTML=html;
+  document.getElementById('pdf-stage-report').innerHTML=html;
+  const ov=document.getElementById('pdf-overlay');
+  ov.classList.add('show');
+  document.getElementById('pdf-body').scrollTop=0;
+  setTimeout(fitMadoremoPreview,0);
+}
+function closeMadoremoPdf(){document.getElementById('pdf-overlay').classList.remove('show');}
+function fitMadoremoPreview(){
+  const body=document.getElementById('pdf-body'),wrap=document.getElementById('pdf-scale-wrap'),rep=document.getElementById('pdf-report');
+  if(!body||!wrap||!rep)return;
+  const s=Math.min(1,(body.clientWidth-24)/PDF_STAGE_W);
+  wrap.style.transform='scale('+s+')';
+  wrap.style.height=(rep.offsetHeight*s)+'px';
+}
+window.addEventListener('resize',()=>{if(document.getElementById('pdf-overlay')?.classList.contains('show'))fitMadoremoPreview();});
+
 async function buildMadoremoPdfFile(){
   if(!window.jspdf||!window.jspdf.jsPDF){alert('PDFライブラリを読み込み中です。少し待ってから再度お試しください。');return null;}
   if(!window.html2canvas){alert('html2canvasが読み込まれていません。');return null;}
   const {jsPDF}=window.jspdf;
-  App.capture();
-  App.renderSummary();
+  showMadoremoPdf();
+  await new Promise(r=>setTimeout(r,400));
   const site=(state.site.projectName||'').trim()||'無題';
 
   const pageW=210,pageH=297,mgn=8;
@@ -962,9 +1009,9 @@ async function buildMadoremoPdfFile(){
   const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
 
   const stage=document.getElementById('pdf-stage');
-  stage.innerHTML=summary.innerHTML;
-  const blocks=[...stage.querySelectorAll('.print-sheet')];
-  if(!blocks.length){alert('出力する内容がありません。');stage.innerHTML='';return null;}
+  const rep=document.getElementById('pdf-stage-report');
+  const blocks=[...rep.querySelectorAll('.print-sheet')];
+  if(!blocks.length){alert('出力する内容がありません。');return null;}
 
   stage.style.visibility='visible';
   try{
@@ -989,7 +1036,19 @@ async function buildMadoremoPdfFile(){
     return null;
   }finally{
     stage.style.visibility='hidden';
-    stage.innerHTML='';
+  }
+}
+async function downloadMadoremoPdf(){
+  const built=await buildMadoremoPdfFile();
+  if(!built)return;
+  const{file,name,site}=built;
+  if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+    try{await navigator.share({files:[file],title:'マドリモ 現場調査シート - '+site});}
+    catch(e){if(e.name!=='AbortError')alert('共有に失敗しました。');}
+  }else{
+    const url=URL.createObjectURL(file);
+    const a=document.createElement('a');a.href=url;a.download=name;a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),5000);
   }
 }
 function shareMadoremoZip(){
