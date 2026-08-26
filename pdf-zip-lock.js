@@ -9,7 +9,10 @@
   'use strict';
 
   function isDesktopDevice(){
-    return !(navigator.maxTouchPoints > 0 || /Mobi|Android|iPhone|iPod/i.test(navigator.userAgent));
+    var ua = navigator.userAgent;
+    if (/Windows NT/i.test(ua)) return true;
+    if (/Macintosh/i.test(ua) && !(navigator.maxTouchPoints > 1)) return true;
+    return false;
   }
 
   // ───────── CRC32 ─────────
