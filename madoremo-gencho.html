@@ -443,7 +443,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 
 <main><div class="layout"><div id="editor">
 <section class="site-info-section"><details id="siteInfoDetails" open><summary><span class="site-info-summary"><span class="site-info-summary-title">現場情報</span><span class="site-info-summary-value" id="siteInfoSummary">現場名未入力</span></span><span class="site-info-summary-action">開閉</span></summary><div class="site-info-body"><div class="grid3"><p><label>現場調査名</label><input id="projectName" placeholder="例）山田様邸"></p><p><label>調査日</label><input id="surveyDate" type="date"></p></div><p><label>躯体構造</label><select id="building"><option>木造（3階以下）</option><option>RC造（3階以下・要納まり確認）</option><option>その他（要確認）</option></select></p><div class="note">資料確認: 防火仕様の設定がない商品があります。防火設備の設置義務がある部位では使用可否を別途確認してください。単位はmmで入力します。</div><button type="button" class="site-info-done" onclick="App.collapseSiteInfo()">入力完了・小さくする</button></div></details></section>
 <aside class="panel no-print"><h2>窓リスト</h2><div id="windowList"></div><button class="blue" style="width:100%;margin-top:8px" onclick="App.addWindow()">＋ 追加</button><div class="note warn">PDF化するときは「📄 PDF」を押してください。各窓の結果表がページ途中で分断されないようにしています。</div></aside>
-<section id="winEditor"><h2 id="winHeading">窓 1</h2><p><label>部屋名</label><input id="placeMemo" placeholder="例）1階リビング南・浴室・寝室"></p><div class="grid3"><p><label>リフォーム場所</label><select id="place"></select></p><p><label>既設窓</label><select id="existing"></select></p><p><label>窓の納まり</label><select id="fit"></select></p></div><div id="mitsukeField" class="hidden"><p><label>見付けタイプ（システムバス同時交換）</label><select id="mitsuke"><option value="">選択してください</option><option value="15">15見付タイプ（左右とも15mm）</option><option value="80">80見付タイプ（左右とも80mm）</option><option value="15-80-right80">15+80見付タイプ（内観右80mm・左15mm）</option><option value="15-80-left80">15+80見付タイプ（内観左80mm・右15mm）</option></select></p><div class="note">システムバスの額縁納まりや既設枠の寸法に合わせて選択してください。左右で見付け寸法が異なる場合は「15+80見付タイプ」を選び、内観から見て80mm側が右か左かを選んでください（型材・現調用カードで対応可否を確認）。</div></div><p><label>既設窓まわり</label><select id="around"><option>修復不必要</option><option>修復必要</option><option>不可</option><option>保留</option></select></p><p><label>既設下枠 立ち上がり寸法（下枠の段差。対応可否は型材・現調用カードで確認）</label><input id="sillRise" type="number" min="0" placeholder="例）48"></p><div id="sillRiseNote" class="note hidden"></div><h3>3点計測</h3><div class="grid"><div><label>開口W寸法（上・中・下）</label><div class="row"><input id="w1" type="number" min="1" placeholder="上"><input id="w2" type="number" min="1" placeholder="中"><input id="w3" type="number" min="1" placeholder="下"></div></div><div><label>開口H寸法（左・中・右）</label><div class="row"><input id="h1" type="number" min="1" placeholder="左"><input id="h2" type="number" min="1" placeholder="中"><input id="h3" type="number" min="1" placeholder="右"></div></div></div><div id="sizeNote" class="note hidden"></div><h3>仕様</h3><div class="grid3"><p><label>シリーズ</label><select id="series"></select></p><p><label>新設窓候補</label><select id="newWindow"></select></p><p><label>ガラス</label><select id="glass"></select></p></div><div id="newWindowReason" class="note warn hidden"></div><div class="grid3"><p><label>外観色</label><select id="outerColor"></select></p><p><label>内観色</label><select id="innerColor"></select></p><p><label>内外同色（同じ色で発注する場合）</label><select id="sameColor"></select></p><div id="colorNote" class="note hidden"></div><p><label>内額縁</label><select id="edge"></select></p></div><div id="edgeNote" class="note warn hidden"></div><div class="grid3"><p><label>網戸</label><select id="screen"><option value="no">なし</option><option value="yes">あり</option></select></p><p><label>外部モール</label><select id="mool"><option>なし</option><option>四方</option><option>二方</option></select></p><p><label>上枠見付</label><select id="upper"><option>未確認</option><option>小（21-30mm）</option><option>大（31-40mm）</option></select></p></div><p><label>窓別メモ</label><textarea id="memo"></textarea></p><div id="matchNote" class="note"></div><div class="actions edit-only"><button class="ghost" onclick="App.duplicateWindow()">この窓を複製</button><button class="danger" onclick="App.deleteWindow()">この窓を削除</button></div></section>
+<section id="winEditor"><h2 id="winHeading">窓 1</h2><p><label>部屋名</label><input id="placeMemo" placeholder="例）1階リビング南・浴室・寝室"></p><div class="grid3"><p><label>リフォーム場所</label><select id="place"></select></p><p><label>既設窓</label><select id="existing"></select></p><p><label>窓の納まり</label><select id="fit"></select></p></div><div id="mitsukeField" class="hidden"><p><label>見付けタイプ（システムバス同時交換）</label><select id="mitsuke"></select></p><div class="note">システムバスの額縁納まりや既設枠の寸法に合わせて選択してください。左右で見付け寸法が異なる場合は「○○+80見付タイプ」を選び、内観から見て80mm側が右か左かを選んでください（新設窓のシリーズによって基準寸法が変わります。型材・現調用カードで対応可否を確認）。</div></div><p><label>既設窓まわり</label><select id="around"><option>修復不必要</option><option>修復必要</option><option>不可</option><option>保留</option></select></p><p><label>既設下枠 立ち上がり寸法（下枠の段差。対応可否は型材・現調用カードで確認）</label><input id="sillRise" type="number" min="0" placeholder="例）48"></p><div id="sillRiseNote" class="note hidden"></div><h3>3点計測</h3><div class="grid"><div><label>開口W寸法（上・中・下）</label><div class="row"><input id="w1" type="number" min="1" placeholder="上"><input id="w2" type="number" min="1" placeholder="中"><input id="w3" type="number" min="1" placeholder="下"></div></div><div><label>開口H寸法（左・中・右）</label><div class="row"><input id="h1" type="number" min="1" placeholder="左"><input id="h2" type="number" min="1" placeholder="中"><input id="h3" type="number" min="1" placeholder="右"></div></div></div><div id="sizeNote" class="note hidden"></div><h3>仕様</h3><div class="grid3"><p><label>シリーズ</label><select id="series"></select></p><p><label>新設窓候補</label><select id="newWindow"></select></p><p><label>ガラス</label><select id="glass"></select></p></div><div id="newWindowReason" class="note warn hidden"></div><div class="grid3"><p><label>外観色</label><select id="outerColor"></select></p><p><label>内観色</label><select id="innerColor"></select></p><p><label>内外同色（同じ色で発注する場合）</label><select id="sameColor"></select></p><div id="colorNote" class="note hidden"></div><p><label>内額縁</label><select id="edge"></select></p></div><div id="edgeNote" class="note warn hidden"></div><div class="grid3"><p><label>網戸</label><select id="screen"><option value="no">なし</option><option value="yes">あり</option></select></p><p><label>外部モール</label><select id="mool"><option>なし</option><option>四方</option><option>二方</option></select></p><p><label>上枠見付</label><select id="upper"><option>未確認</option><option>小（21-30mm）</option><option>大（31-40mm）</option></select></p></div><p><label>窓別メモ</label><textarea id="memo"></textarea></p><div id="matchNote" class="note"></div><div class="actions edit-only"><button class="ghost" onclick="App.duplicateWindow()">この窓を複製</button><button class="danger" onclick="App.deleteWindow()">この窓を削除</button></div></section>
 <section><h2>結果確認</h2><div id="summary"></div></section></div></div><div id="printArea" class="hidden"></div>
 <div class="pdf-overlay" id="pdf-overlay">
   <div class="pdf-toolbar">
@@ -738,7 +738,14 @@ function getMadoremoRecords(){try{return JSON.parse(localStorage.getItem(MADOREM
 function putMadoremoRecords(records){localStorage.setItem(MADOREMO_RECORDS_STORE,JSON.stringify(records));}
 const ids = ['projectName','surveyDate','building','around','sillRise','place','existing','fit','mitsuke','roomFloor','roomType','roomDetail','placeMemo','w1','w2','w3','h1','h2','h3','series','newWindow','glass','outerColor','innerColor','edge','screen','mool','upper','memo'];
 function opt(v,t){return `<option value="${esc(v ?? '')}">${esc(t ?? '')}</option>`}
-function mitsukeLabel(v){return {'15':'15見付タイプ','80':'80見付タイプ','15-80-right80':'15+80見付タイプ（内観右80mm・左15mm）','15-80-left80':'15+80見付タイプ（内観左80mm・右15mm）'}[v] || '－';}
+function mitsukeLabel(v){
+  if(!v) return '－';
+  if(v==='80') return '80見付タイプ（左右とも80mm）';
+  const combo = String(v).match(/^(\d+)-80-(right|left)80$/);
+  if(combo){const base=combo[1],eightyLeft=combo[2]==='left';return `${base}+80見付タイプ（内観${eightyLeft?'左':'右'}80mm・${eightyLeft?'右':'左'}${base}mm）`;}
+  if(/^\d+$/.test(v)) return `${v}見付タイプ（左右とも${v}mm）`;
+  return '－';
+}
 function fillSelect(id,items,labeler,empty='選択してください'){document.getElementById(id).innerHTML = opt('',empty) + items.map(x => opt(x.id,labeler(x))).join('')}
 function readNum(id){const v=parseInt(document.getElementById(id).value,10);return Number.isFinite(v)?v:null}
 function roomName(w){
@@ -897,7 +904,7 @@ const App = {
       const isBath = w.roomType==='浴室' || String(w.placeId)==='2' || String(w.placeId)==='3';
       if(isBath){
         fillSelect('place', DATA.places.filter(p=>p.id===2||p.id===3), x=>x.name, '選択してください');
-        if(w.placeId!=='2' && w.placeId!=='3') w.placeId='2';
+        if(w.placeId!=='2' && w.placeId!=='3') w.placeId='';
       }else{
         place.innerHTML = opt(1, byId(DATA.places,1)?.name || '居室');
         w.placeId='1';
@@ -912,7 +919,20 @@ const App = {
     {
       const needsMitsuke = String(w.placeId)==='3';
       document.getElementById('mitsukeField')?.classList.toggle('hidden', !needsMitsuke);
-      if(!needsMitsuke) w.mitsuke='';
+      if(!needsMitsuke){
+        w.mitsuke='';
+      }else{
+        const sidForMitsuke = w.seriesId || (byId(DATA.newWindows,w.newWindowId)?.seriesId || '');
+        const base = String(sidForMitsuke)==='2' ? '25' : '15';
+        const mitsukeOptions = [
+          {v:base, t:`${base}見付タイプ（左右とも${base}mm）`},
+          {v:'80', t:'80見付タイプ（左右とも80mm）'},
+          {v:`${base}-80-right80`, t:`${base}+80見付タイプ（内観右80mm・左${base}mm）`},
+          {v:`${base}-80-left80`, t:`${base}+80見付タイプ（内観左80mm・右${base}mm）`}
+        ];
+        mitsuke.innerHTML = opt('','選択してください') + mitsukeOptions.map(o=>opt(o.v,o.t)).join('');
+        if(w.mitsuke && !mitsukeOptions.some(o=>o.v===w.mitsuke)) w.mitsuke='';
+      }
       mitsuke.value = w.mitsuke || '';
     }
     const baseCandidates = DATA.targets.filter(t => (!w.placeId || String(t.placeId)===String(w.placeId)) && (!w.existingId || String(t.existingId)===String(w.existingId)) && (!w.fitId || String(t.fitId)===String(w.fitId))).map(t => byId(DATA.newWindows,t.newWindowId)).filter(Boolean).filter(x => isCatalogAllowed(x,w)).filter(x => !w.seriesId || String(x.seriesId)===String(w.seriesId));
