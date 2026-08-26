@@ -902,7 +902,7 @@ const App = {
   updateDependent(){
     const w=state.windows[state.current] || blankWindow();
     {
-      const isBath = w.roomType==='浴室' || String(w.placeId)==='2' || String(w.placeId)==='3';
+      const isBath = w.roomType==='浴室';
       if(isBath){
         fillSelect('place', DATA.places.filter(p=>p.id===2||p.id===3), x=>x.name, '選択してください');
         if(w.placeId!=='2' && w.placeId!=='3') w.placeId='';
