@@ -814,6 +814,22 @@ const App = {
   },
   updateDependent(){
     const w=state.windows[state.current] || blankWindow();
+    {
+      const isBath = w.roomType==='浴室' || String(w.placeId)==='2' || String(w.placeId)==='3';
+      if(isBath){
+        fillSelect('place', DATA.places.filter(p=>p.id===2||p.id===3), x=>x.name, '選択してください');
+        if(w.placeId!=='2' && w.placeId!=='3') w.placeId='2';
+      }else{
+        place.innerHTML = opt(1, byId(DATA.places,1)?.name || '居室');
+        w.placeId='1';
+      }
+      place.value = String(w.placeId);
+    }
+    {
+      const ex = byId(DATA.existing, w.existingId);
+      if(ex && ex.name==='二重窓' && String(w.fitId)!=='1'){ w.fitId='1'; }
+      fit.value = w.fitId || '';
+    }
     const baseCandidates = DATA.targets.filter(t => (!w.placeId || String(t.placeId)===String(w.placeId)) && (!w.existingId || String(t.existingId)===String(w.existingId)) && (!w.fitId || String(t.fitId)===String(w.fitId))).map(t => byId(DATA.newWindows,t.newWindowId)).filter(Boolean).filter(x => isCatalogAllowed(x,w)).filter(x => !w.seriesId || String(x.seriesId)===String(w.seriesId));
     const pdfCandidates = DATA.newWindows.filter(x => x.catalogAdd && isCatalogAllowed(x,w) && (!w.seriesId || String(x.seriesId)===String(w.seriesId)));
     const candidates = [...baseCandidates, ...pdfCandidates].filter((x,i,a)=>a.findIndex(y=>y.id===x.id)===i);
@@ -1065,11 +1081,14 @@ async function buildMadoremoPdfFile(){
     stage.style.visibility='hidden';
   }
 }
+function isDesktopDevice(){
+  return !(navigator.maxTouchPoints>0 || /Mobi|Android|iPhone|iPod/i.test(navigator.userAgent));
+}
 async function downloadMadoremoPdf(){
   const built=await buildMadoremoPdfFile();
   if(!built)return;
   const{file,name,site}=built;
-  if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+  if(!isDesktopDevice()&&navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
     try{await navigator.share({files:[file],title:'マドリモ 現場調査シート - '+site});}
     catch(e){if(e.name!=='AbortError')alert('共有に失敗しました。');}
   }else{

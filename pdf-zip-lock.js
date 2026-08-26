@@ -8,6 +8,10 @@
 (function(global){
   'use strict';
 
+  function isDesktopDevice(){
+    return !(navigator.maxTouchPoints > 0 || /Mobi|Android|iPhone|iPod/i.test(navigator.userAgent));
+  }
+
   // ───────── CRC32 ─────────
   var CRC_TABLE = (function(){
     var t = new Uint32Array(256);
@@ -411,7 +415,7 @@
         var zipName = (built.name || 'file.pdf').replace(/\.pdf$/i, '') + '.zip';
         var zipFile = new File([zipBlob], zipName, { type: 'application/zip' });
 
-        var canShareFile = typeof navigator.share === 'function' &&
+        var canShareFile = !isDesktopDevice() && typeof navigator.share === 'function' &&
           (typeof navigator.canShare !== 'function' || navigator.canShare({ files: [zipFile] }));
 
         if (canShareFile) {
