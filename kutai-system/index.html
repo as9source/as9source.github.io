@@ -5902,6 +5902,13 @@
             return resultRows;
         }
 
+        // 採寸結果に並ぶ各辺（段差T字は合算後）の芯寸法をすべて合計する。
+        function buildResultRowsTotal(resultRows) {
+            const total = resultRows.reduce((sum, row) => sum + row.result, 0);
+            const formula = resultRows.map(row => `${row.name} ${row.result}mm`).join(' + ');
+            return { total, formula };
+        }
+
         function renderDimensionMeasure(title, value) {
             return `
                 <div class="dimension-measure">
@@ -6227,6 +6234,21 @@
                         </div>
                     `;
                 });
+
+                if (resultRows.length > 1) {
+                    const { total: totalLength, formula: totalFormula } = buildResultRowsTotal(resultRows);
+                    html += `
+                        <div class="result-row-enhanced" style="border:3px solid #059669;background:#ecfdf5;box-shadow:0 3px 10px rgba(5,150,105,.14);">
+                            <div class="result-row-main">
+                                <div>
+                                    <div class="result-row-title" style="color:#047857;">📐 全辺の合計</div>
+                                    <div class="result-row-detail">${totalFormula} = ${totalLength}mm</div>
+                                </div>
+                                <div class="result-row-value" style="color:#059669;">${totalLength}<span class="unit">mm</span></div>
+                            </div>
+                        </div>
+                    `;
+                }
 
                 stepResultRows.forEach(step => {
                     html += `
@@ -6617,6 +6639,28 @@
             })();
             // 先に領域を予約し、寸法ラベルが重ならないようにする。
             if (heightBadge) placedLabelRects.push(heightBadge.rect);
+            const totalBadge = (() => {
+                const totalRows = buildResultRows();
+                if (totalRows.length <= 1) return null;
+                const { total } = buildResultRowsTotal(totalRows);
+                const text = `全辺の合計 = ${total}mm`;
+                const font = `bold ${resultCanvas.width < 400 ? 11 : 13}px sans-serif`;
+                ctx.save();
+                ctx.font = font;
+                const width = ctx.measureText(text).width + 22;
+                ctx.restore();
+                const height = resultCanvas.width < 400 ? 24 : 28;
+                const left = heightBadge ? heightBadge.rect.left : (resultCanvas.width < 400 ? 10 : 14);
+                const top = heightBadge ? heightBadge.rect.bottom + 8 : left;
+                return {
+                    text,
+                    font,
+                    width,
+                    height,
+                    rect: { left, top, right: left + width, bottom: top + height }
+                };
+            })();
+            if (totalBadge) placedLabelRects.push(totalBadge.rect);
             
             function makeLabelRect(centerX, centerY, width, height) {
                 return {
@@ -7546,6 +7590,22 @@
                 ctx.strokeRect(rect.left, rect.top, width, height);
                 ctx.fillStyle = '#6d28d9';
                 ctx.fillText(heightBadge.text, rect.left + 11, rect.top + height / 2);
+                ctx.restore();
+            }
+
+            if (totalBadge) {
+                const { rect, width, height } = totalBadge;
+                ctx.save();
+                ctx.font = totalBadge.font;
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = 'rgba(236,253,245,0.97)';
+                ctx.fillRect(rect.left, rect.top, width, height);
+                ctx.strokeStyle = '#059669';
+                ctx.lineWidth = 1.6;
+                ctx.strokeRect(rect.left, rect.top, width, height);
+                ctx.fillStyle = '#047857';
+                ctx.fillText(totalBadge.text, rect.left + 11, rect.top + height / 2);
                 ctx.restore();
             }
         }
@@ -9642,6 +9702,19 @@
                     </div>
                 `;
             });
+
+            if (resultRows.length > 1) {
+                const { total: totalLength, formula: totalFormula } = buildResultRowsTotal(resultRows);
+                resultsHTML += `
+                    <div class="pdf-result-card" style="padding: 10px 12px; background: #ecfdf5; border-radius: 6px; border: 2px solid #059669;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 4px;">
+                            <span style="color: #047857; font-weight: 700; font-size: 12px; line-height: 1.4;">📐 全辺の合計</span>
+                            <strong style="color: #059669; font-size: 20px; white-space: nowrap;">${totalLength} mm</strong>
+                        </div>
+                        <div style="color:#64748b;font-size:10px;line-height:1.45;">${totalFormula} = ${totalLength}mm</div>
+                    </div>
+                `;
+            }
 
             stepResultRows.forEach(step => {
                 resultsHTML += `
