@@ -6650,8 +6650,17 @@
                 const width = ctx.measureText(text).width + 22;
                 ctx.restore();
                 const height = resultCanvas.width < 400 ? 24 : 28;
-                const left = heightBadge ? heightBadge.rect.left : (resultCanvas.width < 400 ? 10 : 14);
-                const top = heightBadge ? heightBadge.rect.bottom + 8 : left;
+                const defaultLeft = heightBadge ? heightBadge.rect.left : (resultCanvas.width < 400 ? 10 : 14);
+                const defaultTop = heightBadge ? heightBadge.rect.bottom + 8 : defaultLeft;
+                const savedPosition = resultLabelOffsets['total-badge'];
+                let left = defaultLeft;
+                let top = defaultTop;
+                if (savedPosition) {
+                    const clamped = clampLabelPosition(savedPosition.x + width / 2, savedPosition.y + height / 2, width, height);
+                    left = clamped.x - width / 2;
+                    top = clamped.y - height / 2;
+                    resultLabelOffsets['total-badge'] = { x: left, y: top };
+                }
                 return {
                     text,
                     font,
@@ -6660,7 +6669,17 @@
                     rect: { left, top, right: left + width, bottom: top + height }
                 };
             })();
-            if (totalBadge) placedLabelRects.push(totalBadge.rect);
+            if (totalBadge) {
+                placedLabelRects.push(totalBadge.rect);
+                resultLabelHitRegions.push({
+                    key: 'total-badge',
+                    x: totalBadge.rect.left,
+                    y: totalBadge.rect.top,
+                    width: totalBadge.width,
+                    height: totalBadge.height,
+                    rect: totalBadge.rect
+                });
+            }
             
             function makeLabelRect(centerX, centerY, width, height) {
                 return {
