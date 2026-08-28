@@ -5693,6 +5693,11 @@
             if (corner.hasStep && corner.lines.length === 2) {
                 return { amount: 0, width: 0, reason: '段差エンド（控除なし）' };
             }
+            // コーナー壁①②③は、片方の辺だけ描画上'wall'になり、もう一方は'corner'のまま残るが、
+            // 壁側の躯体幅は相手フレームの実体ではないため、両辺とも控除の対象にしない。
+            if (corner.componentMode && corner.componentMode.startsWith('wall-')) {
+                return { amount: 0, width: 0, reason: 'コーナー壁（控除なし）' };
+            }
 
             // 斜め辺の入力値は芯寸法そのもの。端点でさらに躯体幅を引かない。
             if (isLineDiagonal(line)) {
