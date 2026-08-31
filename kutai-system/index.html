@@ -14,10 +14,14 @@
     ========================================
     躯体採寸システム
     ========================================
-    バージョン: 1.55.0
+    バージョン: 1.56.0
     最終更新: 2026-08-31
 
     [更新履歴]
+    v1.56.0 (2026-08-31) - 測定図の端にサッシの色を表示
+    - 測定図（結果画面・PDF・PNG）の右上にサッシの色バッジを追加
+    - 躯体高さ・全辺合計と同じくドラッグで移動、ダブルクリックで既定位置へ戻せる
+
     v1.55.0 (2026-08-31) - PDF共有ボタンを削除し、PDF保存をPCでも確実にダウンロードフォルダへ保存
     - 「PDFを共有」ボタンとshareResultsAsPDF関数を削除
     - PDF保存をjsPDFのsave()から明示的なBlobダウンロードへ変更し、PCでもダウンロードフォルダへ確実に保存
@@ -6681,7 +6685,49 @@
                     rect: totalBadge.rect
                 });
             }
-            
+            // サッシの色を測定図の端（既定は右上）にも表示する。
+            const sashColorBadge = (() => {
+                const sashColorValue = document.getElementById('sash-color')?.value || '';
+                if (!sashColorValue) return null;
+                const text = `🎨 色: ${sashColorValue}`;
+                const font = `bold ${resultCanvas.width < 400 ? 11 : 13}px sans-serif`;
+                ctx.save();
+                ctx.font = font;
+                const width = ctx.measureText(text).width + 22;
+                ctx.restore();
+                const height = resultCanvas.width < 400 ? 24 : 28;
+                const edge = resultCanvas.width < 400 ? 10 : 14;
+                const defaultLeft = resultCanvas.width - edge - width;
+                const defaultTop = edge;
+                let left = defaultLeft;
+                let top = defaultTop;
+                const savedPosition = resultLabelOffsets['sash-color-badge'];
+                if (savedPosition) {
+                    const clamped = clampLabelPosition(savedPosition.x + width / 2, savedPosition.y + height / 2, width, height);
+                    left = clamped.x - width / 2;
+                    top = clamped.y - height / 2;
+                    resultLabelOffsets['sash-color-badge'] = { x: left, y: top };
+                }
+                return {
+                    text,
+                    font,
+                    width,
+                    height,
+                    rect: { left, top, right: left + width, bottom: top + height }
+                };
+            })();
+            if (sashColorBadge) {
+                placedLabelRects.push(sashColorBadge.rect);
+                resultLabelHitRegions.push({
+                    key: 'sash-color-badge',
+                    x: sashColorBadge.rect.left,
+                    y: sashColorBadge.rect.top,
+                    width: sashColorBadge.width,
+                    height: sashColorBadge.height,
+                    rect: sashColorBadge.rect
+                });
+            }
+
             function makeLabelRect(centerX, centerY, width, height) {
                 return {
                     left: centerX - width / 2,
@@ -7626,6 +7672,22 @@
                 ctx.strokeRect(rect.left, rect.top, width, height);
                 ctx.fillStyle = '#047857';
                 ctx.fillText(totalBadge.text, rect.left + 11, rect.top + height / 2);
+                ctx.restore();
+            }
+
+            if (sashColorBadge) {
+                const { rect, width, height } = sashColorBadge;
+                ctx.save();
+                ctx.font = sashColorBadge.font;
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = 'rgba(255,247,237,0.97)';
+                ctx.fillRect(rect.left, rect.top, width, height);
+                ctx.strokeStyle = '#ea580c';
+                ctx.lineWidth = 1.6;
+                ctx.strokeRect(rect.left, rect.top, width, height);
+                ctx.fillStyle = '#c2410c';
+                ctx.fillText(sashColorBadge.text, rect.left + 11, rect.top + height / 2);
                 ctx.restore();
             }
         }
