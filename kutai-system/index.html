@@ -14,10 +14,13 @@
     ========================================
     躯体採寸システム
     ========================================
-    バージョン: 1.56.0
+    バージョン: 1.56.1
     最終更新: 2026-08-31
 
     [更新履歴]
+    v1.56.1 (2026-08-31) - サッシ色バッジの表記を商品の色と誤認しにくい形へ修正
+    - バッジの表記を「🎨 色: 〇〇」から「サッシ色 〇〇」へ変更
+
     v1.56.0 (2026-08-31) - 測定図の端にサッシの色を表示
     - 測定図（結果画面・PDF・PNG）の右上にサッシの色バッジを追加
     - 躯体高さ・全辺合計と同じくドラッグで移動、ダブルクリックで既定位置へ戻せる
@@ -6689,7 +6692,7 @@
             const sashColorBadge = (() => {
                 const sashColorValue = document.getElementById('sash-color')?.value || '';
                 if (!sashColorValue) return null;
-                const text = `🎨 色: ${sashColorValue}`;
+                const text = `サッシ色 ${sashColorValue}`;
                 const font = `bold ${resultCanvas.width < 400 ? 11 : 13}px sans-serif`;
                 ctx.save();
                 ctx.font = font;
