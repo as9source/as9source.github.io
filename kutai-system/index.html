@@ -5035,6 +5035,17 @@
             });
         }
 
+        function getSteppedTeeMainGroupForLine(lineId) {
+            for (const [cornerKey, corner] of Object.entries(corners || {})) {
+                if (!corner?.hasStep || corner.lines?.length !== 3) continue;
+                const parts = getTeeParts(corner);
+                if (parts?.mains?.some(({ line }) => line.id === lineId)) {
+                    return { cornerKey, corner, parts };
+                }
+            }
+            return null;
+        }
+
         function updateDimension(id, type, value) {
             if (!dimensions[id]) {
                 dimensions[id] = { length: null, width: null };
@@ -5044,11 +5055,31 @@
                 ? parseFloat(value)
                 : null;
 
-            // 段差T字も通常T字と同じく、分割された各辺を独立した1辺として扱う。
-            dimensions[id][type] = parsed;
-            // calculate()は表示中の入力欄から状態を再同期するため、
-            // 図面上入力時は先に表示値も更新して古い値の上書きを防ぐ。
-            syncVisibleDimensionInput(id, type, parsed);
+            // 段差T字は枝が別の高さにあり辺Aの躯体に干渉しないため、
+            // 高い側の2辺を1つの「全長」として扱い、控除も行わない。
+            // 図面上のどちらの辺ブロックから入力しても、全長欄と両辺を同期する。
+            const steppedGroup = getSteppedTeeMainGroupForLine(id);
+            if (steppedGroup && type === 'length') {
+                steppedGroup.corner.mainLength = parsed;
+                steppedGroup.parts.mains.forEach(({ line }) => {
+                    if (!dimensions[line.id]) dimensions[line.id] = { length: null, width: commonWidth };
+                    dimensions[line.id].length = parsed;
+                });
+                document.querySelectorAll('[data-stepped-corner]').forEach(input => {
+                    if (input.dataset.steppedCorner === steppedGroup.cornerKey) input.value = parsed ?? '';
+                });
+            } else if (steppedGroup && type === 'width') {
+                // 従来と同様、段差T字の高い側は2辺共通の躯体幅とする。
+                steppedGroup.parts.mains.forEach(({ line }) => {
+                    if (!dimensions[line.id]) dimensions[line.id] = { length: null, width: null };
+                    dimensions[line.id].width = parsed;
+                });
+            } else {
+                dimensions[id][type] = parsed;
+                // calculate()は表示中の入力欄から状態を再同期するため、
+                // 図面上入力時は先に表示値も更新して古い値の上書きを防ぐ。
+                syncVisibleDimensionInput(id, type, parsed);
+            }
             drawLines();
             calculate();
         }
@@ -5809,8 +5840,11 @@
             const y = point === 'start' ? line.y1 : line.y2;
             const corner = corners[findCornerKey(x, y, 5)];
             if (!corner?.lines?.length) return { amount: 0, width: 0, reason: '控除なし' };
-            // 段差T字も通常T字と同じく、本体2辺は独立した辺として扱い、
-            // 枝の躯体幅の半分を控除する（下のT字接続の共通計算に合流させる）。
+            // 段差T字は、高い側の本体2辺が連続し、低い枝は段差面までの実測値。
+            // 通常T字の躯体芯控除は3辺とも適用しない。
+            if (corner.hasStep && corner.lines.length === 3) {
+                return { amount: 0, width: 0, reason: '段差T字（控除なし）' };
+            }
             // 2辺の段差コーナーは、高い側の躯体エンドと低い側の壁面の組み合わせ。
             // どちらも実測面までの寸法なので、通常コーナーの芯控除は行わない。
             if (corner.hasStep && corner.lines.length === 2) {
@@ -5973,10 +6007,59 @@
                 };
             }).filter(Boolean);
 
+            // 段差T字では、高い側の全長を現地で1回測った値として扱う。
+            detectCorners();
+            Object.values(corners || {}).forEach(corner => {
+                if (!corner?.hasStep || corner.lines?.length !== 3) return;
+                const parts = getTeeParts(corner);
+                if (!parts) return;
+                const mainIds = parts.mains.map(item => item.line.id);
+                const mainRows = mainIds.map(id => resultRows.find(row => row.line.id === id)).filter(Boolean);
+                if (mainRows.length !== 2) return;
+                const firstIndex = Math.min(...mainRows.map(row => resultRows.indexOf(row)));
+                const measuredTotal = Number(corner.mainLength || mainRows[0].inputLength || 0);
+                const outerDeductions = parts.mains.map(item => {
+                    const outerPoint = item.ref.point === 'start' ? 'end' : 'start';
+                    const deduction = getEndpointDeduction(item.line, outerPoint);
+                    return { item, outerPoint, deduction };
+                }).filter(entry => entry.deduction.amount > 0);
+                const deductionTotal = outerDeductions.reduce((total, entry) => total + entry.deduction.amount, 0);
+                const resultTotal = Math.floor(measuredTotal - deductionTotal);
+                const names = mainRows.map(row => row.name);
+                const combinedDeductions = outerDeductions.map(entry =>
+                    `${entry.item.line.name}外端 ${entry.deduction.reason}: ${entry.deduction.calculation}`
+                );
+                const combinedFormula = combinedDeductions.length
+                    ? `${mainRows[0].baseLabel} ${measuredTotal}mm - ${combinedDeductions.join(' - ')}`
+                    : `${mainRows[0].baseLabel} ${measuredTotal}mm`;
+                const combinedPillars = mainRows.flatMap(row => row.pillarCenters).map(item => ({
+                    ...item,
+                    innerResult: resultTotal,
+                    centerResult: Math.floor(resultTotal + item.width / 2),
+                    result: Math.floor(resultTotal + item.width / 2),
+                    innerFormula: `${combinedFormula} = ${resultTotal}mm`,
+                    formula: `${resultTotal} + ${Math.floor(item.width)} ÷ 2 = ${Math.floor(resultTotal + item.width / 2)}mm`
+                }));
+                const combinedRow = {
+                    ...mainRows[0],
+                    name: names.join('＋'),
+                    inputLength: measuredTotal,
+                    result: resultTotal,
+                    deductions: combinedDeductions,
+                    formula: combinedFormula,
+                    pillarCenters: combinedPillars,
+                    combinedLineIds: mainIds
+                };
+                mainRows.forEach(row => {
+                    const index = resultRows.indexOf(row);
+                    if (index >= 0) resultRows.splice(index, 1);
+                });
+                resultRows.splice(firstIndex, 0, combinedRow);
+            });
             return resultRows;
         }
 
-        // 採寸結果に並ぶ各辺の芯寸法をすべて合計する。
+        // 採寸結果に並ぶ各辺（段差T字は合算後）の芯寸法をすべて合計する。
         function buildResultRowsTotal(resultRows) {
             const total = resultRows.reduce((sum, row) => sum + row.result, 0);
             const formula = resultRows.map(row => `${row.name} ${row.result}mm`).join(' + ');
@@ -7110,6 +7193,27 @@
             
             detectCorners();
             const diagramDimensionRequests = [];
+            const steppedTeeDisplayByLine = new Map();
+            const diagramResultRows = buildResultRows();
+            Object.entries(corners || {}).forEach(([cornerKey, corner]) => {
+                if (!corner?.hasStep || corner.lines?.length !== 3) return;
+                const parts = getTeeParts(corner);
+                if (!parts) return;
+                const orderedMains = [...parts.mains].sort((a, b) =>
+                    lines.findIndex(line => line.id === a.line.id) - lines.findIndex(line => line.id === b.line.id)
+                );
+                const mainIds = orderedMains.map(item => item.line.id);
+                const row = diagramResultRows.find(item =>
+                    item.combinedLineIds?.length === 2 && mainIds.every(id => item.combinedLineIds.includes(id))
+                );
+                if (!row) return;
+                const outerPoints = orderedMains.map(item => ({
+                    x: item.ref.point === 'start' ? item.line.x2 : item.line.x1,
+                    y: item.ref.point === 'start' ? item.line.y2 : item.line.y1
+                }));
+                const group = { cornerKey, row, mainIds, primaryId: mainIds[0], outerPoints };
+                mainIds.forEach(id => steppedTeeDisplayByLine.set(id, group));
+            });
 
             realLines.forEach(dLine => {
                 const line = dLine.line;
@@ -7178,11 +7282,15 @@
                     }
                 }
                 if (dim && dim.length) {
-                    let result = dim.length;
-                    result -= getEndpointDeduction(line, 'start').amount;
-                    result -= getEndpointDeduction(line, 'end').amount;
-                    const labelStart = { x: dLine.x1, y: dLine.y1 };
-                    const labelEnd = { x: dLine.x2, y: dLine.y2 };
+                    const steppedMainGroup = steppedTeeDisplayByLine.get(line.id);
+                    if (steppedMainGroup && steppedMainGroup.primaryId !== line.id) return;
+                    let result = steppedMainGroup ? steppedMainGroup.row.result : dim.length;
+                    if (!steppedMainGroup) {
+                        result -= getEndpointDeduction(line, 'start').amount;
+                        result -= getEndpointDeduction(line, 'end').amount;
+                    }
+                    const labelStart = steppedMainGroup ? steppedMainGroup.outerPoints[0] : { x: dLine.x1, y: dLine.y1 };
+                    const labelEnd = steppedMainGroup ? steppedMainGroup.outerPoints[1] : { x: dLine.x2, y: dLine.y2 };
                     const midX = (labelStart.x + labelEnd.x) / 2;
                     const midY = (labelStart.y + labelEnd.y) / 2;
                     const dx = labelEnd.x - labelStart.x;
@@ -7210,8 +7318,13 @@
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     
-                    const attachedPillars = getPillarConnectionsForLine(line).map(item => ({ ...item, displayLine: line }));
-                    const displayName = line.name;
+                    const displayLines = steppedMainGroup
+                        ? steppedMainGroup.mainIds.map(id => lines.find(item => item.id === id)).filter(Boolean)
+                        : [line];
+                    const attachedPillars = displayLines.flatMap(displayLine =>
+                        getPillarConnectionsForLine(displayLine).map(item => ({ ...item, displayLine }))
+                    ).filter((item, index, array) => array.findIndex(other => other.pillar.id === item.pillar.id) === index);
+                    const displayName = steppedMainGroup ? steppedMainGroup.row.name : line.name;
                     const resultText = attachedPillars.length
                         ? `${displayName} 柱内法 ${Math.floor(result)}mm`
                         : `${displayName} ${Math.floor(result)}mm`;
@@ -7236,7 +7349,7 @@
                         labelWidth,
                         ...detailMetrics.map(metrics => metrics.width + 6)
                     );
-                    const resultLabelKey = `line:${line.id}`;
+                    const resultLabelKey = steppedMainGroup ? `step-main:${steppedMainGroup.cornerKey}` : `line:${line.id}`;
                     let labelPosition = chooseLabelPosition(
                         lineMidX,
                         lineMidY,
