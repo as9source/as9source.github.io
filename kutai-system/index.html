@@ -6963,6 +6963,177 @@
             });
         }
         
+        // 結果図の形を実測値の比率へおおよそ寄せるための座標を作る。
+        // 各辺の「向き」は作図どおりに保ち、「長さ」だけ実測値に応じて決め直す。
+        // 短い辺が潰れて見えなくなるのを防ぐため、比率はそのままではなく
+        // 下限（PROPORTION_MIN_RATIO）を設けて圧縮する。
+        // 端点がつながらなくなる形（閉じた輪など）では変形せず元の形のまま描く。
+        const PROPORTION_MIN_RATIO = 0.22;
+
+        function buildProportionalGeometry() {
+            if (!Array.isArray(lines) || lines.length < 2) return null;
+
+            const measured = new Map();
+            for (const line of lines) {
+                const value = positiveNumberOrNull(dimensions[line.id]?.length);
+                if (!value) return null; // 実測値が揃っていないときは変形しない
+                measured.set(line.id, value);
+            }
+
+            const originalLength = new Map();
+            lines.forEach(line => {
+                originalLength.set(line.id, Math.max(1, Math.hypot(line.x2 - line.x1, line.y2 - line.y1)));
+            });
+
+            // 段差T字の本体はチェーン全体で1つの全長を共有しているため、
+            // そのままでは各辺に全長が入って二重に伸びる。作図上の長さ比で按分する。
+            const chains = computeSteppedMainChains();
+            const effective = new Map();
+            const handled = new Set();
+            lines.forEach(line => {
+                if (handled.has(line.id)) return;
+                const chain = chains.get(line.id);
+                if (chain && chain.ids.length > 1) {
+                    const totalOriginal = chain.ids.reduce((sum, id) => sum + (originalLength.get(id) || 0), 0) || 1;
+                    const shared = measured.get(chain.ids[0]) || 0;
+                    chain.ids.forEach(id => {
+                        effective.set(id, shared * (originalLength.get(id) || 0) / totalOriginal);
+                        handled.add(id);
+                    });
+                } else {
+                    effective.set(line.id, measured.get(line.id));
+                    handled.add(line.id);
+                }
+            });
+
+            const maxEffective = Math.max(...effective.values());
+            const baseUnit = Math.max(...originalLength.values());
+            if (!(maxEffective > 0) || !(baseUnit > 0)) return null;
+            const targetLength = new Map();
+            lines.forEach(line => {
+                const ratio = (effective.get(line.id) || 0) / maxEffective;
+                targetLength.set(line.id, baseUnit * (PROPORTION_MIN_RATIO + (1 - PROPORTION_MIN_RATIO) * ratio));
+            });
+
+            // 端点をまとめて節点にする（5px以内は同じ点とみなす）
+            const nodes = [];
+            const nodeOf = new Map();
+            const registerNode = (lineId, point, x, y) => {
+                let index = nodes.findIndex(node => Math.hypot(node.x - x, node.y - y) <= 5);
+                if (index < 0) {
+                    nodes.push({ x, y });
+                    index = nodes.length - 1;
+                }
+                nodeOf.set(`${lineId}:${point}`, index);
+            };
+            lines.forEach(line => {
+                registerNode(line.id, 'start', line.x1, line.y1);
+                registerNode(line.id, 'end', line.x2, line.y2);
+            });
+
+            const edges = nodes.map(() => []);
+            const addEdge = (from, to, dx, dy) => {
+                if (from === undefined || to === undefined || from < 0 || to < 0) return;
+                edges[from].push({ to, dx, dy });
+                edges[to].push({ to: from, dx: -dx, dy: -dy });
+            };
+
+            // 辺そのもの：向きは作図どおり、長さだけ差し替える
+            lines.forEach(line => {
+                const from = nodeOf.get(`${line.id}:start`);
+                const to = nodeOf.get(`${line.id}:end`);
+                const length = originalLength.get(line.id);
+                const ux = (line.x2 - line.x1) / length;
+                const uy = (line.y2 - line.y1) / length;
+                const target = targetLength.get(line.id);
+                addEdge(from, to, ux * target, uy * target);
+            });
+
+            // 柱・壁・堀込みで分割した辺の隙間は、見た目の隙間なので元の間隔のまま保つ
+            const linkGap = (fromId, fromPoint, toId, toPoint) => {
+                if (!fromId || !toId) return;
+                const from = nodeOf.get(`${fromId}:${fromPoint}`);
+                const to = nodeOf.get(`${toId}:${toPoint}`);
+                if (from === undefined || to === undefined || from === to) return;
+                addEdge(from, to, nodes[to].x - nodes[from].x, nodes[to].y - nodes[from].y);
+            };
+            [...pillars, ...wallFeatures].forEach(feature => {
+                if (!feature.split) return;
+                if (feature.recessLineId) {
+                    linkGap(feature.beforeLineId, 'end', feature.recessLineId, 'start');
+                    linkGap(feature.recessLineId, 'end', feature.afterLineId, 'start');
+                } else {
+                    linkGap(feature.beforeLineId, 'end', feature.afterLineId, 'start');
+                }
+            });
+
+            // 一番左上の点を動かさない基準にして、順に位置を決めていく
+            let startIndex = 0;
+            nodes.forEach((node, index) => {
+                const best = nodes[startIndex];
+                if (node.x < best.x || (node.x === best.x && node.y < best.y)) startIndex = index;
+            });
+            const placed = new Array(nodes.length).fill(null);
+            placed[startIndex] = { x: nodes[startIndex].x, y: nodes[startIndex].y };
+            const queue = [startIndex];
+            let closureError = 0;
+            while (queue.length) {
+                const current = queue.shift();
+                edges[current].forEach(edge => {
+                    const candidate = { x: placed[current].x + edge.dx, y: placed[current].y + edge.dy };
+                    if (placed[edge.to]) {
+                        closureError = Math.max(closureError, Math.hypot(placed[edge.to].x - candidate.x, placed[edge.to].y - candidate.y));
+                    } else {
+                        placed[edge.to] = candidate;
+                        queue.push(edge.to);
+                    }
+                });
+            }
+
+            if (placed.some(position => !position)) return null; // つながっていない形は変形しない
+            if (closureError > 1.5) return null;                 // 閉じた輪などで辻褄が合わない場合も変形しない
+
+            const geometry = new Map();
+            lines.forEach(line => {
+                const a = placed[nodeOf.get(`${line.id}:start`)];
+                const b = placed[nodeOf.get(`${line.id}:end`)];
+                geometry.set(line.id, { x1: a.x, y1: a.y, x2: b.x, y2: b.y });
+            });
+            return geometry;
+        }
+
+        // 元の作図座標を、比率を反映した座標へ移す。
+        // 点が乗っている辺を基準に、辺に沿う向きだけ伸縮し、直交方向はそのまま保つ。
+        function makeProportionalMapper(geometry) {
+            if (!geometry) return (x, y) => ({ x, y });
+            return (x, y) => {
+                let best = null;
+                for (const line of lines) {
+                    const geo = geometry.get(line.id);
+                    if (!geo) continue;
+                    const vx = line.x2 - line.x1;
+                    const vy = line.y2 - line.y1;
+                    const lengthSquared = vx * vx + vy * vy;
+                    if (!lengthSquared) continue;
+                    const t = Math.max(0, Math.min(1, ((x - line.x1) * vx + (y - line.y1) * vy) / lengthSquared));
+                    const distance = Math.hypot(x - (line.x1 + vx * t), y - (line.y1 + vy * t));
+                    if (!best || distance < best.distance) best = { distance, line, geo };
+                }
+                if (!best) return { x, y };
+                const { line, geo } = best;
+                const length = Math.max(1, Math.hypot(line.x2 - line.x1, line.y2 - line.y1));
+                const ux = (line.x2 - line.x1) / length;
+                const uy = (line.y2 - line.y1) / length;
+                const newLength = Math.max(1, Math.hypot(geo.x2 - geo.x1, geo.y2 - geo.y1));
+                const along = ((x - line.x1) * ux + (y - line.y1) * uy) * (newLength / length);
+                const perpendicular = (x - line.x1) * -uy + (y - line.y1) * ux;
+                return {
+                    x: geo.x1 + ux * along - uy * perpendicular,
+                    y: geo.y1 + uy * along + ux * perpendicular
+                };
+            };
+        }
+
         function drawResultDiagram() {
             const resultCanvas = document.getElementById('result-canvas');
             if (!resultCanvas) return;
@@ -6971,10 +7142,47 @@
             // キャンバスサイズを画面に合わせて設定（v1.21.2）
             const container = document.getElementById('result-canvas-container');
             const containerWidth = container ? container.clientWidth : 500;
-            
+
+            // 結果図では、辺の長さを実測値の比率へおおよそ寄せた座標で描く。
+            // 変形できない形（実測値が未入力・閉じた輪など）では元の座標のまま。
+            const proportionalGeometry = buildProportionalGeometry();
+            const toProportional = makeProportionalMapper(proportionalGeometry);
+
+            const realLines = [];
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                const dx = line.x2 - line.x1;
+                const dy = line.y2 - line.y1;
+
+                if (Math.sqrt(dx * dx + dy * dy) === 0) continue;
+
+                const geo = proportionalGeometry?.get(line.id);
+                realLines.push({
+                    x1: geo ? geo.x1 : line.x1,
+                    y1: geo ? geo.y1 : line.y1,
+                    x2: geo ? geo.x2 : line.x2,
+                    y2: geo ? geo.y2 : line.y2,
+                    line: line
+                });
+            }
+
+            // バウンディングボックス計算（比率反映後の形で）
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+            realLines.forEach(rLine => {
+                minX = Math.min(minX, rLine.x1, rLine.x2);
+                minY = Math.min(minY, rLine.y1, rLine.y2);
+                maxX = Math.max(maxX, rLine.x1, rLine.x2);
+                maxY = Math.max(maxY, rLine.y1, rLine.y2);
+            });
+
+            const shapeWidth = Math.max(maxX - minX, 1);
+            const shapeHeight = Math.max(maxY - minY, 1);
+
             // 画面サイズに応じて適切なキャンバスサイズを設定
             let resultCanvasWidth, resultCanvasHeight;
-            
+
             if (containerWidth < 400) {
                 // スマホ（縦）
                 resultCanvasWidth = containerWidth;
@@ -6988,7 +7196,14 @@
                 resultCanvasWidth = Math.min(containerWidth, 800);
                 resultCanvasHeight = resultCanvasWidth * 0.75;
             }
-            
+
+            // 横長の形のときに縦の空きが大きくなりすぎないよう、形の縦横比に合わせる。
+            // 縦の余りが減ると、PDFで1ページに収める際の縮小も起きにくくなり横幅を活かせる。
+            if (realLines.length > 0) {
+                const shapeAspect = Math.max(0.42, Math.min(1.15, shapeHeight / shapeWidth));
+                resultCanvasHeight = Math.min(resultCanvasHeight, resultCanvasWidth * (shapeAspect + 0.24));
+            }
+
             const dimensionedLineCount = lines.filter(line => {
                 const dim = dimensions[line.id];
                 return dim && dim.length;
@@ -6997,52 +7212,24 @@
                 Object.values(corners || {}).filter(corner => corner && (corner.hasStep || corner.lines?.length >= 3)).length;
             resultCanvasHeight += Math.max(0, dimensionedLineCount - 1) * (containerWidth < 400 ? 44 : 58);
             resultCanvasHeight += Math.min(240, diagramComponentCount * (containerWidth < 400 ? 18 : 24));
-            
+            // A4縦1ページに収める都合で図が細くならないよう、縦横比の上限を決めておく。
+            // 画面が狭いときはラベルの置き場所が足りなくなるため、上限はかけない。
+            if (containerWidth >= 500) {
+                resultCanvasHeight = Math.min(resultCanvasHeight, resultCanvasWidth * 1.2);
+            }
+
             resultCanvas.width = resultCanvasWidth;
             resultCanvas.height = resultCanvasHeight;
             setupResultLabelDragging(resultCanvas);
-            
+
             const ctx = resultCanvas.getContext('2d');
-            
+
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0, 0, resultCanvas.width, resultCanvas.height);
-            
+
             if (lines.length === 0) return;
-            
-            // 作図時の座標関係を保持して処理
-            const realLines = [];
-            
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i];
-                const dx = line.x2 - line.x1;
-                const dy = line.y2 - line.y1;
-                
-                if (Math.sqrt(dx * dx + dy * dy) === 0) continue;
-                
-                realLines.push({
-                    x1: line.x1,
-                    y1: line.y1,
-                    x2: line.x2,
-                    y2: line.y2,
-                    line: line
-                });
-            }
-            
             if (realLines.length === 0) return;
-            
-            // バウンディングボックス計算
-            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-            
-            realLines.forEach(rLine => {
-                minX = Math.min(minX, rLine.x1, rLine.x2);
-                minY = Math.min(minY, rLine.y1, rLine.y2);
-                maxX = Math.max(maxX, rLine.x1, rLine.x2);
-                maxY = Math.max(maxY, rLine.y1, rLine.y2);
-            });
-            
-            const shapeWidth = Math.max(maxX - minX, 1);
-            const shapeHeight = Math.max(maxY - minY, 1);
-            
+
             // マージンを画面サイズに応じて調整（v1.21.2）
             const margin = resultCanvas.width < 400 ? 44 : 85;
             const drawableWidth = resultCanvas.width - margin * 2;
@@ -7071,6 +7258,55 @@
             const tinyFontSize = resultCanvas.width < 400 ? 9 : 11;
             const placedLabelRects = [];
             const placedLeaderSegments = [];
+
+            // 躯体（二重線）を障害物として持ち、寸法ラベルが躯体の上へ載らないようにする。
+            const bodyObstacles = realLines.map(rLine => ({
+                x1: transformX(rLine.x1),
+                y1: transformY(rLine.y1),
+                x2: transformX(rLine.x2),
+                y2: transformY(rLine.y2),
+                half: Math.max(4, getLinePlanWidth(rLine.line) / 2)
+            }));
+
+            function bodyCollisionPenalty(rect) {
+                let penalty = 0;
+                bodyObstacles.forEach(seg => {
+                    const start = { x: seg.x1, y: seg.y1 };
+                    const end = { x: seg.x2, y: seg.y2 };
+                    if (segmentIntersectsRect(start, end, rect, seg.half + 3)) penalty += 70000;
+                });
+                return penalty;
+            }
+
+            // 出隅の拡大図は寸法ラベルより後に描くため、そのままだとラベルを覆ってしまう。
+            // 先に置き場所を予約しておき、寸法ラベルが最初から避けるようにする。
+            wallFeatures.filter(feature => feature.featureType === 'notch').forEach(feature => {
+                if (feature.x === undefined || feature.y === undefined) return;
+                const mapped = toProportional(feature.x, feature.y);
+                const anchorX = transformX(mapped.x);
+                const anchorY = transformY(mapped.y);
+                const boxScale = 0.9;
+                const boxWidth = 152 * boxScale;
+                const boxHeight = 152 * boxScale;
+                const saved = resultLabelOffsets[`notch:${feature.id}`];
+                const centerX = Math.max(boxWidth / 2 + 6, Math.min(resultCanvas.width - boxWidth / 2 - 6,
+                    saved?.x ?? (anchorX + boxWidth / 2 + 46)));
+                const centerY = Math.max(boxHeight / 2 + 6, Math.min(resultCanvas.height - boxHeight / 2 - 6,
+                    saved?.y ?? (anchorY - boxHeight / 2 - 26)));
+                placedLabelRects.push({
+                    left: centerX - boxWidth / 2,
+                    right: centerX + boxWidth / 2,
+                    top: centerY - boxHeight / 2,
+                    bottom: centerY + boxHeight / 2
+                });
+                placedLeaderSegments.push({
+                    key: `notch:${feature.id}`,
+                    x1: anchorX,
+                    y1: anchorY,
+                    x2: centerX,
+                    y2: centerY
+                });
+            });
 
             // 計算結果の図にも躯体高さを明示する（下部の計算表示は変更しない）。
             const heightBadge = (() => {
@@ -7315,10 +7551,11 @@
                             const rect = makeLabelRect(clamped.x, clamped.y, labelWidth, labelHeight);
                             const overlapScore = placedLabelRects.reduce((total, placed) => total + rectOverlapArea(rect, placed), 0);
                             const leaderPenalty = leaderCollisionPenalty(lineMidX, lineMidY, clamped.x, clamped.y);
+                            const bodyPenalty = bodyCollisionPenalty(rect);
                             const distancePenalty = Math.hypot(clamped.x - lineMidX, clamped.y - lineMidY) * 0.01;
-                            const score = overlapScore * 100 + leaderPenalty + distancePenalty;
-                            
-                            if (!placedLabelRects.some(placed => rectsOverlap(rect, placed)) && leaderPenalty === 0) {
+                            const score = overlapScore * 100 + leaderPenalty + bodyPenalty + distancePenalty;
+
+                            if (!placedLabelRects.some(placed => rectsOverlap(rect, placed)) && leaderPenalty === 0 && bodyPenalty === 0) {
                                 return { x: clamped.x, y: clamped.y, rect };
                             }
                             
@@ -7335,13 +7572,14 @@
                     for (let x = edge + labelWidth / 2; x <= resultCanvas.width - edge - labelWidth / 2; x += gridStep) {
                         const rect = makeLabelRect(x, y, labelWidth, labelHeight);
                         const leaderPenalty = leaderCollisionPenalty(lineMidX, lineMidY, x, y);
-                        if (!placedLabelRects.some(placed => rectsOverlap(rect, placed)) && leaderPenalty === 0) {
+                        const bodyPenalty = bodyCollisionPenalty(rect);
+                        if (!placedLabelRects.some(placed => rectsOverlap(rect, placed)) && leaderPenalty === 0 && bodyPenalty === 0) {
                             return { x, y, rect };
                         }
-                        
+
                         const overlapScore = placedLabelRects.reduce((total, placed) => total + rectOverlapArea(rect, placed), 0);
                         const distancePenalty = Math.hypot(x - lineMidX, y - lineMidY) * 0.01;
-                        const score = overlapScore * 100 + leaderPenalty + distancePenalty + 1000;
+                        const score = overlapScore * 100 + leaderPenalty + bodyPenalty + distancePenalty + 1000;
                         
                         if (!fallback || score < fallback.score) {
                             fallback = { x, y, rect, score };
@@ -7507,7 +7745,9 @@
                 if (!row) return;
                 const outerPoints = chain.outerRefs.map(ref => {
                     const refLine = lines.find(l => l.id === ref.lineId);
-                    return { x: ref.point === 'start' ? refLine.x1 : refLine.x2, y: ref.point === 'start' ? refLine.y1 : refLine.y2 };
+                    // 比率反映後の座標で寸法ラベルの位置を決める
+                    const source = proportionalGeometry?.get(refLine.id) || refLine;
+                    return { x: ref.point === 'start' ? source.x1 : source.x2, y: ref.point === 'start' ? source.y1 : source.y2 };
                 });
                 const group = { row, mainIds: chain.ids, primaryId: chain.primaryId, outerPoints };
                 chain.ids.forEach(id => steppedTeeDisplayByLine.set(id, group));
@@ -7725,7 +7965,11 @@
                 }
             });
 
-            const resultTransform = (x, y) => ({ x: transformX(x), y: transformY(y) });
+            // 部品や接続部は元の作図座標で持っているため、比率反映を通してから画面座標へ移す。
+            const resultTransform = (x, y) => {
+                const p = toProportional(x, y);
+                return { x: transformX(p.x), y: transformY(p.y) };
+            };
             drawApprovedCornerJoins(ctx, resultTransform);
             drawTJunctions(ctx, resultTransform);
             drawSteppedJunctions(ctx, resultTransform);
