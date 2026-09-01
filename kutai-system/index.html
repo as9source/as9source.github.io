@@ -4006,24 +4006,18 @@
                 return fallback;
             }
             
-            // 段差T字の本体2辺は見た目上も1本として扱うため、辺名ラベルは
-            // 2辺をまたいだ1つの箱にまとめる（枠線・端部の描画自体は各辺そのまま）。
+            // 段差T字の本体の辺は見た目上も1本として扱うため、辺名ラベルは
+            // まとめて1つの箱にする（枠線・端部の描画自体は各辺そのまま）。
+            // 同じ辺の上に段差T字を連続配置した場合は3辺以上のチェーンになる。
             const steppedMainGroupByLine = new Map();
-            Object.values(corners || {}).forEach(corner => {
-                if (!corner?.hasStep || corner.lines?.length !== 3) return;
-                const parts = getTeeParts(corner);
-                if (!parts) return;
-                const [main1, main2] = parts.mains;
-                const outerPointOf = main => ({
-                    x: main.ref.point === 'start' ? main.line.x2 : main.line.x1,
-                    y: main.ref.point === 'start' ? main.line.y2 : main.line.y1
+            computeSteppedMainChains().forEach((chain, lineId) => {
+                if (steppedMainGroupByLine.has(lineId)) return;
+                const outerPoints = chain.outerRefs.map(ref => {
+                    const refLine = lines.find(l => l.id === ref.lineId);
+                    return { x: ref.point === 'start' ? refLine.x1 : refLine.x2, y: ref.point === 'start' ? refLine.y1 : refLine.y2 };
                 });
-                const group = {
-                    mainIds: [main1.line.id, main2.line.id],
-                    primaryId: main1.line.id,
-                    outerPoints: [outerPointOf(main1), outerPointOf(main2)]
-                };
-                group.mainIds.forEach(id => steppedMainGroupByLine.set(id, group));
+                const group = { mainIds: chain.ids, primaryId: chain.primaryId, outerPoints };
+                chain.ids.forEach(id => steppedMainGroupByLine.set(id, group));
             });
 
             lines.forEach((line, index) => {
@@ -5060,15 +5054,9 @@
             });
         }
 
+        // 段差T字が連続する場合も含め、指定した辺が属する「本体チェーン」を返す。
         function getSteppedTeeMainGroupForLine(lineId) {
-            for (const [cornerKey, corner] of Object.entries(corners || {})) {
-                if (!corner?.hasStep || corner.lines?.length !== 3) continue;
-                const parts = getTeeParts(corner);
-                if (parts?.mains?.some(({ line }) => line.id === lineId)) {
-                    return { cornerKey, corner, parts };
-                }
-            }
-            return null;
+            return computeSteppedMainChains().get(lineId) || null;
         }
 
         function updateDimension(id, type, value) {
@@ -5081,23 +5069,20 @@
                 : null;
 
             // 段差T字は枝が別の高さにあり辺Aの躯体に干渉しないため、
-            // 高い側の2辺を1つの「全長」として扱い、控除も行わない。
-            // 図面上のどちらの辺ブロックから入力しても、全長欄と両辺を同期する。
+            // 高い側の辺（連続する場合はチェーン全体）を1つの「全長」として
+            // 扱い、控除も行わない。図面上のどの辺ブロックから入力しても、
+            // チェーン内の全ての辺の値を同期する。
             const steppedGroup = getSteppedTeeMainGroupForLine(id);
             if (steppedGroup && type === 'length') {
-                steppedGroup.corner.mainLength = parsed;
-                steppedGroup.parts.mains.forEach(({ line }) => {
-                    if (!dimensions[line.id]) dimensions[line.id] = { length: null, width: commonWidth };
-                    dimensions[line.id].length = parsed;
-                });
-                document.querySelectorAll('[data-stepped-corner]').forEach(input => {
-                    if (input.dataset.steppedCorner === steppedGroup.cornerKey) input.value = parsed ?? '';
+                steppedGroup.ids.forEach(lineId => {
+                    if (!dimensions[lineId]) dimensions[lineId] = { length: null, width: commonWidth };
+                    dimensions[lineId].length = parsed;
                 });
             } else if (steppedGroup && type === 'width') {
-                // 従来と同様、段差T字の高い側は2辺共通の躯体幅とする。
-                steppedGroup.parts.mains.forEach(({ line }) => {
-                    if (!dimensions[line.id]) dimensions[line.id] = { length: null, width: null };
-                    dimensions[line.id].width = parsed;
+                // 従来と同様、段差T字の高い側は共通の躯体幅とする。
+                steppedGroup.ids.forEach(lineId => {
+                    if (!dimensions[lineId]) dimensions[lineId] = { length: null, width: null };
+                    dimensions[lineId].width = parsed;
                 });
             } else {
                 dimensions[id][type] = parsed;
@@ -5347,6 +5332,60 @@
                 pairs.add([a, b].sort().join('|'));
             });
             return pairs;
+        }
+
+        // 同じ辺の上に段差T字を連続で配置すると、3本以上の辺が地続きになる
+        // ことがある。ペア単位（1つの段差コーナーだけ）でまとめると、
+        // 途中の辺が別々のグループに二重登録されてラベルが重複表示されて
+        // しまうため、連結成分（チェーン）全体を1つのグループにまとめる。
+        // 戻り値は lineId -> { ids: [...チェーン内の全辺id], outerRefs: [両端の{lineId,point}] }
+        function computeSteppedMainChains() {
+            detectCorners();
+            const parent = new Map();
+            const find = x => {
+                if (!parent.has(x)) parent.set(x, x);
+                let root = x;
+                while (parent.get(root) !== root) root = parent.get(root);
+                let cur = x;
+                while (parent.get(cur) !== root) {
+                    const next = parent.get(cur);
+                    parent.set(cur, root);
+                    cur = next;
+                }
+                return root;
+            };
+            const union = (a, b) => {
+                const ra = find(a), rb = find(b);
+                if (ra !== rb) parent.set(ra, rb);
+            };
+            const internalRefs = new Set();
+            Object.values(corners || {}).forEach(corner => {
+                if (!corner?.hasStep || corner.lines?.length !== 3) return;
+                const parts = getTeeParts(corner);
+                if (!parts) return;
+                const [m1, m2] = parts.mains;
+                union(m1.line.id, m2.line.id);
+                internalRefs.add(`${m1.line.id}:${m1.ref.point}`);
+                internalRefs.add(`${m2.line.id}:${m2.ref.point}`);
+            });
+            const groupsByRoot = new Map();
+            parent.forEach((_, id) => {
+                const root = find(id);
+                if (!groupsByRoot.has(root)) groupsByRoot.set(root, { ids: [], outerRefs: [] });
+                groupsByRoot.get(root).ids.push(id);
+            });
+            const result = new Map();
+            groupsByRoot.forEach(group => {
+                if (group.ids.length < 2) return;
+                group.ids.forEach(id => {
+                    ['start', 'end'].forEach(point => {
+                        if (!internalRefs.has(`${id}:${point}`)) group.outerRefs.push({ lineId: id, point });
+                    });
+                });
+                group.primaryId = group.ids[0];
+                group.ids.forEach(id => result.set(id, group));
+            });
+            return result;
         }
 
         function renumberLineNames() {
@@ -6061,27 +6100,26 @@
             }).filter(Boolean);
 
             // 段差T字では、高い側の全長を現地で1回測った値として扱う。
-            detectCorners();
-            Object.values(corners || {}).forEach(corner => {
-                if (!corner?.hasStep || corner.lines?.length !== 3) return;
-                const parts = getTeeParts(corner);
-                if (!parts) return;
-                const mainIds = parts.mains.map(item => item.line.id);
-                const mainRows = mainIds.map(id => resultRows.find(row => row.line.id === id)).filter(Boolean);
-                if (mainRows.length !== 2) return;
+            // 同じ辺の上に段差T字を連続配置した場合は、チェーン全体をまとめる。
+            const processedChains = new Set();
+            computeSteppedMainChains().forEach(chain => {
+                if (processedChains.has(chain)) return;
+                processedChains.add(chain);
+                const mainRows = chain.ids.map(id => resultRows.find(row => row.line.id === id)).filter(Boolean);
+                if (mainRows.length !== chain.ids.length) return;
                 const firstIndex = Math.min(...mainRows.map(row => resultRows.indexOf(row)));
-                const measuredTotal = Number(corner.mainLength || mainRows[0].inputLength || 0);
-                const outerDeductions = parts.mains.map(item => {
-                    const outerPoint = item.ref.point === 'start' ? 'end' : 'start';
-                    const deduction = getEndpointDeduction(item.line, outerPoint);
-                    return { item, outerPoint, deduction };
+                const measuredTotal = Number(mainRows[0].inputLength || 0);
+                const outerDeductions = chain.outerRefs.map(ref => {
+                    const refLine = lines.find(l => l.id === ref.lineId);
+                    const deduction = getEndpointDeduction(refLine, ref.point);
+                    return { refLine, deduction };
                 }).filter(entry => entry.deduction.amount > 0);
                 const deductionTotal = outerDeductions.reduce((total, entry) => total + entry.deduction.amount, 0);
                 const resultTotal = Math.floor(measuredTotal - deductionTotal);
-                // 本体2辺は同じ文字（辺名）を共有するため重複排除する。
+                // チェーン内の辺は同じ文字（辺名）を共有するため重複排除する。
                 const names = [...new Set(mainRows.map(row => row.name))];
                 const combinedDeductions = outerDeductions.map(entry =>
-                    `${entry.item.line.name}外端 ${entry.deduction.reason}: ${entry.deduction.calculation}`
+                    `${entry.refLine.name}外端 ${entry.deduction.reason}: ${entry.deduction.calculation}`
                 );
                 const combinedFormula = combinedDeductions.length
                     ? `${mainRows[0].baseLabel} ${measuredTotal}mm - ${combinedDeductions.join(' - ')}`
@@ -6102,7 +6140,7 @@
                     deductions: combinedDeductions,
                     formula: combinedFormula,
                     pillarCenters: combinedPillars,
-                    combinedLineIds: mainIds
+                    combinedLineIds: chain.ids
                 };
                 mainRows.forEach(row => {
                     const index = resultRows.indexOf(row);
@@ -7249,24 +7287,21 @@
             const diagramDimensionRequests = [];
             const steppedTeeDisplayByLine = new Map();
             const diagramResultRows = buildResultRows();
-            Object.entries(corners || {}).forEach(([cornerKey, corner]) => {
-                if (!corner?.hasStep || corner.lines?.length !== 3) return;
-                const parts = getTeeParts(corner);
-                if (!parts) return;
-                const orderedMains = [...parts.mains].sort((a, b) =>
-                    lines.findIndex(line => line.id === a.line.id) - lines.findIndex(line => line.id === b.line.id)
-                );
-                const mainIds = orderedMains.map(item => item.line.id);
+            const processedResultChains = new Set();
+            computeSteppedMainChains().forEach(chain => {
+                if (processedResultChains.has(chain)) return;
+                processedResultChains.add(chain);
                 const row = diagramResultRows.find(item =>
-                    item.combinedLineIds?.length === 2 && mainIds.every(id => item.combinedLineIds.includes(id))
+                    item.combinedLineIds?.length === chain.ids.length &&
+                    chain.ids.every(id => item.combinedLineIds.includes(id))
                 );
                 if (!row) return;
-                const outerPoints = orderedMains.map(item => ({
-                    x: item.ref.point === 'start' ? item.line.x2 : item.line.x1,
-                    y: item.ref.point === 'start' ? item.line.y2 : item.line.y1
-                }));
-                const group = { cornerKey, row, mainIds, primaryId: mainIds[0], outerPoints };
-                mainIds.forEach(id => steppedTeeDisplayByLine.set(id, group));
+                const outerPoints = chain.outerRefs.map(ref => {
+                    const refLine = lines.find(l => l.id === ref.lineId);
+                    return { x: ref.point === 'start' ? refLine.x1 : refLine.x2, y: ref.point === 'start' ? refLine.y1 : refLine.y2 };
+                });
+                const group = { row, mainIds: chain.ids, primaryId: chain.primaryId, outerPoints };
+                chain.ids.forEach(id => steppedTeeDisplayByLine.set(id, group));
             });
 
             realLines.forEach(dLine => {
@@ -7403,7 +7438,7 @@
                         labelWidth,
                         ...detailMetrics.map(metrics => metrics.width + 6)
                     );
-                    const resultLabelKey = steppedMainGroup ? `step-main:${steppedMainGroup.cornerKey}` : `line:${line.id}`;
+                    const resultLabelKey = steppedMainGroup ? `step-main:${steppedMainGroup.primaryId}` : `line:${line.id}`;
                     let labelPosition = chooseLabelPosition(
                         lineMidX,
                         lineMidY,
