@@ -2997,8 +2997,18 @@
                 const stepped = !!corner.hasStep;
 
                 targetCtx.save();
-                // 先に一般描画された接続部だけを消し、正しい納まりを描き直す。
+                targetCtx.lineCap = 'butt';
+                // 先に一般描画された接続部を消してから描き直す。
+                // 描き直す範囲（本体は±local、枝はinner+local）をきちんと消しておかないと、
+                // 消し残した部分に元の線と描き直した線が重なって、そこだけ濃くなる。
+                // 濃さが途中で変わると線が切れているように見えるため、必ず一度だけ描く。
                 targetCtx.strokeStyle = '#ffffff';
+                targetCtx.lineWidth = mainHalf * 2 + 4;
+                targetCtx.beginPath();
+                targetCtx.moveTo(c.x - mx * local, c.y - my * local);
+                targetCtx.lineTo(c.x + mx * local, c.y + my * local);
+                targetCtx.stroke();
+
                 targetCtx.lineWidth = Math.max(mainHalf, branchHalf) * 2 + 7;
                 targetCtx.beginPath();
                 targetCtx.moveTo(c.x, c.y);
