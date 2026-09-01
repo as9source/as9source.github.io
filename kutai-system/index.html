@@ -4006,10 +4006,30 @@
                 return fallback;
             }
             
+            // 段差T字の本体2辺は見た目上も1本として扱うため、辺名ラベルは
+            // 2辺をまたいだ1つの箱にまとめる（枠線・端部の描画自体は各辺そのまま）。
+            const steppedMainGroupByLine = new Map();
+            Object.values(corners || {}).forEach(corner => {
+                if (!corner?.hasStep || corner.lines?.length !== 3) return;
+                const parts = getTeeParts(corner);
+                if (!parts) return;
+                const [main1, main2] = parts.mains;
+                const outerPointOf = main => ({
+                    x: main.ref.point === 'start' ? main.line.x2 : main.line.x1,
+                    y: main.ref.point === 'start' ? main.line.y2 : main.line.y1
+                });
+                const group = {
+                    mainIds: [main1.line.id, main2.line.id],
+                    primaryId: main1.line.id,
+                    outerPoints: [outerPointOf(main1), outerPointOf(main2)]
+                };
+                group.mainIds.forEach(id => steppedMainGroupByLine.set(id, group));
+            });
+
             lines.forEach((line, index) => {
                 const p1 = transform(line.x1, line.y1);
                 const p2 = transform(line.x2, line.y2);
-                
+
                 const planWidth = getLinePlanWidth(line);
                 // 一本の辺につき二本だけ描く。角での自動延長は行わない。
                 drawDoubleLine(ctx, p1.x, p1.y, p2.x, p2.y, planWidth);
@@ -4023,11 +4043,16 @@
                 if (!(endState === 'wall' && endCorner?.lines?.length >= 2) && !endpointCoveredBySplitFeature(line.id, 'end')) {
                     drawPlanTermination(ctx, p2.x, p2.y, p1.x, p1.y, endState, planWidth);
                 }
-                
-                const midX = (p1.x + p2.x) / 2;
-                const midY = (p1.y + p2.y) / 2;
-                
-                mainLabelRequests.push({ line, index, p1, p2, midX, midY, planWidth });
+
+                const steppedGroup = steppedMainGroupByLine.get(line.id);
+                if (steppedGroup && steppedGroup.primaryId !== line.id) return;
+
+                const labelP1 = steppedGroup ? transform(steppedGroup.outerPoints[0].x, steppedGroup.outerPoints[0].y) : p1;
+                const labelP2 = steppedGroup ? transform(steppedGroup.outerPoints[1].x, steppedGroup.outerPoints[1].y) : p2;
+                const midX = (labelP1.x + labelP2.x) / 2;
+                const midY = (labelP1.y + labelP2.y) / 2;
+
+                mainLabelRequests.push({ line, index, p1: labelP1, p2: labelP2, midX, midY, planWidth });
             });
 
             drawApprovedCornerJoins(ctx, transform);
@@ -5308,9 +5333,37 @@
             return order;
         }
 
+        // 段差T字の本体2辺は、見た目上も辺の数え方の上でも「1本の辺」として
+        // 扱う（枝が段差の下にあり、辺Aの躯体に干渉しないため）。そのため
+        // ここで求めるペアは同じ文字を共有し、新しい文字を消費しない。
+        function findSteppedMainPairs() {
+            detectCorners();
+            const pairs = new Set();
+            Object.values(corners || {}).forEach(corner => {
+                if (!corner?.hasStep || corner.lines?.length !== 3) return;
+                const parts = getTeeParts(corner);
+                if (!parts) return;
+                const [a, b] = parts.mains.map(m => m.line.id);
+                pairs.add([a, b].sort().join('|'));
+            });
+            return pairs;
+        }
+
         function renumberLineNames() {
             const order = computeSpatialLineOrder();
-            const rank = new Map(order.map((id, index) => [id, index]));
+            const steppedPairs = findSteppedMainPairs();
+            const rank = new Map();
+            let letterIndex = 0;
+            order.forEach((id, i) => {
+                const prevId = order[i - 1];
+                const sharesLetterWithPrev = prevId !== undefined && steppedPairs.has([id, prevId].sort().join('|'));
+                if (sharesLetterWithPrev) {
+                    rank.set(id, rank.get(prevId));
+                } else {
+                    rank.set(id, letterIndex);
+                    letterIndex++;
+                }
+            });
             lines.forEach(line => {
                 const index = rank.has(line.id) ? rank.get(line.id) : lines.indexOf(line);
                 line.name = `辺${lineLetter(index)}`;
@@ -6025,7 +6078,8 @@
                 }).filter(entry => entry.deduction.amount > 0);
                 const deductionTotal = outerDeductions.reduce((total, entry) => total + entry.deduction.amount, 0);
                 const resultTotal = Math.floor(measuredTotal - deductionTotal);
-                const names = mainRows.map(row => row.name);
+                // 本体2辺は同じ文字（辺名）を共有するため重複排除する。
+                const names = [...new Set(mainRows.map(row => row.name))];
                 const combinedDeductions = outerDeductions.map(entry =>
                     `${entry.item.line.name}外端 ${entry.deduction.reason}: ${entry.deduction.calculation}`
                 );
