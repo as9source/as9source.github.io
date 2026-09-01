@@ -3910,9 +3910,13 @@
             displayFeatureGeometry = new Map();
             diagramLabelHitRegions = [];
             normalizeInlineWallGaps();
-            
+
             detectCorners();
-            
+            // 呼び出し元で柱・壁の追加処理がrenumberLineNames()の後に
+            // pillars/wallFeaturesへ登録される場合があるため、実際に描画する
+            // 直前でもう一度並び順を確定させ、常に最終状態と一致させる。
+            renumberLineNames();
+
             if (lines.length === 0) return;
             
             const shouldTransform = currentPattern !== 'custom';
@@ -5144,8 +5148,140 @@
             return result;
         }
 
+        // 辺の並び順(A,B,C...)は配列の格納順ではなく、図形上の座標だけで決める。
+        // 「一番左側にある端部(壁・エンド)」を起点に辺をたどっていくことで、
+        // 柱・壁・T字などで辺を分割した際の内部的な保存方向に左右されず、
+        // 常に「内側の左側からA→B→C…」という向きで安定して並ぶようにする。
+        function computeSpatialLineOrder() {
+            if (!lines.length) return [];
+            detectCorners();
+
+            // 柱・壁・堀込みの途中分割は、見た目の隙間を空けるため
+            // 分割後の2〜3辺が幾何学的には接しない（＝コーナー判定に乗らない）。
+            // そのため部品側が持つ前後関係(beforeLineId/afterLineId)を、
+            // 隙間をまたぐ「仮想コーナー」として辿れるようにする。
+            const virtualLink = new Map();
+            const linkVirtual = (fromId, fromPoint, toId, toPoint) => {
+                if (!fromId || !toId) return;
+                virtualLink.set(`${fromId}:${fromPoint}`, { lineId: toId, point: toPoint });
+            };
+            [...pillars, ...wallFeatures].forEach(feature => {
+                if (!feature.split) return;
+                if (feature.recessLineId) {
+                    linkVirtual(feature.beforeLineId, 'end', feature.recessLineId, 'start');
+                    linkVirtual(feature.recessLineId, 'start', feature.beforeLineId, 'end');
+                    linkVirtual(feature.recessLineId, 'end', feature.afterLineId, 'start');
+                    linkVirtual(feature.afterLineId, 'start', feature.recessLineId, 'end');
+                } else {
+                    linkVirtual(feature.beforeLineId, 'end', feature.afterLineId, 'start');
+                    linkVirtual(feature.afterLineId, 'start', feature.beforeLineId, 'end');
+                }
+            });
+
+            const cornerKeyAt = (line, point) => {
+                const x = point === 'start' ? line.x1 : line.x2;
+                const y = point === 'start' ? line.y1 : line.y2;
+                return findCornerKey(x, y, 5);
+            };
+            const pointAt = (line, point) => ({
+                x: point === 'start' ? line.x1 : line.x2,
+                y: point === 'start' ? line.y1 : line.y2
+            });
+            const isEarlierPoint = (a, b) => a.x !== b.x ? a.x < b.x : a.y < b.y;
+            const otherPoint = point => point === 'start' ? 'end' : 'start';
+            const isTerminal = (line, point) => {
+                if (virtualLink.has(`${line.id}:${point}`)) return false;
+                const corner = corners[cornerKeyAt(line, point)];
+                return !corner || corner.lines.length <= 1;
+            };
+
+            const visited = new Set();
+            const order = [];
+            const pendingBranches = [];
+
+            function walkChain(startLine, startPoint) {
+                let currentLine = startLine;
+                let currentEntry = startPoint;
+                while (currentLine && !visited.has(currentLine.id)) {
+                    visited.add(currentLine.id);
+                    order.push(currentLine.id);
+                    const exitPoint = otherPoint(currentEntry);
+                    const virtual = virtualLink.get(`${currentLine.id}:${exitPoint}`);
+                    if (virtual) {
+                        currentLine = lines.find(l => l.id === virtual.lineId);
+                        currentEntry = virtual.point;
+                        continue;
+                    }
+                    const corner = corners[cornerKeyAt(currentLine, exitPoint)];
+                    if (!corner || corner.lines.length <= 1) break;
+                    const others = corner.lines.filter(ref => ref.lineId !== currentLine.id);
+                    if (others.length === 1) {
+                        const nextRef = others[0];
+                        currentLine = lines.find(l => l.id === nextRef.lineId);
+                        currentEntry = nextRef.point;
+                        continue;
+                    }
+                    // T字コーナー：直線的に連続する本体側をそのまま歩き続け、
+                    // 枝側は本体を歩き終えたあとにまとめて処理する。
+                    const parts = getTeeParts(corner);
+                    const mainOther = parts && parts.mains.find(m => m.line.id !== currentLine.id);
+                    if (parts && parts.branch && !visited.has(parts.branch.line.id)) {
+                        pendingBranches.push({ line: parts.branch.line, point: parts.branch.ref.point });
+                    }
+                    if (mainOther) {
+                        currentLine = mainOther.line;
+                        currentEntry = mainOther.ref.point;
+                        continue;
+                    }
+                    const fallback = others.find(ref => !visited.has(ref.lineId));
+                    if (!fallback) break;
+                    currentLine = lines.find(l => l.id === fallback.lineId);
+                    currentEntry = fallback.point;
+                }
+            }
+
+            function pickLeftmost(candidates) {
+                let best = null;
+                candidates.forEach(candidate => {
+                    const p = pointAt(candidate.line, candidate.point);
+                    if (!best || isEarlierPoint(p, best.p)) best = { ...candidate, p };
+                });
+                return best;
+            }
+
+            while (visited.size < lines.length) {
+                let start = null;
+                while (pendingBranches.length && !start) {
+                    const candidate = pendingBranches.shift();
+                    if (!visited.has(candidate.line.id)) start = candidate;
+                }
+                if (!start) {
+                    const unvisited = lines.filter(line => !visited.has(line.id));
+                    const terminals = [];
+                    unvisited.forEach(line => {
+                        ['start', 'end'].forEach(point => {
+                            if (isTerminal(line, point)) terminals.push({ line, point });
+                        });
+                    });
+                    const pool = terminals.length
+                        ? terminals
+                        : unvisited.flatMap(line => [{ line, point: 'start' }, { line, point: 'end' }]);
+                    start = pickLeftmost(pool);
+                }
+                if (!start) break;
+                walkChain(start.line, start.point);
+            }
+
+            // 取りこぼしがあれば保険として末尾に追加する。
+            lines.forEach(line => { if (!visited.has(line.id)) order.push(line.id); });
+            return order;
+        }
+
         function renumberLineNames() {
-            lines.forEach((line, index) => {
+            const order = computeSpatialLineOrder();
+            const rank = new Map(order.map((id, index) => [id, index]));
+            lines.forEach(line => {
+                const index = rank.has(line.id) ? rank.get(line.id) : lines.indexOf(line);
                 line.name = `辺${lineLetter(index)}`;
             });
         }
