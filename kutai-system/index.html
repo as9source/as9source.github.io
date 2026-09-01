@@ -5236,6 +5236,18 @@
                 return !corner || corner.lines.length <= 1;
             };
 
+            // T字の枝は本体を歩き終えたあとに処理する前提の部品であり、
+            // 起点(内側の左側)には選ばない。輪状の自由作図に枝を追加すると
+            // 図形内で唯一の端部が枝になってしまい、枝からA,B,C…を振り
+            // 始めてしまう不具合があったため、枝の端部は起点候補から除外し、
+            // 他に候補が無い場合のみ最後の手段として使う。
+            const branchLineIds = new Set();
+            Object.values(corners || {}).forEach(corner => {
+                if (corner?.lines?.length !== 3) return;
+                const parts = getTeeParts(corner);
+                if (parts?.branch) branchLineIds.add(parts.branch.line.id);
+            });
+
             const visited = new Set();
             const order = [];
             const pendingBranches = [];
@@ -5265,6 +5277,17 @@
                     // T字コーナー：直線的に連続する本体側をそのまま歩き続け、
                     // 枝側は本体を歩き終えたあとにまとめて処理する。
                     const parts = getTeeParts(corner);
+                    if (parts && parts.branch.line.id === currentLine.id) {
+                        // 枝側から到達した場合（起点候補から除外し損ねた場合の保険）：
+                        // 本体2辺のどちらかを引き続き歩き、もう一方は保留にする。
+                        const [main1, main2] = parts.mains;
+                        if (!visited.has(main2.line.id)) {
+                            pendingBranches.push({ line: main2.line, point: main2.ref.point });
+                        }
+                        currentLine = main1.line;
+                        currentEntry = main1.ref.point;
+                        continue;
+                    }
                     const mainOther = parts && parts.mains.find(m => m.line.id !== currentLine.id);
                     if (parts && parts.branch && !visited.has(parts.branch.line.id)) {
                         pendingBranches.push({ line: parts.branch.line, point: parts.branch.ref.point });
@@ -5304,8 +5327,15 @@
                             if (isTerminal(line, point)) terminals.push({ line, point });
                         });
                     });
-                    const pool = terminals.length
-                        ? terminals
+                    // 枝の端部は最後の手段としてのみ起点候補にする。輪状に
+                    // 閉じた本体（壁・エンドが無い）に枝を追加すると、枝の
+                    // 端部だけが図形内で唯一の端部になってしまうため、
+                    // 本体側（枝以外）の点を優先的に起点候補にする。
+                    const nonBranchLines = unvisited.filter(line => !branchLineIds.has(line.id));
+                    const nonBranchTerminals = terminals.filter(t => !branchLineIds.has(t.line.id));
+                    const pool = nonBranchTerminals.length ? nonBranchTerminals
+                        : nonBranchLines.length ? nonBranchLines.flatMap(line => [{ line, point: 'start' }, { line, point: 'end' }])
+                        : terminals.length ? terminals
                         : unvisited.flatMap(line => [{ line, point: 'start' }, { line, point: 'end' }]);
                     start = pickLeftmost(pool);
                 }
@@ -5318,22 +5348,8 @@
             return order;
         }
 
-        // 段差T字の本体2辺は、見た目上も辺の数え方の上でも「1本の辺」として
-        // 扱う（枝が段差の下にあり、辺Aの躯体に干渉しないため）。そのため
-        // ここで求めるペアは同じ文字を共有し、新しい文字を消費しない。
-        function findSteppedMainPairs() {
-            detectCorners();
-            const pairs = new Set();
-            Object.values(corners || {}).forEach(corner => {
-                if (!corner?.hasStep || corner.lines?.length !== 3) return;
-                const parts = getTeeParts(corner);
-                if (!parts) return;
-                const [a, b] = parts.mains.map(m => m.line.id);
-                pairs.add([a, b].sort().join('|'));
-            });
-            return pairs;
-        }
-
+        // 段差T字の本体は、見た目上も辺の数え方の上でも「1本の辺」として
+        // 扱う（枝が段差の下にあり、辺Aの躯体に干渉しないため）。
         // 同じ辺の上に段差T字を連続で配置すると、3本以上の辺が地続きになる
         // ことがある。ペア単位（1つの段差コーナーだけ）でまとめると、
         // 途中の辺が別々のグループに二重登録されてラベルが重複表示されて
@@ -5390,18 +5406,22 @@
 
         function renumberLineNames() {
             const order = computeSpatialLineOrder();
-            const steppedPairs = findSteppedMainPairs();
+            // チェーンの共有文字は、歩いた順で隣り合っているかどうかに頼らず
+            // 実際のつながり（connectedComponents）だけで判定する。歩く途中で
+            // 枝側から段差T字へたどり着くなど順番が乱れる場合があるため。
+            const chains = computeSteppedMainChains();
+            const assignedChainRank = new Map();
             const rank = new Map();
             let letterIndex = 0;
-            order.forEach((id, i) => {
-                const prevId = order[i - 1];
-                const sharesLetterWithPrev = prevId !== undefined && steppedPairs.has([id, prevId].sort().join('|'));
-                if (sharesLetterWithPrev) {
-                    rank.set(id, rank.get(prevId));
-                } else {
-                    rank.set(id, letterIndex);
-                    letterIndex++;
+            order.forEach(id => {
+                const chain = chains.get(id);
+                if (chain && assignedChainRank.has(chain)) {
+                    rank.set(id, assignedChainRank.get(chain));
+                    return;
                 }
+                rank.set(id, letterIndex);
+                if (chain) assignedChainRank.set(chain, letterIndex);
+                letterIndex++;
             });
             lines.forEach(line => {
                 const index = rank.has(line.id) ? rank.get(line.id) : lines.indexOf(line);
