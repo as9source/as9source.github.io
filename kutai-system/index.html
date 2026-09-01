@@ -2104,7 +2104,15 @@
                 <button onclick="finishDrawing()" style="flex: 1; min-width: 110px; padding: 12px; background: #10b981; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">✓ 作図終了</button>
             </div>
             </section>
-            
+
+            <div class="measurement-site-card" style="background:#f8fafc;border-color:#cbd5e1;">
+                <div style="margin-bottom:12px;color:#334155;font-size:13px;font-weight:900;">4. 備考（任意）</div>
+                <textarea id="remarks" rows="3" placeholder="現場で気づいたこと・注意事項などを入力"
+                          oninput="updateRemarksDisplay()"
+                          style="width:100%;padding:12px;border:2px solid #94a3b8;border-radius:8px;font-size:15px;font-family:inherit;line-height:1.6;resize:vertical;box-sizing:border-box;"></textarea>
+                <div style="margin-top:7px;color:#64748b;font-size:12px;font-weight:600;">採寸結果の図の下・PDF・共有画像にも表示されます</div>
+            </div>
+
             <div class="dimension-inputs" id="dimension-inputs" hidden></div>
             
             <div class="results">
@@ -2400,6 +2408,8 @@
             // 現場名と色をクリア（v1.16.0）
             document.getElementById('site-name').value = '';
             document.getElementById('sash-color').value = '';
+            const remarksField = document.getElementById('remarks');
+            if (remarksField) remarksField.value = '';
             
             // canvasサイズを確実に設定してから描画（v1.14.1）
             setTimeout(() => {
@@ -3460,9 +3470,12 @@
             });
         }
 
-        // 壁は直交線＋ハッチ、エンドはコの字で表す
-        function drawPlanTermination(targetCtx, x, y, otherX, otherY, state, planWidth) {
+        // 壁は直交線＋ハッチ、エンドはコの字で表す。
+        // 出隅壁（躯体伸ばし）の端部は、元の図の上ではエンドと同じコの字で描き、
+        // 伸びや飛び出しの詳細は引き出しの拡大図（drawNotchFeature）へ逃がす。
+        function drawPlanTermination(targetCtx, x, y, otherX, otherY, state, planWidth, notchFeature = null) {
             if (state === 'corner' || state === 'attached') return;
+            const drawState = notchFeature ? 'end' : state;
             const dx = x - otherX;
             const dy = y - otherY;
             const length = Math.hypot(dx, dy);
@@ -3475,7 +3488,7 @@
             targetCtx.save();
             targetCtx.strokeStyle = '#0f172a';
             targetCtx.lineWidth = 2;
-            if (state === 'wall') {
+            if (drawState === 'wall') {
                 const overhang = Math.max(9, planWidth * 0.55);
                 targetCtx.beginPath();
                 targetCtx.moveTo(x + nx * (half + overhang), y + ny * (half + overhang));
@@ -3686,73 +3699,179 @@
             return `${slopeLine.name}${feature.lowSide === 'end' ? '終点側' : '始点側'}が低い`;
         }
 
+        // 出隅壁（躯体伸ばし）の詳細を、北村さんの手描き図（14.pdf 3枚目）と同じ構図の
+        // 拡大詳細図として1つの引き出し吹き出しにまとめて描く。
+        // 重要：斜線＝ハッチは「壁である」ことを示す模様であって、線の向きではない。
+        // 壁も躯体も、線そのものはすべて水平または垂直。
+        // 構図：躯体の縦2本線が上から降りてきて、左の線は横の壁面で止まる。壁は出隅の角で
+        // 真下へ折れ、躯体の右線はその壁面より下まで伸びて下端で壁面へ閉じる。
+        // 「壁からのとび出し」は壁の縦面から躯体の右線までの水平距離なので、壁の縦面は
+        // 躯体幅ととび出しの差の分だけ躯体の内側に入る（とび出し＝躯体幅のときだけ左線と一致）。
+        // 辺の全長（辺A等）は図中の辺ラベルに表示済みのため、ここでは
+        // 「躯体の伸び」「壁からのとび出し」だけを寸法線付きで記載する。
         function drawNotchFeature(targetCtx, line, feature, point, scaleFactor = 1) {
-            const dx = line.x2 - line.x1;
-            const dy = line.y2 - line.y1;
-            const length = Math.max(1, Math.hypot(dx, dy));
-            let ux = dx / length;
-            let uy = dy / length;
-            if (Math.hypot(feature.x - line.x2, feature.y - line.y2) < Math.hypot(feature.x - line.x1, feature.y - line.y1)) {
-                ux *= -1;
-                uy *= -1;
-            }
-            const isInsideExtension = feature.side === 'inside' || feature.side === 'right';
-            const sideSign = isInsideExtension ? -1 : 1;
-            const nx = -uy * sideSign;
-            const ny = ux * sideSign;
-            const bodyExtensionValue = Number(feature.bodyExtension ?? feature.capExtension);
-            const edgeLength = Number(dimensions[line.id]?.length);
-            const extendedTotal = Number.isFinite(edgeLength) && edgeLength > 0 && Number.isFinite(bodyExtensionValue) && bodyExtensionValue > 0
-                ? edgeLength + bodyExtensionValue
-                : null;
+            const bodyExtensionValue = Number(feature.bodyExtension ?? feature.capExtension) || 0;
+            const projectionValue = Number(feature.projection) || 0;
 
             const labelKey = `notch:${feature.id}`;
-            const labelLines = [
-                `${line.name}からの躯体伸び ${bodyExtensionValue}mm`,
-                `壁からの躯体の飛び出し ${feature.projection}mm／${isInsideExtension ? '内側伸ばし' : '外側伸ばし'}`,
-                ...(extendedTotal === null ? [] : [`元の${line.name} ${edgeLength}mm＋伸ばし ${bodyExtensionValue}mm＝合計 ${extendedTotal}mm`])
-            ];
-            targetCtx.save();
-            targetCtx.font = `bold ${Math.max(9, 10 * scaleFactor)}px sans-serif`;
-            const labelWidth = Math.max(...labelLines.map(text => targetCtx.measureText(text).width)) + 16;
-            const labelHeight = labelLines.length === 3 ? 54 : 38;
-            const defaultLabel = {
-                x: point.x + nx * 82 * scaleFactor,
-                y: point.y + ny * 82 * scaleFactor
-            };
+            const boxWidth = 152 * scaleFactor;
+            const boxHeight = 152 * scaleFactor;
             const offsets = targetCtx === ctx ? diagramLabelOffsets : resultLabelOffsets;
             const saved = offsets[labelKey];
             const canvasWidth = targetCtx.canvas?.width || 800;
             const canvasHeight = targetCtx.canvas?.height || 600;
-            const labelX = Math.max(labelWidth / 2 + 6, Math.min(canvasWidth - labelWidth / 2 - 6, saved?.x ?? defaultLabel.x));
-            const labelY = Math.max(labelHeight / 2 + 6, Math.min(canvasHeight - labelHeight / 2 - 6, saved?.y ?? defaultLabel.y));
-            if (saved) offsets[labelKey] = { x: labelX, y: labelY };
-            const rect = { left: labelX - labelWidth / 2, right: labelX + labelWidth / 2, top: labelY - labelHeight / 2, bottom: labelY + labelHeight / 2 };
-            targetCtx.strokeStyle = '#c2410c';
-            targetCtx.lineWidth = 1.3;
-            targetCtx.setLineDash([5, 4]);
+            const defaultPos = { x: point.x + boxWidth / 2 + 46, y: point.y - boxHeight / 2 - 26 };
+            const boxX = Math.max(boxWidth / 2 + 6, Math.min(canvasWidth - boxWidth / 2 - 6, saved?.x ?? defaultPos.x));
+            const boxY = Math.max(boxHeight / 2 + 6, Math.min(canvasHeight - boxHeight / 2 - 6, saved?.y ?? defaultPos.y));
+            if (saved) offsets[labelKey] = { x: boxX, y: boxY };
+            const rect = { left: boxX - boxWidth / 2, right: boxX + boxWidth / 2, top: boxY - boxHeight / 2, bottom: boxY + boxHeight / 2 };
+
+            targetCtx.save();
+
+            // 引き出し線（ドラッグで移動可能。作図画面の他の情報ブロックと同じ仕組み）
+            targetCtx.strokeStyle = '#94a3b8';
+            targetCtx.lineWidth = 1;
+            targetCtx.setLineDash([4, 3]);
             targetCtx.beginPath();
             targetCtx.moveTo(point.x, point.y);
-            targetCtx.lineTo(labelX, labelY);
+            targetCtx.lineTo(boxX, boxY);
             targetCtx.stroke();
             targetCtx.setLineDash([]);
-            targetCtx.fillStyle = 'rgba(255,247,237,.98)';
-            targetCtx.fillRect(rect.left, rect.top, labelWidth, labelHeight);
-            targetCtx.strokeStyle = '#f97316';
-            targetCtx.strokeRect(rect.left, rect.top, labelWidth, labelHeight);
-            targetCtx.textAlign = 'center';
-            targetCtx.textBaseline = 'middle';
-            labelLines.forEach((text, index) => {
-                targetCtx.fillStyle = index === 0 ? '#9a3412' : '#7c2d12';
-                targetCtx.font = `${index === 0 ? 'bold ' : ''}${Math.max(9, 10 * scaleFactor)}px sans-serif`;
-                targetCtx.fillText(text, labelX, labelY - ((labelLines.length - 1) * 8) + index * 16);
-            });
-            if (targetCtx === ctx) {
-                diagramLabelHitRegions.push({ key: labelKey, type: 'detail', x: labelX, y: labelY, rect });
-            } else {
-                resultLabelHitRegions.push({ key: labelKey, x: labelX, y: labelY, width: labelWidth, height: labelHeight, rect });
+
+            // 吹き出しの枠
+            targetCtx.fillStyle = 'rgba(255,255,255,.98)';
+            targetCtx.fillRect(rect.left, rect.top, boxWidth, boxHeight);
+            targetCtx.strokeStyle = '#0f172a';
+            targetCtx.lineWidth = 1.2;
+            targetCtx.strokeRect(rect.left, rect.top, boxWidth, boxHeight);
+
+            // --- 拡大詳細図 ---
+            // 「斜線＝ハッチ」は壁であることを示す模様であって、線の向きではない。
+            // 壁も躯体も線そのものは水平・垂直だけで構成し、短いハッチだけが斜め。
+            //
+            // 壁の縦面の位置は「壁からのとび出し」で決まる。躯体幅200mmでとび出し170mmなら、
+            // 壁の縦面は躯体の右線から170mm分だけ左（＝躯体の左線から30mm）の位置に来る。
+            // 躯体の左線と同じ位置になるのは、とび出し＝躯体幅のときだけ。
+            const bodyLeftX = rect.left + 24 * scaleFactor;
+            const bodyRightX = rect.left + 64 * scaleFactor;
+            const wallLeftX = rect.left + 8 * scaleFactor;
+            const topY = rect.top + 10 * scaleFactor;
+            const wallY = rect.top + 32 * scaleFactor;        // 横の壁面＝出隅の角
+            const bodyBottomY = rect.top + 70 * scaleFactor;  // 躯体の下端（伸びの先）
+            const wallBottomY = rect.top + 92 * scaleFactor;  // 壁の縦面はさらに下へ続く
+
+            const bodyWidthValue = positiveNumberOrNull(dimensions[line.id]?.width || commonWidth);
+            const projectionRatio = bodyWidthValue && projectionValue > 0
+                ? Math.max(0.12, Math.min(0.92, projectionValue / bodyWidthValue))
+                : 0.5;
+            const wallFaceX = bodyRightX - (bodyRightX - bodyLeftX) * projectionRatio;
+
+            targetCtx.strokeStyle = '#0f172a';
+            targetCtx.lineWidth = 1.6;
+
+            // 躯体の左の縦線：横の壁面まで
+            targetCtx.beginPath();
+            targetCtx.moveTo(bodyLeftX, topY);
+            targetCtx.lineTo(bodyLeftX, wallY);
+            targetCtx.stroke();
+
+            // 壁（横）：左から来て出隅の角で止まる
+            targetCtx.beginPath();
+            targetCtx.moveTo(wallLeftX, wallY);
+            targetCtx.lineTo(wallFaceX, wallY);
+            targetCtx.stroke();
+            for (let hx = wallLeftX + 4 * scaleFactor; hx < wallFaceX; hx += 7 * scaleFactor) {
+                targetCtx.beginPath();
+                targetCtx.moveTo(hx, wallY);
+                targetCtx.lineTo(hx - 5 * scaleFactor, wallY + 6 * scaleFactor);
+                targetCtx.stroke();
             }
+
+            // 壁（縦）：出隅の角から真下へ折れる壁面
+            targetCtx.beginPath();
+            targetCtx.moveTo(wallFaceX, wallY);
+            targetCtx.lineTo(wallFaceX, wallBottomY);
+            targetCtx.stroke();
+            for (let hy = wallY + 4 * scaleFactor; hy < wallBottomY; hy += 7 * scaleFactor) {
+                targetCtx.beginPath();
+                targetCtx.moveTo(wallFaceX, hy);
+                targetCtx.lineTo(wallFaceX - 6 * scaleFactor, hy + 5 * scaleFactor);
+                targetCtx.stroke();
+            }
+
+            // 躯体の右の縦線：壁の下まで伸びて、下端で壁の縦面へ閉じる
+            targetCtx.beginPath();
+            targetCtx.moveTo(bodyRightX, topY);
+            targetCtx.lineTo(bodyRightX, bodyBottomY);
+            targetCtx.lineTo(wallFaceX, bodyBottomY);
+            targetCtx.stroke();
+
+            // --- 寸法線（図から少し離して見やすく。水平・垂直のみ） ---
+            const dimX = bodyRightX + 26 * scaleFactor;   // 躯体の伸び：右へ離す
+            const projY = wallBottomY + 18 * scaleFactor; // 壁からのとび出し：下へ離す
+            targetCtx.strokeStyle = '#475569';
+            targetCtx.lineWidth = 1;
+
+            // 躯体の伸び：横の壁面から躯体の下端まで（縦）
+            targetCtx.setLineDash([2, 2]);
+            targetCtx.beginPath();
+            targetCtx.moveTo(bodyRightX, wallY);
+            targetCtx.lineTo(dimX, wallY);
+            targetCtx.moveTo(bodyRightX, bodyBottomY);
+            targetCtx.lineTo(dimX, bodyBottomY);
+            targetCtx.stroke();
+            targetCtx.setLineDash([]);
+            targetCtx.beginPath();
+            targetCtx.moveTo(dimX, wallY);
+            targetCtx.lineTo(dimX, bodyBottomY);
+            targetCtx.stroke();
+            [wallY, bodyBottomY].forEach(y => {
+                targetCtx.beginPath();
+                targetCtx.moveTo(dimX - 4 * scaleFactor, y);
+                targetCtx.lineTo(dimX + 4 * scaleFactor, y);
+                targetCtx.stroke();
+            });
+
+            // 壁からのとび出し：壁の縦面から躯体の右線まで（横）
+            targetCtx.setLineDash([2, 2]);
+            targetCtx.beginPath();
+            targetCtx.moveTo(wallFaceX, wallBottomY);
+            targetCtx.lineTo(wallFaceX, projY);
+            targetCtx.moveTo(bodyRightX, bodyBottomY);
+            targetCtx.lineTo(bodyRightX, projY);
+            targetCtx.stroke();
+            targetCtx.setLineDash([]);
+            targetCtx.beginPath();
+            targetCtx.moveTo(wallFaceX, projY);
+            targetCtx.lineTo(bodyRightX, projY);
+            targetCtx.stroke();
+            [wallFaceX, bodyRightX].forEach(x => {
+                targetCtx.beginPath();
+                targetCtx.moveTo(x, projY - 4 * scaleFactor);
+                targetCtx.lineTo(x, projY + 4 * scaleFactor);
+                targetCtx.stroke();
+            });
+
+            // ラベル（この拡大図でしか分からない2つの値のみ。辺の全長は辺ラベルと重複するため省く）
+            targetCtx.textAlign = 'left';
+            targetCtx.textBaseline = 'middle';
+            targetCtx.font = `${Math.max(9, 10 * scaleFactor)}px sans-serif`;
+            targetCtx.fillStyle = '#0f172a';
+            targetCtx.fillText('壁', wallLeftX, wallY - 9 * scaleFactor);
+
+            targetCtx.fillStyle = '#334155';
+            targetCtx.fillText('躯体の伸び', dimX + 5 * scaleFactor, (wallY + bodyBottomY) / 2 - 7 * scaleFactor);
+            targetCtx.fillText(`${bodyExtensionValue}mm`, dimX + 5 * scaleFactor, (wallY + bodyBottomY) / 2 + 7 * scaleFactor);
+            targetCtx.fillText('壁からのとび出し', wallLeftX, projY + 16 * scaleFactor);
+            targetCtx.fillText(`${projectionValue}mm`, wallLeftX, projY + 30 * scaleFactor);
+
             targetCtx.restore();
+
+            if (targetCtx === ctx) {
+                diagramLabelHitRegions.push({ key: labelKey, type: 'detail', x: boxX, y: boxY, rect });
+            } else {
+                resultLabelHitRegions.push({ key: labelKey, x: boxX, y: boxY, width: boxWidth, height: boxHeight, rect });
+            }
         }
 
         function drawWallsOnLine(targetCtx, line, transformPoint = (x, y) => ({x, y}), scaleFactor = 1) {
@@ -4032,10 +4151,10 @@
                 const startState = line.start || 'wall';
                 const endState = line.end || 'wall';
                 if (!(startState === 'wall' && startCorner?.lines?.length >= 2) && !endpointCoveredBySplitFeature(line.id, 'start')) {
-                    drawPlanTermination(ctx, p1.x, p1.y, p2.x, p2.y, startState, planWidth);
+                    drawPlanTermination(ctx, p1.x, p1.y, p2.x, p2.y, startState, planWidth, getNotchFeatureAt(line.id, 'start'));
                 }
                 if (!(endState === 'wall' && endCorner?.lines?.length >= 2) && !endpointCoveredBySplitFeature(line.id, 'end')) {
-                    drawPlanTermination(ctx, p2.x, p2.y, p1.x, p1.y, endState, planWidth);
+                    drawPlanTermination(ctx, p2.x, p2.y, p1.x, p1.y, endState, planWidth, getNotchFeatureAt(line.id, 'end'));
                 }
 
                 const steppedGroup = steppedMainGroupByLine.get(line.id);
@@ -5645,6 +5764,7 @@
                 id: currentSaveId || Date.now().toString(),
                 siteName: siteName,
                 sashColor: sashColor,
+                remarks: document.getElementById('remarks')?.value || '',
                 pattern: currentPattern,
                 lines: JSON.parse(JSON.stringify(lines)),
                 dimensions: JSON.parse(JSON.stringify(dimensions)),
@@ -5793,6 +5913,8 @@
             // 入力値を復元
             document.getElementById('site-name').value = data.siteName;
             document.getElementById('sash-color').value = data.sashColor;
+            const remarksInput = document.getElementById('remarks');
+            if (remarksInput) remarksInput.value = data.remarks || '';
             
             // パターンタイトル設定
             const patternTitles = {
@@ -6228,6 +6350,10 @@
         // 出隅壁（躯体伸ばし）が付いた辺は、現場では「エンド」と同じく端から端まで
         // 実測するほうが自然なため、辺の寸法入力は伸び分を含めた実測値を受け取り、
         // 内部の辺寸法（コーナー基準の理論値）へは伸び分を差し引いて保存する。
+        function getNotchFeatureAt(lineId, point) {
+            return wallFeatures.find(feature => feature.featureType === 'notch' && feature.lineId === lineId && feature.endpoint === point) || null;
+        }
+
         function getLineNotchExtensionTotal(lineId) {
             return wallFeatures
                 .filter(feature => feature.featureType === 'notch' && feature.lineId === lineId)
@@ -6242,6 +6368,7 @@
                 const endpointName = feature.endpoint && endpointLine
                     ? `${endpointLine.name}${feature.endpoint === 'start' ? '始点' : '終点'} 出隅`
                     : null;
+                // dimensions[lineId].length は端から端まで測った実寸（伸び分を含む合計）そのもの。
                 const edgeLength = positiveNumberOrNull(endpointLine ? dimensions[endpointLine.id]?.length : null);
                 const bodyExtension = positiveNumberOrNull(feature.bodyExtension ?? feature.capExtension);
                 return {
@@ -6250,7 +6377,7 @@
                     projection: Number(feature.projection),
                     bodyExtension,
                     edgeLength,
-                    extendedTotal: edgeLength && bodyExtension ? edgeLength + bodyExtension : null,
+                    extendedTotal: edgeLength,
                     side: feature.side === 'inside' || feature.side === 'right' ? '内側伸ばし' : '外側伸ばし',
                     bodyWidth: positiveNumberOrNull(endpointLine ? (dimensions[endpointLine.id]?.width || commonWidth) : commonWidth)
                 };
@@ -6281,6 +6408,38 @@
                     angle: measuredAngle
                 };
             }).filter(Boolean);
+        }
+
+        // 備考：採寸結果の図の下・PDF・共有画像に同じ内容を表示する。
+        function getRemarksText() {
+            return (document.getElementById('remarks')?.value || '').trim();
+        }
+
+        function escapeHtmlText(value) {
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function buildRemarksHtml(options = {}) {
+            const text = getRemarksText();
+            if (!text) return '';
+            const body = escapeHtmlText(text).replace(/\n/g, '<br>');
+            const titleSize = options.compact ? '12px' : '13px';
+            const bodySize = options.compact ? '11px' : '14px';
+            return `
+                <div class="pdf-result-card" style="margin-top:12px;padding:11px 13px;background:#f8fafc;border-radius:8px;border:2px solid #94a3b8;">
+                    <div style="color:#334155;font-weight:800;font-size:${titleSize};margin-bottom:5px;">📝 備考</div>
+                    <div style="color:#0f172a;font-size:${bodySize};line-height:1.7;">${body}</div>
+                </div>
+            `;
+        }
+
+        function updateRemarksDisplay() {
+            const holder = document.getElementById('result-remarks-block');
+            if (holder) holder.innerHTML = buildRemarksHtml();
         }
 
         function positiveNumberOrNull(value) {
@@ -6561,7 +6720,7 @@
                 });
 
                 notchResultRows.forEach(item => {
-                    html += `<div class="result-row-enhanced" style="border-color:#fdba74;background:#fff7ed;"><div class="result-row-title" style="color:#9a3412;">${item.name} 出隅壁（躯体伸ばし）</div><div class="result-row-detail">${item.side} ／ 躯体幅 ${item.bodyWidth || '-'}mm ／ 壁からの躯体の飛び出し ${item.projection}mm ／ 辺からの躯体伸び ${item.bodyExtension || '-'}mm${item.extendedTotal ? `<br>元の辺寸法 ${item.edgeLength}mm<br><strong>${item.edgeLength}＋伸ばし ${item.bodyExtension}＝合計 ${item.extendedTotal}mm</strong>` : ''}</div></div>`;
+                    html += `<div class="result-row-enhanced" style="border-color:#fdba74;background:#fff7ed;"><div class="result-row-title" style="color:#9a3412;">${item.name} 出隅壁（躯体伸ばし）</div><div class="result-row-detail">${item.side} ／ 躯体幅 ${item.bodyWidth || '-'}mm ／ 壁からの躯体の飛び出し ${item.projection}mm ／ 辺からの躯体伸び ${item.bodyExtension || '-'}mm${item.extendedTotal ? `<br><strong>辺寸法（端から端の実寸）${item.extendedTotal}mm</strong>` : ''}</div></div>`;
                 });
                 
                 html += '</div>';
@@ -6570,9 +6729,10 @@
                     <div style="margin:0 0 8px;padding:9px 12px;border-radius:8px;background:#eff6ff;border:1px solid #93c5fd;color:#1e40af;font-size:12px;font-weight:700;">
                         ✋ 寸法の情報箱はドラッグで移動できます。ダブルクリック／ダブルタップで自動配置に戻ります。
                     </div>
-                    <div id="result-canvas-container" style="margin-bottom:20px;">
+                    <div id="result-canvas-container" style="margin-bottom:12px;">
                         <canvas id="result-canvas" style="width:100%;border-radius:10px;touch-action:none;cursor:default;"></canvas>
                     </div>
+                    <div id="result-remarks-block" style="margin-bottom:20px;">${buildRemarksHtml()}</div>
                     <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
                         <button onclick="downloadAsPDF()" style="flex: 1; min-width: 140px; padding: 12px 20px; background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
                             📄 PDFで保存
@@ -7347,10 +7507,10 @@
                 const startCorner = corners[findCornerKey(line.x1, line.y1, 5)];
                 const endCorner = corners[findCornerKey(line.x2, line.y2, 5)];
                 if (!(startState === 'wall' && startCorner?.lines?.length >= 2) && !endpointCoveredBySplitFeature(line.id, 'start')) {
-                    drawPlanTermination(ctx, sx1, sy1, sx2, sy2, startState, planWidth);
+                    drawPlanTermination(ctx, sx1, sy1, sx2, sy2, startState, planWidth, getNotchFeatureAt(line.id, 'start'));
                 }
                 if (!(endState === 'wall' && endCorner?.lines?.length >= 2) && !endpointCoveredBySplitFeature(line.id, 'end')) {
-                    drawPlanTermination(ctx, sx2, sy2, sx1, sy1, endState, planWidth);
+                    drawPlanTermination(ctx, sx2, sy2, sx1, sy1, endState, planWidth, getNotchFeatureAt(line.id, 'end'));
                 }
                 
                 const dim = dimensions[line.id];
@@ -9078,7 +9238,7 @@
             if (!line) return;
             const notchExtensionTotal = getLineNotchExtensionTotal(lineId);
             const storedLength = dimensions[lineId]?.length;
-            const current = Number.isFinite(storedLength) ? storedLength + notchExtensionTotal : '';
+            const current = Number.isFinite(storedLength) ? storedLength : '';
             const currentWidth = dimensions[lineId]?.width || commonWidth || '';
             const dimensionLabel = isLineDiagonal(line) ? '芯寸法' : '外法寸法';
             const bodyWidthWarning = buildBodyWidthWarnings().find(warning => warning.lineIds.includes(lineId));
@@ -9137,18 +9297,12 @@
                 alert('正しい寸法を入力してください。');
                 return;
             }
-            const notchExtensionTotal = getLineNotchExtensionTotal(lineId);
-            const internalLength = numeric - notchExtensionTotal;
-            if (notchExtensionTotal > 0 && internalLength <= 0) {
-                alert(`実測値が出隅の躯体伸び ${notchExtensionTotal}mm を下回っています。端から端までの実寸を正しく入力してください。`);
-                return;
-            }
             const numericWidth = useIndividualWidth ? parseFloat(widthValue) : null;
             if (useIndividualWidth && (!Number.isFinite(numericWidth) || numericWidth <= 0)) {
                 alert('この辺の躯体幅を正しい数値で入力してください。');
                 return;
             }
-            updateDimension(lineId, 'length', internalLength);
+            updateDimension(lineId, 'length', numeric);
             if (useIndividualWidth) updateDimension(lineId, 'width', numericWidth);
             closeDiagramMenu();
             showAlert(`${line.name}の寸法${useIndividualWidth ? 'と躯体幅' : ''}を入力しました。`, 'success');
@@ -10104,7 +10258,7 @@
             });
 
             notchResultRows.forEach(item => {
-                resultsHTML += `<div class="pdf-result-card" style="padding:10px 12px;background:#fff7ed;border-radius:6px;border:1px solid #fdba74;"><div style="color:#9a3412;font-weight:700;font-size:12px;">${item.name} 出隅壁（躯体伸ばし）</div><div style="margin-top:4px;color:#7c2d12;font-size:10px;">${item.side} ／ 躯体幅 ${item.bodyWidth || '-'}mm ／ 壁からの躯体の飛び出し ${item.projection}mm ／ 辺からの躯体伸び ${item.bodyExtension || '-'}mm${item.extendedTotal ? `<br>元の辺寸法 ${item.edgeLength}mm<br><strong>${item.edgeLength}＋伸ばし ${item.bodyExtension}＝合計 ${item.extendedTotal}mm</strong>` : ''}</div></div>`;
+                resultsHTML += `<div class="pdf-result-card" style="padding:10px 12px;background:#fff7ed;border-radius:6px;border:1px solid #fdba74;"><div style="color:#9a3412;font-weight:700;font-size:12px;">${item.name} 出隅壁（躯体伸ばし）</div><div style="margin-top:4px;color:#7c2d12;font-size:10px;">${item.side} ／ 躯体幅 ${item.bodyWidth || '-'}mm ／ 壁からの躯体の飛び出し ${item.projection}mm ／ 辺からの躯体伸び ${item.bodyExtension || '-'}mm${item.extendedTotal ? `<br><strong>辺寸法（端から端の実寸）${item.extendedTotal}mm</strong>` : ''}</div></div>`;
             });
             
             resultsHTML += '</div>';
@@ -10133,7 +10287,9 @@
 
                 resultsHTML += '</div>';
             }
-            
+
+            resultsHTML += buildRemarksHtml({ compact: true });
+
             return resultsHTML;
         }
         
