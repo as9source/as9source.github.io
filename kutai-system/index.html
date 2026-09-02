@@ -3480,12 +3480,166 @@
             });
         }
 
+        // 出隅（躯体伸ばし）の形は、躯体幅を 1 とするローカル座標だけで定義する。
+        //   a … 躯体が伸びる向き（伸びた先端が a=0、手前側が負）
+        //   b … 壁のある側が正（躯体の中心が b=0、躯体の二重線は b=±0.5）
+        // 拡大図も元の採寸図も、向きと大きさだけ変えてこの1つの定義から描く。
+        // こうしておかないと「拡大図と元の図で形が違う」状態がまた起きる。
+        const NOTCH_SHAPE = {
+            bodyBack: 0.55,   // 壁面より手前に見せる躯体の長さ
+            extension: 0.95,  // 壁面から躯体の先端まで（＝躯体の伸び）
+            wallTail: 0.55,   // 壁の縦面が躯体の先端より先へ続く長さ
+            wallHead: 0.40,   // 壁の横面が躯体の壁側線より先へ出る長さ
+            hatchStep: 0.175  // 壁を示すハッチの間隔
+        };
+
+        // 「壁からのとび出し」は壁の縦面から躯体の反対側の線までの距離。
+        // 躯体幅に対する比で持てば、拡大図でも元の図でも同じ形になる。
+        function getNotchProjectionRatio(line, feature) {
+            const bodyWidthValue = positiveNumberOrNull(dimensions[line?.id]?.width || commonWidth);
+            const projectionValue = Number(feature?.projection) || 0;
+            return bodyWidthValue && projectionValue > 0
+                ? Math.max(0.12, Math.min(0.92, projectionValue / bodyWidthValue))
+                : 0.5;
+        }
+
+        // 壁の縦面のローカル位置（b）。とび出し＝躯体幅のとき壁側の躯体線と一致する。
+        function getNotchWallFaceB(projectionRatio) {
+            return -0.5 + Math.max(0.12, Math.min(0.92, projectionRatio));
+        }
+
+        // 出隅の壁がどちら側に付くかを、作図された形そのものから決める。
+        // 法線 n0 =(-uy, ux)（u は端部へ向かう辺の向き）を +b とし、
+        //「外側伸ばし」は壁が図形の重心側（＝形の内側）に付き、躯体はその反対の外側へ飛び出す。
+        // 北村さん：「基本的に図の下側が内側」。コの字なら壁は輪の内側、直線なら壁は下側。
+        // L字の左辺と右辺では重心の位置が逆になるため、同じ設定でも自動的に左右が反転する。
+        // 直線だけの形は重心が辺の上に乗って判定できないので、画面の下側
+        //（辺が縦のときは右側）を壁側にする。内外は「躯体の伸ばし方向」の入力で反転できる。
+        function getNotchWallSideSign(feature) {
+            const line = lines.find(item => item.id === feature?.lineId);
+            if (!line) return 1;
+            const atStart = feature.endpoint === 'start';
+            const ex = atStart ? line.x1 : line.x2;
+            const ey = atStart ? line.y1 : line.y2;
+            const ox = atStart ? line.x2 : line.x1;
+            const oy = atStart ? line.y2 : line.y1;
+            const length = Math.hypot(ex - ox, ey - oy) || 1;
+            const nx = -(ey - oy) / length;
+            const ny = (ex - ox) / length;
+            let sumX = 0;
+            let sumY = 0;
+            lines.forEach(item => { sumX += item.x1 + item.x2; sumY += item.y1 + item.y2; });
+            const count = Math.max(1, lines.length * 2);
+            const toCentroid = (sumX / count - (ex + ox) / 2) * nx + (sumY / count - (ey + oy) / 2) * ny;
+            const baseSign = Math.abs(toCentroid) > 0.5
+                ? (toCentroid > 0 ? 1 : -1)
+                : (Math.abs(ny) > 1e-6 ? (ny > 0 ? 1 : -1) : (nx > 0 ? 1 : -1));
+            const inside = feature.side === 'inside' || feature.side === 'right';
+            return inside ? -baseSign : baseSign;
+        }
+
+        // 拡大図・元の図で共通に使う向き。実際の辺の向きを画面の縦横へ寄せ（斜めの辺は
+        // 近いほうへ倒す）、壁の付く側を +b とする。これで「見た目の通り」の向きになる。
+        function getNotchAxes(feature) {
+            const sign = getNotchWallSideSign(feature);
+            const line = lines.find(item => item.id === feature?.lineId);
+            if (!line) return { u: { x: 0, y: 1 }, n: { x: -sign, y: 0 } };
+            const atStart = feature.endpoint === 'start';
+            const dx = (atStart ? line.x1 : line.x2) - (atStart ? line.x2 : line.x1);
+            const dy = (atStart ? line.y1 : line.y2) - (atStart ? line.y2 : line.y1);
+            const u = Math.abs(dx) >= Math.abs(dy)
+                ? { x: dx < 0 ? -1 : 1, y: 0 }
+                : { x: 0, y: dy < 0 ? -1 : 1 };
+            return { u, n: { x: -u.y * sign, y: u.x * sign } };
+        }
+
+        // 拡大図の箱。中身を実際の向きに回すので、横向きの辺のときは横長の箱になる。
+        // 採寸結果図の置き場所予約もこの関数を使う（片方だけ変えるとズレる）。
+        function getNotchDetailBoxSize(feature, scaleFactor = 1) {
+            const horizontal = getNotchAxes(feature).u.x !== 0;
+            return horizontal
+                ? { width: 194 * scaleFactor, height: 128 * scaleFactor }
+                : { width: 158 * scaleFactor, height: 146 * scaleFactor };
+        }
+
+        // 出隅の形を1か所で描く。map(a, b) がローカル座標を画面座標へ移す。
+        // 回転も左右反転も map 側に任せるので、ハッチの倒れる向きまで自動で追従する。
+        // 重要：斜線＝ハッチは「壁である」ことを示す模様であって、線の向きではない。
+        // 壁も躯体も、線そのものはすべて辺に平行か直角。
+        function drawNotchShape(targetCtx, map, unit, projectionRatio, options = {}) {
+            const half = 0.5;
+            const ext = NOTCH_SHAPE.extension;
+            const tail = NOTCH_SHAPE.wallTail;
+            const wallFaceB = getNotchWallFaceB(projectionRatio);
+            const wallEndB = half + NOTCH_SHAPE.wallHead;
+            const bodyStartA = -(ext + NOTCH_SHAPE.bodyBack);
+            // 小さく描くときはハッチが潰れるので、間隔だけ最低幅を確保する（形は変えない）。
+            const hatchStep = Math.max(NOTCH_SHAPE.hatchStep, 4.5 / Math.max(1, unit));
+            const hatchScale = hatchStep / NOTCH_SHAPE.hatchStep;
+            const stroke = points => {
+                targetCtx.beginPath();
+                points.forEach((p, index) => {
+                    const q = map(p[0], p[1]);
+                    if (index === 0) targetCtx.moveTo(q.x, q.y);
+                    else targetCtx.lineTo(q.x, q.y);
+                });
+                targetCtx.stroke();
+            };
+
+            targetCtx.save();
+
+            // 壁の中に躯体の二重線やグリッドが残らないよう、壁の当たる範囲を消してから描く
+            //（途中壁・堀込みと同じ考え方）。
+            if (options.erase !== false) {
+                const block = [
+                    map(-ext, wallFaceB), map(-ext, wallEndB),
+                    map(tail, wallEndB), map(tail, wallFaceB)
+                ];
+                const xs = block.map(p => p.x);
+                const ys = block.map(p => p.y);
+                targetCtx.save();
+                targetCtx.beginPath();
+                block.forEach((p, index) => index === 0 ? targetCtx.moveTo(p.x, p.y) : targetCtx.lineTo(p.x, p.y));
+                targetCtx.closePath();
+                targetCtx.clip();
+                targetCtx.clearRect(Math.min(...xs) - 1, Math.min(...ys) - 1,
+                    Math.max(...xs) - Math.min(...xs) + 2, Math.max(...ys) - Math.min(...ys) + 2);
+                targetCtx.fillStyle = '#f8fafc';
+                targetCtx.fill();
+                targetCtx.restore();
+            }
+
+            targetCtx.strokeStyle = options.color || '#0f172a';
+            targetCtx.lineWidth = options.lineWidth || 1.6;
+            targetCtx.lineCap = 'butt';
+            targetCtx.lineJoin = 'miter';
+
+            // 壁側の躯体線：横の壁面で止まる
+            stroke([[bodyStartA, half], [-ext, half]]);
+            // 反対側の躯体線：壁面より先へ伸び、先端で壁の縦面へ閉じる
+            stroke([[bodyStartA, -half], [0, -half], [0, wallFaceB]]);
+            // 壁（横）：外から来て出隅の角で止まる
+            stroke([[-ext, wallEndB], [-ext, wallFaceB]]);
+            // 壁（縦）：出隅の角から、躯体の先端より先まで真下へ折れる
+            stroke([[-ext, wallFaceB], [tail, wallFaceB]]);
+
+            // ハッチ（壁であることを示す模様）
+            for (let hb = wallEndB - 0.1 * hatchScale; hb > wallFaceB; hb -= hatchStep) {
+                stroke([[-ext, hb], [-ext + 0.15 * hatchScale, hb + 0.125 * hatchScale]]);
+            }
+            for (let ha = -ext + 0.1 * hatchScale; ha < tail; ha += hatchStep) {
+                stroke([[ha, wallFaceB], [ha + 0.125 * hatchScale, wallFaceB + 0.15 * hatchScale]]);
+            }
+
+            targetCtx.restore();
+        }
+
         // 壁は直交線＋ハッチ、エンドはコの字で表す。
-        // 出隅壁（躯体伸ばし）の端部は、元の図の上ではエンドと同じコの字で描き、
-        // 伸びや飛び出しの詳細は引き出しの拡大図（drawNotchFeature）へ逃がす。
+        // 出隅壁（躯体伸ばし）の端部は、拡大図（drawNotchFeature）とまったく同じ形を、
+        // 実際の辺の向きと壁の付く側に合わせて回転・反転させて描く。寸法は拡大図側だけに入れる。
         function drawPlanTermination(targetCtx, x, y, otherX, otherY, state, planWidth, notchFeature = null) {
             if (state === 'corner' || state === 'attached') return;
-            const drawState = notchFeature ? 'end' : state;
+            const drawState = state;
             const dx = x - otherX;
             const dy = y - otherY;
             const length = Math.hypot(dx, dy);
@@ -3498,6 +3652,24 @@
             targetCtx.save();
             targetCtx.strokeStyle = '#0f172a';
             targetCtx.lineWidth = 2;
+            if (notchFeature) {
+                // 拡大図と同じ形を、辺の向き（回転）と壁の付く側（左右反転）に合わせて描く。
+                const notchLine = lines.find(item => item.id === notchFeature.lineId);
+                const wallSign = getNotchWallSideSign(notchFeature);
+                const unit = planWidth;
+                drawNotchShape(
+                    targetCtx,
+                    (a, b) => ({
+                        x: x + ux * a * unit + nx * wallSign * b * unit,
+                        y: y + uy * a * unit + ny * wallSign * b * unit
+                    }),
+                    unit,
+                    getNotchProjectionRatio(notchLine, notchFeature),
+                    { lineWidth: 2 }
+                );
+                targetCtx.restore();
+                return;
+            }
             if (drawState === 'wall') {
                 const overhang = Math.max(9, planWidth * 0.55);
                 targetCtx.beginPath();
@@ -3711,12 +3883,9 @@
 
         // 出隅壁（躯体伸ばし）の詳細を、北村さんの手描き図（14.pdf 3枚目）と同じ構図の
         // 拡大詳細図として1つの引き出し吹き出しにまとめて描く。
-        // 重要：斜線＝ハッチは「壁である」ことを示す模様であって、線の向きではない。
-        // 壁も躯体も、線そのものはすべて水平または垂直。
-        // 構図：躯体の縦2本線が上から降りてきて、左の線は横の壁面で止まる。壁は出隅の角で
-        // 真下へ折れ、躯体の右線はその壁面より下まで伸びて下端で壁面へ閉じる。
-        // 「壁からのとび出し」は壁の縦面から躯体の右線までの水平距離なので、壁の縦面は
-        // 躯体幅ととび出しの差の分だけ躯体の内側に入る（とび出し＝躯体幅のときだけ左線と一致）。
+        // 形そのものは drawNotchShape が唯一の定義で、元の採寸図の端部とまったく同じ。
+        // 向きも実際の辺に合わせて回転・反転する（横向きの辺なら拡大図も横向き）。
+        // 文字だけは常に水平に描き、置き場所を向きに合わせて決める。
         // 辺の全長（辺A等）は図中の辺ラベルに表示済みのため、ここでは
         // 「躯体の伸び」「壁からのとび出し」だけを寸法線付きで記載する。
         function drawNotchFeature(targetCtx, line, feature, point, scaleFactor = 1) {
@@ -3724,8 +3893,9 @@
             const projectionValue = Number(feature.projection) || 0;
 
             const labelKey = `notch:${feature.id}`;
-            const boxWidth = 152 * scaleFactor;
-            const boxHeight = 152 * scaleFactor;
+            const boxSize = getNotchDetailBoxSize(feature, scaleFactor);
+            const boxWidth = boxSize.width;
+            const boxHeight = boxSize.height;
             const offsets = targetCtx === ctx ? diagramLabelOffsets : resultLabelOffsets;
             const saved = offsets[labelKey];
             const canvasWidth = targetCtx.canvas?.width || 800;
@@ -3755,134 +3925,104 @@
             targetCtx.lineWidth = 1.2;
             targetCtx.strokeRect(rect.left, rect.top, boxWidth, boxHeight);
 
-            // --- 拡大詳細図 ---
-            // 「斜線＝ハッチ」は壁であることを示す模様であって、線の向きではない。
-            // 壁も躯体も線そのものは水平・垂直だけで構成し、短いハッチだけが斜め。
-            //
-            // 壁の縦面の位置は「壁からのとび出し」で決まる。躯体幅200mmでとび出し170mmなら、
-            // 壁の縦面は躯体の右線から170mm分だけ左（＝躯体の左線から30mm）の位置に来る。
-            // 躯体の左線と同じ位置になるのは、とび出し＝躯体幅のときだけ。
-            // 内側伸ばしのときは左右反転して描く。X座標はすべて X(オフセット) 経由で求め、
-            // 横方向の向きに依存する処理（ハッチの倒れる向き・文字寄せ）は sx で符号を反転する。
-            const isInsideExtension = feature.side === 'inside' || feature.side === 'right';
-            const sx = isInsideExtension ? -1 : 1;
-            const X = off => isInsideExtension
-                ? rect.right - off * scaleFactor
-                : rect.left + off * scaleFactor;
+            // ローカル座標（a：躯体が伸びる向き／b：壁のある側）を、実際の辺の向きへ回す。
+            const axes = getNotchAxes(feature);
+            const unit = 38 * scaleFactor;                 // 拡大図での躯体幅
+            const ext = NOTCH_SHAPE.extension;
+            const tail = NOTCH_SHAPE.wallTail;
+            const bodyStartA = -(ext + NOTCH_SHAPE.bodyBack);
+            const projectionRatio = getNotchProjectionRatio(line, feature);
+            const wallFaceB = getNotchWallFaceB(projectionRatio);
+            const wallEndB = 0.5 + NOTCH_SHAPE.wallHead;
+            const dimB = -1.15;          // 「躯体の伸び」の寸法線（躯体をはさんで壁の反対側）
+            const projA = tail + 0.45;   // 「壁からのとび出し」の寸法線（躯体の先端より先）
+            const rel = (a, b) => ({
+                x: (axes.u.x * a + axes.n.x * b) * unit,
+                y: (axes.u.y * a + axes.n.y * b) * unit
+            });
 
-            const bodyNearX = X(24);   // 壁側の躯体線
-            const bodyFarX = X(64);    // 壁と反対側の躯体線
-            const wallEndX = X(8);     // 横の壁面の先端
-            const topY = rect.top + 10 * scaleFactor;
-            const wallY = rect.top + 32 * scaleFactor;        // 横の壁面＝出隅の角
-            const bodyBottomY = rect.top + 70 * scaleFactor;  // 躯体の下端（伸びの先）
-            const wallBottomY = rect.top + 92 * scaleFactor;  // 壁の縦面はさらに下へ続く
+            // 文字は常に水平。向きに応じて置き場所（寄せ方）だけを決める。
+            const fontSize = Math.max(9, 10 * scaleFactor);
+            const lineHeight = 13 * scaleFactor;
+            targetCtx.font = `${fontSize}px sans-serif`;
+            const textItems = [
+                { color: '#0f172a', a: -ext - 0.24, b: wallEndB - 0.2, dirA: 0, dirB: 0, texts: ['壁'] },
+                { color: '#334155', a: -ext / 2, b: dimB - 0.16, dirA: 0, dirB: -1,
+                  texts: ['躯体の伸び', `${bodyExtensionValue}mm`] },
+                { color: '#334155', a: projA + 0.16, b: (wallFaceB - 0.5) / 2, dirA: 1, dirB: 0,
+                  texts: ['壁からのとび出し', `${projectionValue}mm`] }
+            ].map(item => {
+                const at = rel(item.a, item.b);
+                const dir = rel(item.dirA, item.dirB);
+                const width = Math.max(...item.texts.map(text => targetCtx.measureText(text).width));
+                const height = item.texts.length * lineHeight;
+                const horizontal = Math.abs(dir.x) > Math.abs(dir.y);
+                const left = horizontal
+                    ? (dir.x > 0 ? at.x : at.x - width)
+                    : at.x - width / 2;
+                const top = horizontal || dir.y === 0
+                    ? at.y - height / 2
+                    : (dir.y > 0 ? at.y : at.y - height);
+                return { ...item, left, top, right: left + width, bottom: top + height };
+            });
 
-            const bodyWidthValue = positiveNumberOrNull(dimensions[line.id]?.width || commonWidth);
-            const projectionRatio = bodyWidthValue && projectionValue > 0
-                ? Math.max(0.12, Math.min(0.92, projectionValue / bodyWidthValue))
-                : 0.5;
-            const wallFaceX = X(64 - (64 - 24) * projectionRatio);
+            // 図と文字をまとめて吹き出しの中央へ収める
+            const bounds = { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity };
+            const include = (px, py) => {
+                bounds.left = Math.min(bounds.left, px);
+                bounds.right = Math.max(bounds.right, px);
+                bounds.top = Math.min(bounds.top, py);
+                bounds.bottom = Math.max(bounds.bottom, py);
+            };
+            [[bodyStartA, dimB], [bodyStartA, wallEndB], [projA, dimB], [projA, wallEndB]]
+                .forEach(([a, b]) => { const p = rel(a, b); include(p.x, p.y); });
+            textItems.forEach(item => { include(item.left, item.top); include(item.right, item.bottom); });
+            const originX = boxX - (bounds.left + bounds.right) / 2;
+            const originY = boxY - (bounds.top + bounds.bottom) / 2;
+            const notchMap = (a, b) => {
+                const p = rel(a, b);
+                return { x: originX + p.x, y: originY + p.y };
+            };
 
-            targetCtx.strokeStyle = '#0f172a';
-            targetCtx.lineWidth = 1.6;
+            drawNotchShape(targetCtx, notchMap, unit, projectionRatio, { lineWidth: 1.6 });
 
-            // 壁側の躯体線：横の壁面まで
-            targetCtx.beginPath();
-            targetCtx.moveTo(bodyNearX, topY);
-            targetCtx.lineTo(bodyNearX, wallY);
-            targetCtx.stroke();
-
-            // 壁（横）：外から来て出隅の角で止まる
-            targetCtx.beginPath();
-            targetCtx.moveTo(wallEndX, wallY);
-            targetCtx.lineTo(wallFaceX, wallY);
-            targetCtx.stroke();
-            for (let d = 4; d * scaleFactor < Math.abs(wallFaceX - wallEndX); d += 7) {
-                const hx = wallEndX + d * scaleFactor * sx;
-                targetCtx.beginPath();
-                targetCtx.moveTo(hx, wallY);
-                targetCtx.lineTo(hx - 5 * scaleFactor * sx, wallY + 6 * scaleFactor);
-                targetCtx.stroke();
-            }
-
-            // 壁（縦）：出隅の角から真下へ折れる壁面
-            targetCtx.beginPath();
-            targetCtx.moveTo(wallFaceX, wallY);
-            targetCtx.lineTo(wallFaceX, wallBottomY);
-            targetCtx.stroke();
-            for (let hy = wallY + 4 * scaleFactor; hy < wallBottomY; hy += 7 * scaleFactor) {
-                targetCtx.beginPath();
-                targetCtx.moveTo(wallFaceX, hy);
-                targetCtx.lineTo(wallFaceX - 6 * scaleFactor * sx, hy + 5 * scaleFactor);
-                targetCtx.stroke();
-            }
-
-            // 反対側の躯体線：壁の下まで伸びて、下端で壁の縦面へ閉じる
-            targetCtx.beginPath();
-            targetCtx.moveTo(bodyFarX, topY);
-            targetCtx.lineTo(bodyFarX, bodyBottomY);
-            targetCtx.lineTo(wallFaceX, bodyBottomY);
-            targetCtx.stroke();
-
-            // --- 寸法線（図から少し離して見やすく。水平・垂直のみ） ---
-            const dimX = X(90);                           // 躯体の伸び：壁と反対側へ離す
-            const projY = wallBottomY + 18 * scaleFactor; // 壁からのとび出し：下へ離す
+            // --- 寸法線（図から少し離して見やすく。ローカル座標なので向きに自動で追従する） ---
             targetCtx.strokeStyle = '#475569';
             targetCtx.lineWidth = 1;
-
-            // 躯体の伸び：横の壁面から躯体の下端まで（縦）
-            targetCtx.setLineDash([2, 2]);
-            targetCtx.beginPath();
-            targetCtx.moveTo(bodyFarX, wallY);
-            targetCtx.lineTo(dimX, wallY);
-            targetCtx.moveTo(bodyFarX, bodyBottomY);
-            targetCtx.lineTo(dimX, bodyBottomY);
-            targetCtx.stroke();
-            targetCtx.setLineDash([]);
-            targetCtx.beginPath();
-            targetCtx.moveTo(dimX, wallY);
-            targetCtx.lineTo(dimX, bodyBottomY);
-            targetCtx.stroke();
-            [wallY, bodyBottomY].forEach(y => {
+            const seg = (a1, b1, a2, b2) => {
+                const p = notchMap(a1, b1);
+                const q = notchMap(a2, b2);
                 targetCtx.beginPath();
-                targetCtx.moveTo(dimX - 4 * scaleFactor, y);
-                targetCtx.lineTo(dimX + 4 * scaleFactor, y);
+                targetCtx.moveTo(p.x, p.y);
+                targetCtx.lineTo(q.x, q.y);
                 targetCtx.stroke();
-            });
+            };
 
-            // 壁からのとび出し：壁の縦面から反対側の躯体線まで（横）
+            // 躯体の伸び：横の壁面から躯体の先端まで
             targetCtx.setLineDash([2, 2]);
-            targetCtx.beginPath();
-            targetCtx.moveTo(wallFaceX, wallBottomY);
-            targetCtx.lineTo(wallFaceX, projY);
-            targetCtx.moveTo(bodyFarX, bodyBottomY);
-            targetCtx.lineTo(bodyFarX, projY);
-            targetCtx.stroke();
+            seg(-ext, -0.5, -ext, dimB);
+            seg(0, -0.5, 0, dimB);
             targetCtx.setLineDash([]);
-            targetCtx.beginPath();
-            targetCtx.moveTo(wallFaceX, projY);
-            targetCtx.lineTo(bodyFarX, projY);
-            targetCtx.stroke();
-            [wallFaceX, bodyFarX].forEach(x => {
-                targetCtx.beginPath();
-                targetCtx.moveTo(x, projY - 4 * scaleFactor);
-                targetCtx.lineTo(x, projY + 4 * scaleFactor);
-                targetCtx.stroke();
-            });
+            seg(-ext, dimB, 0, dimB);
+            [-ext, 0].forEach(a => seg(a, dimB - 0.1, a, dimB + 0.1));
+
+            // 壁からのとび出し：壁の縦面から反対側の躯体線まで
+            targetCtx.setLineDash([2, 2]);
+            seg(tail, wallFaceB, projA, wallFaceB);
+            seg(0, -0.5, projA, -0.5);
+            targetCtx.setLineDash([]);
+            seg(projA, wallFaceB, projA, -0.5);
+            [wallFaceB, -0.5].forEach(b => seg(projA - 0.1, b, projA + 0.1, b));
 
             // ラベル（この拡大図でしか分からない2つの値のみ。辺の全長は辺ラベルと重複するため省く）
-            targetCtx.textAlign = isInsideExtension ? 'right' : 'left';
-            targetCtx.textBaseline = 'middle';
-            targetCtx.font = `${Math.max(9, 10 * scaleFactor)}px sans-serif`;
-            targetCtx.fillStyle = '#0f172a';
-            targetCtx.fillText('壁', wallEndX, wallY - 9 * scaleFactor);
-
-            targetCtx.fillStyle = '#334155';
-            targetCtx.fillText('躯体の伸び', dimX + 5 * scaleFactor * sx, (wallY + bodyBottomY) / 2 - 7 * scaleFactor);
-            targetCtx.fillText(`${bodyExtensionValue}mm`, dimX + 5 * scaleFactor * sx, (wallY + bodyBottomY) / 2 + 7 * scaleFactor);
-            targetCtx.fillText('壁からのとび出し', wallEndX, projY + 16 * scaleFactor);
-            targetCtx.fillText(`${projectionValue}mm`, wallEndX, projY + 30 * scaleFactor);
+            targetCtx.textAlign = 'left';
+            targetCtx.textBaseline = 'top';
+            textItems.forEach(item => {
+                targetCtx.fillStyle = item.color;
+                item.texts.forEach((text, row) => {
+                    targetCtx.fillText(text, originX + item.left, originY + item.top + row * lineHeight);
+                });
+            });
 
             targetCtx.restore();
 
@@ -7296,8 +7436,9 @@
                 const anchorX = transformX(mapped.x);
                 const anchorY = transformY(mapped.y);
                 const boxScale = 0.9;
-                const boxWidth = 152 * boxScale;
-                const boxHeight = 152 * boxScale;
+                const reservedBox = getNotchDetailBoxSize(feature, boxScale);
+                const boxWidth = reservedBox.width;
+                const boxHeight = reservedBox.height;
                 const saved = resultLabelOffsets[`notch:${feature.id}`];
                 const centerX = Math.max(boxWidth / 2 + 6, Math.min(resultCanvas.width - boxWidth / 2 - 6,
                     saved?.x ?? (anchorX + boxWidth / 2 + 46)));
