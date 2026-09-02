@@ -638,9 +638,9 @@
     ========================================
     -->
     <!-- jsPDF ライブラリ（PDF保存用） -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="../vendor/jspdf.umd.min.js"></script>
     <!-- html2canvas ライブラリ（ページ全体キャプチャ用） -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="../vendor/html2canvas.min.js"></script>
     <script src="../cloud-backup.js?v=5"></script>
     <script src="../pdf-zip-lock.js?v=2"></script>
 
@@ -5884,7 +5884,7 @@
                         <div style="display: flex; justify-content: space-between; align-items: start;">
                             <div onclick="loadSavedData('${data.id}')" style="flex: 1;">
                                 <div style="font-size: 18px; font-weight: bold; color: #1f2937; margin-bottom: 8px;">
-                                    📍 ${data.siteName} ／ 🎨 ${data.sashColor}
+                                    📍 ${escapeHtmlText(data.siteName)} ／ 🎨 ${escapeHtmlText(data.sashColor)}
                                 </div>
                                 <div style="font-size: 13px; color: #6b7280;">
                                     更新: ${updatedDate}
@@ -6046,7 +6046,7 @@
                         <div style="display: flex; justify-content: space-between; align-items: start;">
                             <div onclick="loadSavedData('${data.id}')" style="flex: 1;">
                                 <div style="font-size: 18px; font-weight: bold; color: #1f2937; margin-bottom: 8px;">
-                                    📍 ${data.siteName} ／ 🎨 ${data.sashColor}
+                                    📍 ${escapeHtmlText(data.siteName)} ／ 🎨 ${escapeHtmlText(data.sashColor)}
                                 </div>
                                 <div style="font-size: 13px; color: #6b7280;">
                                     更新: ${updatedDate}
@@ -10623,9 +10623,9 @@
                 // ヘッダー
                 resultDiv.innerHTML = `
                     <div style="text-align:center;margin-bottom:12px;border-bottom:3px solid #2563eb;padding-bottom:10px;">
-                        <h1 style="font-size:26px;color:#1f2937;margin:0 0 8px 0;">📍 ${siteName}</h1>
+                        <h1 style="font-size:26px;color:#1f2937;margin:0 0 8px 0;">📍 ${escapeHtmlText(siteName)}</h1>
                         <div style="display:flex;justify-content:center;gap:22px;align-items:center;color:#475569;font-size:14px;font-weight:700;">
-                            <span>🎨 ${sashColor}</span>
+                            <span>🎨 ${escapeHtmlText(sashColor)}</span>
                             <span>${new Date().toLocaleDateString('ja-JP', {year:'numeric', month:'long', day:'numeric'})}</span>
                         </div>
                     </div>
@@ -10850,7 +10850,7 @@
                 resultDiv.innerHTML = `
                     <div style="text-align: center; margin-bottom: 20px; border-bottom: 3px solid #2563eb; padding-bottom: 15px;">
                         <h1 style="font-size: 28px; color: #1e40af; margin: 0 0 10px 0;">躯体採寸システム</h1>
-                        ${siteName || sashColor ? `<h2 style="font-size: 18px; color: #374151; margin: 0 0 10px 0;">📍 ${siteName}${sashColor ? ` ／ 🎨 ${sashColor}` : ''}</h2>` : ''}
+                        ${siteName || sashColor ? `<h2 style="font-size: 18px; color: #374151; margin: 0 0 10px 0;">📍 ${escapeHtmlText(siteName)}${sashColor ? ` ／ 🎨 ${escapeHtmlText(sashColor)}` : ''}</h2>` : ''}
                         <p style="font-size: 14px; color: #6b7280; margin: 0;">${new Date().toLocaleDateString('ja-JP', {year: 'numeric', month: 'long', day: 'numeric'})}</p>
                     </div>
                 `;
@@ -10932,7 +10932,7 @@
                 resultDiv.innerHTML = `
                     <div style="text-align: center; margin-bottom: 20px; border-bottom: 3px solid #2563eb; padding-bottom: 15px;">
                         <h1 style="font-size: 28px; color: #1e40af; margin: 0 0 10px 0;">躯体採寸システム</h1>
-                        ${siteName || sashColor ? `<h2 style="font-size: 18px; color: #374151; margin: 0 0 10px 0;">📍 ${siteName}${sashColor ? ` ／ 🎨 ${sashColor}` : ''}</h2>` : ''}
+                        ${siteName || sashColor ? `<h2 style="font-size: 18px; color: #374151; margin: 0 0 10px 0;">📍 ${escapeHtmlText(siteName)}${sashColor ? ` ／ 🎨 ${escapeHtmlText(sashColor)}` : ''}</h2>` : ''}
                         <p style="font-size: 14px; color: #6b7280; margin: 0;">${new Date().toLocaleDateString('ja-JP', {year: 'numeric', month: 'long', day: 'numeric'})}</p>
                     </div>
                 `;
