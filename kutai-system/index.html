@@ -14,10 +14,20 @@
     ========================================
     躯体採寸システム
     ========================================
-    バージョン: 1.56.1
-    最終更新: 2026-08-31
+    バージョン: 1.57.0
+    最終更新: 2026-09-02
 
     [更新履歴]
+    v1.57.0 (2026-09-02) - PDF生成を高速化
+    - html2canvasの呼び出しを結果カードごとから「表紙」「採寸結果」の2回に固定
+      （カード12枚で15回→2回、30枚で33回→2回）
+    - 改ページは1枚の画像をカード下端で切り分ける方式へ変更し、従来どおりカード途中では分割しない
+    - PDFへ載せる画像をPNGからJPEG(0.95)へ変更（線画と文字のみのため画質差なし）
+    - 描画倍率を2倍から1.5倍へ（A4幅で約145dpi）。要素が大きい場合は端末のcanvas面積上限に
+      収まるよう自動で下げ、iOSでの生成失敗を防止
+    - PDF保存中の待機表示を追加（従来は無表示で固まって見えた）
+    - 測定図の読み込み完了を待ってから描画。生成失敗時も作業用DOMを必ず片付けるよう修正
+
     v1.56.1 (2026-08-31) - サッシ色バッジの表記を商品の色と誤認しにくい形へ修正
     - バッジの表記を「🎨 色: 〇〇」から「サッシ色 〇〇」へ変更
 
@@ -628,9 +638,9 @@
     ========================================
     -->
     <!-- jsPDF ライブラリ（PDF保存用） -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="../vendor/jspdf.umd.min.js"></script>
     <!-- html2canvas ライブラリ（ページ全体キャプチャ用） -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="../vendor/html2canvas.min.js"></script>
     <script src="../cloud-backup.js?v=5"></script>
     <script src="../pdf-zip-lock.js?v=2"></script>
 
@@ -5874,7 +5884,7 @@
                         <div style="display: flex; justify-content: space-between; align-items: start;">
                             <div onclick="loadSavedData('${data.id}')" style="flex: 1;">
                                 <div style="font-size: 18px; font-weight: bold; color: #1f2937; margin-bottom: 8px;">
-                                    📍 ${data.siteName} ／ 🎨 ${data.sashColor}
+                                    📍 ${escapeHtmlText(data.siteName)} ／ 🎨 ${escapeHtmlText(data.sashColor)}
                                 </div>
                                 <div style="font-size: 13px; color: #6b7280;">
                                     更新: ${updatedDate}
@@ -6036,7 +6046,7 @@
                         <div style="display: flex; justify-content: space-between; align-items: start;">
                             <div onclick="loadSavedData('${data.id}')" style="flex: 1;">
                                 <div style="font-size: 18px; font-weight: bold; color: #1f2937; margin-bottom: 8px;">
-                                    📍 ${data.siteName} ／ 🎨 ${data.sashColor}
+                                    📍 ${escapeHtmlText(data.siteName)} ／ 🎨 ${escapeHtmlText(data.sashColor)}
                                 </div>
                                 <div style="font-size: 13px; color: #6b7280;">
                                     更新: ${updatedDate}
@@ -10575,27 +10585,47 @@
             return resultsHTML;
         }
         
+        // PDF生成中の待機表示。重い処理に入る前に必ず1フレーム描画させてから返す。
+        function showPdfLoading(message) {
+            const loadingDiv = document.createElement('div');
+            loadingDiv.id = 'pdf-loading';
+            loadingDiv.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: center; justify-content: center;';
+            loadingDiv.innerHTML = '<div style="background: white; padding: 40px; border-radius: 12px; text-align: center;"><div style="font-size: 60px; margin-bottom: 20px;">⏳</div><div style="font-size: 20px; font-weight: bold; color: #333;">' + message + '</div><div style="font-size: 14px; color: #666; margin-top: 10px;">しばらくお待ちください</div></div>';
+            document.body.appendChild(loadingDiv);
+            return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        }
+
+        function removePdfLoading() {
+            const loading = document.getElementById('pdf-loading');
+            if (loading && loading.parentNode) loading.parentNode.removeChild(loading);
+        }
+
         async function downloadAsPDF(options = {}) {
             const resultsContent = document.getElementById('results-content');
             if (!resultsContent || !resultsContent.innerHTML || resultsContent.innerHTML.includes('入力が完了していません')) {
                 alert('採寸結果がありません');
                 return;
             }
-            
+
+            // ZIP共有経由のときはPdfZipLock側が進捗を出すので二重表示しない。
+            const useLoading = !options.returnFile;
+            if (useLoading) await showPdfLoading('PDF生成中...');
+
+            let resultDiv = null;
             try {
                 const siteName = document.getElementById('site-name')?.value || '';
                 const sashColor = document.getElementById('sash-color')?.value || '';
                 
                 //計算結果部分のHTMLを作成
-                const resultDiv = document.createElement('div');
+                resultDiv = document.createElement('div');
                 resultDiv.style.cssText = 'position:fixed;left:-10000px;top:0;width:800px;padding:30px;background:white;font-family:sans-serif;z-index:-1;';
                 
                 // ヘッダー
                 resultDiv.innerHTML = `
                     <div style="text-align:center;margin-bottom:12px;border-bottom:3px solid #2563eb;padding-bottom:10px;">
-                        <h1 style="font-size:26px;color:#1f2937;margin:0 0 8px 0;">📍 ${siteName}</h1>
+                        <h1 style="font-size:26px;color:#1f2937;margin:0 0 8px 0;">📍 ${escapeHtmlText(siteName)}</h1>
                         <div style="display:flex;justify-content:center;gap:22px;align-items:center;color:#475569;font-size:14px;font-weight:700;">
-                            <span>🎨 ${sashColor}</span>
+                            <span>🎨 ${escapeHtmlText(sashColor)}</span>
                             <span>${new Date().toLocaleDateString('ja-JP', {year:'numeric', month:'long', day:'numeric'})}</span>
                         </div>
                     </div>
@@ -10603,6 +10633,7 @@
                 
                 // 図面
                 const resultCanvas = document.getElementById('result-canvas');
+                let diagramImage = null;
                 if (resultCanvas) {
                     const canvasDiv = document.createElement('div');
                     canvasDiv.className = 'pdf-diagram-block';
@@ -10616,8 +10647,8 @@
                     canvasDiv.appendChild(canvasImg);
                     appendRemarksBlock(canvasDiv);
                     resultDiv.appendChild(canvasDiv);
+                    diagramImage = canvasImg;
                 }
-                
                 
                 // 計算結果
                 const resultsDiv = document.createElement('div');
@@ -10628,8 +10659,14 @@
                 
                 // 一時的にbodyに追加
                 document.body.appendChild(resultDiv);
-                
-                // PDF作成。図・見出し・結果カードを別々に描画し、カード途中で改ページしない。
+
+                // 測定図の読み込み完了を待つ。未完了のまま描画すると図が空になる。
+                if (diagramImage && diagramImage.decode) {
+                    await diagramImage.decode().catch(() => {});
+                }
+
+                // PDF作成。html2canvasは「表紙」「採寸結果」の2回だけ呼び、
+                // 結果が1ページに収まらない場合はその1枚をカード境界で切って改ページする。
                 const { jsPDF } = window.jspdf;
                 const pdf = new jsPDF({
                     orientation: 'portrait',
@@ -10653,43 +10690,26 @@
                     pageHasContent = false;
                 };
 
-                const addBlockCanvas = blockCanvas => {
-                    const pixelsPerMm = blockCanvas.width / contentWidth;
-                    const fullHeightMm = blockCanvas.height / pixelsPerMm;
-                    if (fullHeightMm <= contentHeight) {
-                        if (pageHasContent && cursorY + fullHeightMm > contentBottom) addPage();
-                        pdf.addImage(blockCanvas.toDataURL('image/png'), 'PNG', margin, cursorY, contentWidth, fullHeightMm);
-                        cursorY += fullHeightMm + blockGap;
-                        pageHasContent = true;
-                        return;
-                    }
+                // 中身は線画と文字だけなのでJPEGで画質差は出ない。
+                // PNGに比べてエンコード時間もPDFのファイルサイズも大幅に軽くなる。
+                const IMAGE_QUALITY = 0.95;
+                const toImageData = source => source.toDataURL('image/jpeg', IMAGE_QUALITY);
 
-                    // 単独ブロックが1ページより長い場合も、縮小・切り捨てせず全高を分割する。
-                    if (pageHasContent) addPage();
-                    const sliceHeightPx = Math.max(1, Math.floor(contentHeight * pixelsPerMm));
-                    for (let sourceY = 0; sourceY < blockCanvas.height; sourceY += sliceHeightPx) {
-                        if (sourceY > 0) addPage();
-                        const currentSliceHeight = Math.min(sliceHeightPx, blockCanvas.height - sourceY);
-                        const sliceCanvas = document.createElement('canvas');
-                        sliceCanvas.width = blockCanvas.width;
-                        sliceCanvas.height = currentSliceHeight;
-                        const sliceCtx = sliceCanvas.getContext('2d');
-                        sliceCtx.fillStyle = '#ffffff';
-                        sliceCtx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
-                        sliceCtx.drawImage(blockCanvas, 0, sourceY, blockCanvas.width, currentSliceHeight, 0, 0, blockCanvas.width, currentSliceHeight);
-                        const sliceHeightMm = currentSliceHeight / pixelsPerMm;
-                        pdf.addImage(sliceCanvas.toDataURL('image/png'), 'PNG', margin, margin, contentWidth, sliceHeightMm);
-                        cursorY = margin + sliceHeightMm + blockGap;
-                        pageHasContent = true;
-                    }
+                // 端末のcanvas面積上限（iOS Safariは約1670万px）を超えると生成が丸ごと失敗するため、
+                // 要素の実寸から安全な倍率を決める。A4幅換算で約145dpiあれば寸法値は十分読める。
+                const MAX_CANVAS_PIXELS = 12000000;
+                const BASE_RENDER_SCALE = 1.5;
+                const renderPdfBlock = block => {
+                    const rect = block.getBoundingClientRect();
+                    const area = Math.max(rect.width * rect.height, 1);
+                    const scale = Math.max(0.75, Math.min(BASE_RENDER_SCALE, Math.sqrt(MAX_CANVAS_PIXELS / area)));
+                    return html2canvas(block, {
+                        scale,
+                        backgroundColor: '#ffffff',
+                        logging: false,
+                        useCORS: true
+                    });
                 };
-
-                const renderPdfBlock = block => html2canvas(block, {
-                    scale: 2,
-                    backgroundColor: '#ffffff',
-                    logging: false,
-                    useCORS: true
-                });
 
                 const addFittedPageCanvas = blockCanvas => {
                     if (pageHasContent) addPage();
@@ -10701,9 +10721,52 @@
                     const drawWidth = blockCanvas.width * scaleToUse;
                     const drawHeight = blockCanvas.height * scaleToUse;
                     const drawX = (pageWidth - drawWidth) / 2;
-                    pdf.addImage(blockCanvas.toDataURL('image/png'), 'PNG', drawX, margin, drawWidth, drawHeight);
+                    pdf.addImage(toImageData(blockCanvas), 'JPEG', drawX, margin, drawWidth, drawHeight);
                     cursorY = margin + drawHeight + blockGap;
                     pageHasContent = true;
+                };
+
+                // 1枚の画像から1ページ分を切り出して配置する。切り出し用canvasは使い回す。
+                const sliceCanvas = document.createElement('canvas');
+                const sliceCtx = sliceCanvas.getContext('2d');
+                const addCanvasSlice = (sourceCanvas, sourceY, sliceHeightPx, pixelsPerMm) => {
+                    sliceCanvas.width = sourceCanvas.width;
+                    sliceCanvas.height = sliceHeightPx;
+                    sliceCtx.fillStyle = '#ffffff';
+                    sliceCtx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
+                    sliceCtx.drawImage(sourceCanvas, 0, sourceY, sourceCanvas.width, sliceHeightPx, 0, 0, sourceCanvas.width, sliceHeightPx);
+                    pdf.addImage(toImageData(sliceCanvas), 'JPEG', margin, margin, contentWidth, sliceHeightPx / pixelsPerMm);
+                    cursorY = margin + sliceHeightPx / pixelsPerMm + blockGap;
+                    pageHasContent = true;
+                };
+
+                // カードの下端を改ページ候補にして、カードの途中で切れないように分割する。
+                const addPaginatedCanvas = (sourceCanvas, container, blocks) => {
+                    const pixelsPerMm = sourceCanvas.width / contentWidth;
+                    const maxSliceHeightPx = Math.max(1, Math.floor(contentHeight * pixelsPerMm));
+                    const containerRect = container.getBoundingClientRect();
+                    const pxPerCssPx = sourceCanvas.height / Math.max(containerRect.height, 1);
+                    const breakPoints = blocks
+                        .map(block => (block.getBoundingClientRect().bottom - containerRect.top) * pxPerCssPx)
+                        .filter(value => value > 0 && value < sourceCanvas.height)
+                        .sort((a, b) => a - b);
+
+                    if (pageHasContent) addPage();
+                    let sourceY = 0;
+                    while (sourceY < sourceCanvas.height) {
+                        if (sourceY > 0) addPage();
+                        const limit = sourceY + maxSliceHeightPx;
+                        let sliceEnd = Math.min(limit, sourceCanvas.height);
+                        if (limit < sourceCanvas.height) {
+                            // そのページに収まる最後のカード下端で切る。
+                            // 1枚でも1ページを超えるカードは候補が無いのでやむを得ず途中で切る。
+                            const candidate = breakPoints.filter(value => value > sourceY && value <= limit).pop();
+                            if (candidate) sliceEnd = Math.ceil(candidate);
+                        }
+                        const sliceHeightPx = Math.max(1, Math.round(sliceEnd - sourceY));
+                        addCanvasSlice(sourceCanvas, sourceY, sliceHeightPx, pixelsPerMm);
+                        sourceY += sliceHeightPx;
+                    }
                 };
 
                 const headerBlock = resultDiv.firstElementChild;
@@ -10715,24 +10778,17 @@
                 resultDiv.insertBefore(coverBlock, resultsDiv);
 
                 // 1ページ目：表題・現場情報・測定図をひとまとまりで配置。
-                const coverCanvas = await renderPdfBlock(coverBlock);
-                addFittedPageCanvas(coverCanvas);
+                addFittedPageCanvas(await renderPdfBlock(coverBlock));
 
                 // 2ページ目以降：採寸結果。15%以内の超過なら軽く縮小し、1ページへ収める。
-                if (resultsDiv) {
-                    const completeResultsCanvas = await renderPdfBlock(resultsDiv);
-                    const resultsHeightAtFullWidth = completeResultsCanvas.height * (contentWidth / completeResultsCanvas.width);
-                    if (resultsHeightAtFullWidth <= contentHeight * 1.15) {
-                        addFittedPageCanvas(completeResultsCanvas);
-                    } else {
-                        addPage();
-                        const resultsHeading = resultsDiv.querySelector('h3');
-                        const resultCards = [...resultsDiv.querySelectorAll('.pdf-result-card')];
-                        const resultBlocks = [resultsHeading, ...resultCards].filter(Boolean);
-                        for (const block of resultBlocks) {
-                            addBlockCanvas(await renderPdfBlock(block));
-                        }
-                    }
+                const resultsCanvas = await renderPdfBlock(resultsDiv);
+                const resultsHeightAtFullWidth = resultsCanvas.height * (contentWidth / resultsCanvas.width);
+                if (resultsHeightAtFullWidth <= contentHeight * 1.15) {
+                    addFittedPageCanvas(resultsCanvas);
+                } else {
+                    const resultsHeading = resultsDiv.querySelector('h3');
+                    const resultCards = [...resultsDiv.querySelectorAll('.pdf-result-card')];
+                    addPaginatedCanvas(resultsCanvas, resultsDiv, [resultsHeading, ...resultCards].filter(Boolean));
                 }
 
                 const totalPages = pdf.getNumberOfPages();
@@ -10743,15 +10799,12 @@
                     pdf.text(`${pageNumber} / ${totalPages}`, pageWidth / 2, pageHeight - 6, { align: 'center' });
                 }
 
-                document.body.removeChild(resultDiv);
-                
                 const filename = getPdfFilename(siteName, sashColor);
+                const blob = pdf.output('blob');
                 if (options.returnFile) {
-                    const blob = pdf.output('blob');
                     return new File([blob], filename, { type: 'application/pdf' });
                 }
                 // jsPDFのsave()に頼らず、PCでも確実にダウンロードフォルダへ保存されるBlobリンクで保存する。
-                const blob = pdf.output('blob');
                 const link = document.createElement('a');
                 link.download = filename;
                 link.href = URL.createObjectURL(blob);
@@ -10762,6 +10815,10 @@
                 if (options.returnFile) throw error;
                 console.error('PDF保存エラー:', error);
                 alert('PDFの保存に失敗しました: ' + error.message);
+            } finally {
+                // 失敗しても作業用DOMを必ず片付ける。残るとDOMが膨らんで次回以降がさらに重くなる。
+                if (resultDiv && resultDiv.parentNode) resultDiv.parentNode.removeChild(resultDiv);
+                if (useLoading) removePdfLoading();
             }
         }
 
@@ -10793,7 +10850,7 @@
                 resultDiv.innerHTML = `
                     <div style="text-align: center; margin-bottom: 20px; border-bottom: 3px solid #2563eb; padding-bottom: 15px;">
                         <h1 style="font-size: 28px; color: #1e40af; margin: 0 0 10px 0;">躯体採寸システム</h1>
-                        ${siteName || sashColor ? `<h2 style="font-size: 18px; color: #374151; margin: 0 0 10px 0;">📍 ${siteName}${sashColor ? ` ／ 🎨 ${sashColor}` : ''}</h2>` : ''}
+                        ${siteName || sashColor ? `<h2 style="font-size: 18px; color: #374151; margin: 0 0 10px 0;">📍 ${escapeHtmlText(siteName)}${sashColor ? ` ／ 🎨 ${escapeHtmlText(sashColor)}` : ''}</h2>` : ''}
                         <p style="font-size: 14px; color: #6b7280; margin: 0;">${new Date().toLocaleDateString('ja-JP', {year: 'numeric', month: 'long', day: 'numeric'})}</p>
                     </div>
                 `;
@@ -10875,7 +10932,7 @@
                 resultDiv.innerHTML = `
                     <div style="text-align: center; margin-bottom: 20px; border-bottom: 3px solid #2563eb; padding-bottom: 15px;">
                         <h1 style="font-size: 28px; color: #1e40af; margin: 0 0 10px 0;">躯体採寸システム</h1>
-                        ${siteName || sashColor ? `<h2 style="font-size: 18px; color: #374151; margin: 0 0 10px 0;">📍 ${siteName}${sashColor ? ` ／ 🎨 ${sashColor}` : ''}</h2>` : ''}
+                        ${siteName || sashColor ? `<h2 style="font-size: 18px; color: #374151; margin: 0 0 10px 0;">📍 ${escapeHtmlText(siteName)}${sashColor ? ` ／ 🎨 ${escapeHtmlText(sashColor)}` : ''}</h2>` : ''}
                         <p style="font-size: 14px; color: #6b7280; margin: 0;">${new Date().toLocaleDateString('ja-JP', {year: 'numeric', month: 'long', day: 'numeric'})}</p>
                     </div>
                 `;
