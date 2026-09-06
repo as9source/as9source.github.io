@@ -276,10 +276,10 @@ input[type=text]:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 
   .pdf-toolbar{gap:6px}
 }
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="../vendor/jspdf.umd.min.js"></script>
+<script src="../vendor/jspdf.plugin.autotable.min.js"></script>
 <script src="../cloud-backup.js?v=5"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="../vendor/html2canvas.min.js"></script>
 <script src="../pdf-zip-lock.js?v=2"></script>
 </head>
 <body>
@@ -507,6 +507,9 @@ function getWinData(n){
     curtain:r('curtain'+n),hoko:r('hoko'+n),memo:t('memo-'+n),photos:(winPhotos.get(n)||[]).slice()
   };
 }
+// 現場名・メモ・寸法欄などの自由入力をHTMLへ埋め込む際のエスケープ。
+// 寸法欄はinputmode=numericだがtype=textのため任意の文字が入りうる。
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function collectAll(){
   return{
     surveyDate:document.getElementById('survey-date').value,
@@ -612,38 +615,38 @@ function buildCards(){
     const khMin=khVals.length?Math.floor(Math.min(...khVals)):null;
     const kwLabels=['上','中','下'];
     const kwMinCell=kwMin!==null?`<span style="background:#1a4a7a;color:#fff;font-weight:700;border-radius:4px;padding:2px 8px;margin-right:8px;font-size:13px;">${kwMin}㎜</span>`:'';
-    const kwSubCells=wd.kw.map((s,i)=>`<span style="color:#aaa;font-size:9px;">${kwLabels[i]}</span><span style="font-size:10px;color:#555;">${s||'—'}</span>`).join('<span style="color:#ddd;font-size:9px;"> / </span>');
+    const kwSubCells=wd.kw.map((s,i)=>`<span style="color:#aaa;font-size:9px;">${kwLabels[i]}</span><span style="font-size:10px;color:#555;">${esc(s)||'—'}</span>`).join('<span style="color:#ddd;font-size:9px;"> / </span>');
     const kwCells=kwMinCell+`<span style="color:#888;font-size:10px;">(${kwSubCells})</span>`;
     const khLabels=['左','中','右'];
     const khMinCell=khMin!==null?`<span style="background:#1a4a7a;color:#fff;font-weight:700;border-radius:4px;padding:2px 8px;margin-right:8px;font-size:13px;">${khMin}㎜</span>`:'';
-    const khSubCells=wd.kh.map((s,i)=>`<span style="color:#aaa;font-size:9px;">${khLabels[i]}</span><span style="font-size:10px;color:#555;">${s||'—'}</span>`).join('<span style="color:#ddd;font-size:9px;"> / </span>');
+    const khSubCells=wd.kh.map((s,i)=>`<span style="color:#aaa;font-size:9px;">${khLabels[i]}</span><span style="font-size:10px;color:#555;">${esc(s)||'—'}</span>`).join('<span style="color:#ddd;font-size:9px;"> / </span>');
     const khCells=khMinCell+`<span style="color:#888;font-size:10px;">(${khSubCells})</span>`;
     const glass=[lb(LBL.series,wd.series),lb(LBL.gt,wd.glassType),wd.glassType2?lb(LBL.gt2,wd.glassType2):''].filter(s=>s&&s!=='—').join(' / ')||'—';
     const spStr=[lb(LBL.sp,wd.spacer),wd.gas==='y'?'ガス有':''].filter(Boolean).join('・')||'—';
     const koshiStr=wd.koshi==='y'?'有（'+lb(LBL.kt,wd.koshiType)+'）':'無';
     const fukaStr=wd.fukaAri==='y'?[lb(LBL.fs,wd.fukaSize),lb(LBL.fd,wd.fukaDir),wd.curtain==='y'?'カーテンレール有':'',wd.hoko==='y'?'補強有':''].filter(Boolean).join('・'):'無';
-    const taikakuStr=(wd.taikaku&&(wd.taikaku[0]||wd.taikaku[1]))?'対角1: '+(wd.taikaku[0]||'—')+'㎜ ／ 対角2: '+(wd.taikaku[1]||'—')+'㎜':'—';
+    const taikakuStr=(wd.taikaku&&(wd.taikaku[0]||wd.taikaku[1]))?'対角1: '+(esc(wd.taikaku[0])||'—')+'㎜ ／ 対角2: '+(esc(wd.taikaku[1])||'—')+'㎜':'—';
     const openTypeStr=(wd.shoji==='2'&&wd.openType)?lb(LBL.openType,wd.openType):'—';
     const winTypeStr=wd.windowType?lb(LBL.winType,wd.windowType):'—';
     const mochidashiStr=wd.mochidashi?lb(LBL.mochidashi,wd.mochidashi):'—';
     const opHandleStr=wd.operatorHandle?(wd.operatorHandle==='y'?'有'+(wd.hanyoHandle?' ／ 汎用ハンドル: '+lb(LBL.hanyoHandle,wd.hanyoHandle):''):'無'):'—';
     const leftRightStr=wd.leftRight?lb(LBL.leftRight,wd.leftRight):'—';
     const armStopperStr=wd.armStopper?lb(LBL.armStopper,wd.armStopper):'—';
-    const cresStr=wd.cresType?(lb(LBL.cres,wd.cresType)+(wd.cresType==='std'&&wd.cresPos?' '+wd.cresPos+'㎜':'')):'—';
-    const hikiteStr=wd.hikiteType?(lb(LBL.hikite,wd.hikiteType)+(wd.hikitePos?' '+wd.hikitePos+'㎜':'')):'—';
-    const nakazanStr=wd.nakazan?(lb(LBL.nakazan,wd.nakazan)+(wd.nakazan==='y'&&wd.nakazanPos?' '+wd.nakazanPos+'㎜':'')):'—';
+    const cresStr=wd.cresType?(lb(LBL.cres,wd.cresType)+(wd.cresType==='std'&&wd.cresPos?' '+esc(wd.cresPos)+'㎜':'')):'—';
+    const hikiteStr=wd.hikiteType?(lb(LBL.hikite,wd.hikiteType)+(wd.hikitePos?' '+esc(wd.hikitePos)+'㎜':'')):'—';
+    const nakazanStr=wd.nakazan?(lb(LBL.nakazan,wd.nakazan)+(wd.nakazan==='y'&&wd.nakazanPos?' '+esc(wd.nakazanPos)+'㎜':'')):'—';
     const shitawakuStr=wd.shitawaku?lb(LBL.shitawaku,wd.shitawaku):'—';
     // 開口寸法差の自動記載（画面表示と同一文言）
     const autoNotes=[diffNote(wd.kw,['上','中','下'],'KW'),diffNote(wd.kh,['左','中','右'],'KH')].filter(Boolean);
     const autoMemo=autoNotes.length?`<div class="memo-auto">${autoNotes.map(s=>'⚠ '+s).join('<br>')}</div>`:'';
-    const photoHtml=Array.isArray(wd.photos)&&wd.photos.length?`<div class="pdf-photos">${wd.photos.map((src,i)=>`<div class="pf" style="background-image:url('${src}')" title="写真 ${i+1}"></div>`).join('')}</div>`:'';
+    const photoHtml=Array.isArray(wd.photos)&&wd.photos.length?`<div class="pdf-photos">${wd.photos.map((src,i)=>`<div class="pf" style="background-image:url('${esc(src)}')" title="写真 ${i+1}"></div>`).join('')}</div>`:'';
     const hikiRows=wd.windowType==='hiki'?`<tr><th>障子枚数</th><td style="font-size:10px">${wd.shoji?wd.shoji+'枚建':'—'}</td><th>開閉タイプ</th><td style="font-size:10px">${openTypeStr}</td></tr><tr><th>下枠</th><td colspan="3" style="font-size:10px">${shitawakuStr}</td></tr><tr><th>クレセント</th><td colspan="3">${cresStr}</td></tr><tr><th>引手</th><td colspan="3">${hikiteStr}</td></tr><tr><th>中桟</th><td colspan="3">${nakazanStr}</td></tr>`:'';
     const fixHirakiRows=(wd.windowType==='fix'||wd.windowType==='hiraki')?`<tr><th>OPハンドル</th><td colspan="3" style="font-size:10px">${opHandleStr}</td></tr>`:'';
     const hirakiRows=wd.windowType==='hiraki'?`<tr><th>左右区分</th><td style="font-size:10px">${leftRightStr}</td><th>アームストッパー</th><td style="font-size:10px">${armStopperStr}</td></tr>`:'';
-    return`<div class="wc"><div class="wh">${wd.label}${wd.location?' ／ '+wd.location:''}</div><div class="wc-inner"><div class="wc-data"><table>
+    return`<div class="wc"><div class="wh">${esc(wd.label)}${wd.location?' ／ '+esc(wd.location):''}</div><div class="wc-inner"><div class="wc-data"><table>
 <tr><th style="width:28%">窓種</th><td style="width:14%;font-size:10px">${winTypeStr}</td><th style="width:28%">商品色</th><td style="width:30%;font-size:10px">${lb(LBL.color,wd.color)}</td></tr>
 ${hikiRows}${fixHirakiRows}${hirakiRows}
-<tr><th>取付寸法 A</th><td style="font-size:10px">${wd.dimA||'—'} ㎜</td><th>持ち出し</th><td style="font-size:10px">${mochidashiStr}</td></tr>
+<tr><th>取付寸法 A</th><td style="font-size:10px">${esc(wd.dimA)||'—'} ㎜</td><th>持ち出し</th><td style="font-size:10px">${mochidashiStr}</td></tr>
 <tr><th>KW 幅<br><sub>上 / 中 / 下</sub></th><td colspan="3">${kwCells}</td></tr>
 <tr><th>KH 高<br><sub>左 / 中 / 右</sub></th><td colspan="3">${khCells}</td></tr>
 <tr><th>対角</th><td colspan="3">${taikakuStr}</td></tr>
@@ -651,7 +654,7 @@ ${hikiRows}${fixHirakiRows}${hirakiRows}
 <tr><th>スペーサー</th><td colspan="3">${spStr}</td></tr>
 <tr><th>格子</th><td colspan="3">${koshiStr}</td></tr>
 <tr><th>ふかし枠</th><td colspan="3">${fukaStr}</td></tr>
-</table></div><div class="wc-memo"><div class="wc-memo-label">備考・メモ</div><div class="wc-memo-body">${autoMemo}${wd.memo||''}${photoHtml}</div></div></div></div>`;
+</table></div><div class="wc-memo"><div class="wc-memo-label">備考・メモ</div><div class="wc-memo-body">${autoMemo}${esc(wd.memo).replace(/\n/g,'<br>')}${photoHtml}</div></div></div></div>`;
   }).join('');
   return{site,date,winCount:data.winData.length,cards};
 }
@@ -712,7 +715,7 @@ function reportHTML(){
   return `
 <div class="rh">
   <div class="rt">内窓 現場調査シート</div>
-  <div class="rm">現場名：${site}<br>調査日：${date}<br>窓数：${winCount}か所</div>
+  <div class="rm">現場名：${esc(site)}<br>調査日：${esc(date)}<br>窓数：${winCount}か所</div>
 </div>
 <div class="grid">${cards}</div>
 <div class="leg"><span class="leg-dot"></span><span>緑ハイライト = 最小値（取付基準寸法）</span></div>`;
@@ -1423,7 +1426,7 @@ if (document.readyState === 'loading') {
 }
 
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw.js?v=4').catch(()=>{});
+  navigator.serviceWorker.register('./sw.js?v=5').catch(()=>{});
 }
 
 (()=>{const records=getUchirimoRecords();if(records.length)return;try{const legacy=JSON.parse(localStorage.getItem('uchirimo_gencho_v2')||'null');if(legacy&&(legacy.siteName||(legacy.winData||[]).some(w=>w.memo||(w.photos||[]).length))){legacy.id=legacy.id||Date.now().toString();legacy.updatedAt=legacy.updatedAt||new Date().toISOString();putUchirimoRecords([legacy]);}}catch(_){}})();

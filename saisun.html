@@ -11,8 +11,8 @@
 <link rel="manifest" href="saisun-manifest.json">
 <link rel="apple-touch-icon" href="saisun-icon.png">
 <title>ドアリモ採寸システム</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="vendor/html2canvas.min.js"></script>
+<script src="vendor/jspdf.umd.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
 
@@ -885,6 +885,8 @@ main{max-width:940px;padding:24px 20px 12px}
 <script src="./pdf-zip-lock.js?v=2"></script>
 <script>
 // ======= State =======
+// 現場名やメモなどの自由入力をHTMLへ埋め込む際のエスケープ。
+const escHtml = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let currentType = '';
 let photoData = [];
 let tsukeMethod = '';
@@ -1941,7 +1943,7 @@ function renderRecordList() {
     const d = r.siteDate ? r.siteDate.replace(/-/g,'/') : '日付なし';
     return `<div class="record-item" onclick="loadRecord('${r.id}')">
       <div class="record-info">
-        <div class="record-name">${r.siteName || '（現場名なし）'}</div>
+        <div class="record-name">${escHtml(r.siteName) || '（現場名なし）'}</div>
         <div class="record-date">${d}</div>
       </div>
       <button class="record-del" onclick="deleteRecord(event,'${r.id}')">🗑</button>
@@ -2144,7 +2146,7 @@ function buildSheetHTML(siteName, siteDate, kengu, tsukeLabel, shimowakuTxt, isD
   <span style="font-size:18px;font-weight:700;letter-spacing:.05em">${pdfTitle}</span>
   <span style="font-size:11px;color:#555">${siteDate}</span>
 </div>
-<div style="font-size:15px;font-weight:700;margin-bottom:14px">${siteName}</div>
+<div style="font-size:15px;font-weight:700;margin-bottom:14px">${escHtml(siteName)}</div>
 
 <div style="margin-bottom:11px">
   <div style="font-size:9px;font-weight:700;letter-spacing:.15em;color:#666;border-bottom:1px solid #ccc;padding-bottom:3px;margin-bottom:7px">既存ドア情報</div>
@@ -2222,7 +2224,7 @@ ${backdoorHtml}
 ${slidingHtml}
 ${photoHtml}
 
-<div style="margin-top:10px;font-size:10px;color:#aaa;text-align:right;border-top:1px solid #eee;padding-top:5px">${siteName} | ${siteDate}</div>
+<div style="margin-top:10px;font-size:10px;color:#aaa;text-align:right;border-top:1px solid #eee;padding-top:5px">${escHtml(siteName)} | ${escHtml(siteDate)}</div>
 </div>`;
 }
 
@@ -2431,7 +2433,7 @@ if (document.readyState === 'loading') {
 }
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('saisun-sw.js?v=5')
+  navigator.serviceWorker.register('saisun-sw.js?v=6')
     .then(registration => registration.update())
     .catch(() => {});
 }

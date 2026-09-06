@@ -1,11 +1,13 @@
-const CACHE_NAME = 'saisun-v6';
+const CACHE_NAME = 'saisun-v7';
 const ASSETS = [
   '/saisun.html',
   '/saisun-manifest.json',
   '/saisun-icon.png',
   '/saisun-icon-192.png',
   '/cloud-backup.js',
-  '/pdf-zip-lock.js'
+  '/pdf-zip-lock.js',
+  '/vendor/jspdf.umd.min.js',
+  '/vendor/html2canvas.min.js'
 ];
 
 self.addEventListener('install', event => {
