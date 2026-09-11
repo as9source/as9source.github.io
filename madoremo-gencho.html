@@ -611,12 +611,28 @@ function edgeAllowedFor(item,w){
   if(kind === 'sliding' || kind === 'project') return list.includes(`${sid}-${kind}`);
   return list.includes(`${sid}-sliding`) || list.includes(`${sid}-project`);
 }
-// 外部モールの対応シリーズ（四方=トリプルガラス樹脂窓・樹脂窓のみ／二方=＋アルミ樹脂複合窓）
-// ハイブリッド専用枠は設定なし。
-const MOOL_BY_SERIES = {'1':['なし','四方','二方'],'2':['なし','四方','二方'],'5':['なし','二方'],'6':['なし']};
+// 外部モールの対応シリーズ（四方=トリプルガラス樹脂窓・樹脂窓のみ／
+// 二方=＋樹脂窓 ハイブリッド専用枠・アルミ樹脂複合窓）
+const MOOL_BY_SERIES = {'1':['なし','四方','二方'],'2':['なし','四方','二方'],'5':['なし','二方'],'6':['なし','二方']};
 // 組み合わせ商品の「FIX側の片割れ」として登録されている単独の断熱パネル入FIX窓は候補に出さない
 function isPanelFixHalf(item){
   return item?.parentId != null && /^断熱パネル入/.test(item?.name || '');
+}
+// 開き勝手（右／左）の入力が要る新設窓
+// ・たてすべり出し窓／開き窓テラス／テラスドア … 単窓・２連窓は要（３連窓は左右対称のため不要）
+// ・すべり出し窓・片上げ下げ窓 … 単独は不要。FIXとの「連窓」になるものだけ要（段窓だけのものは不要）
+// ・引違い窓／FIX窓／高所用すべり出し窓、品名で勝手や左右が決まっているものは不要
+function needsHandSetting(item){
+  const name = String(item?.name || '');
+  if(!name) return false;
+  if(/勝手|左側|右側/.test(name)) return false;
+  if(/引違い/.test(name)) return false;
+  if(/高所用/.test(name)) return false;
+  if(/[2２]連窓/.test(name)) return true;
+  if(/[3３]連窓/.test(name)) return false;
+  if(/たてすべり出し窓|開き窓テラス|テラスドア/.test(name)) return true;
+  if(/すべり出し窓.*連窓/.test(name)) return true;
+  return false;
 }
 function newWindowUnavailableReason(w,candidates){
   if(!(w.placeId && w.existingId && w.fitId)) return '';
@@ -774,9 +790,10 @@ const MADOREMO_RECORDS_STORE = 'madoremo-survey-records-v1';
 const byId = (arr,id) => arr.find(x => String(x.id) === String(id));
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const text = v => esc(v || '－').split('\n').join(' / ');
+// 内観色「グレイジュ」の組み合わせは外観色「ブラック」「プラチナステン」のみ
 const COLOR_COMBO_RESTRICT = {
-  '2': {'ホワイト':['ホワイト','グレイジュ'],'ブラウン':['ホワイト','ナチュラル','ダークブラウン','グレイジュ'],'プラチナステン':['ホワイト','ナチュラル','ダークブラウン','グレイジュ'],'ブラック':['ホワイト','ブラック','グレイジュ']},
-  '6': {'ホワイト':['ホワイト','グレイジュ'],'ブラウン':['ホワイト','ナチュラル','ダークブラウン','グレイジュ'],'プラチナステン':['ホワイト','ナチュラル','ダークブラウン','グレイジュ'],'ブラック':['ホワイト','ブラック','グレイジュ']}
+  '2': {'ホワイト':['ホワイト'],'ブラウン':['ホワイト','ナチュラル','ダークブラウン'],'プラチナステン':['ホワイト','ナチュラル','ダークブラウン','グレイジュ'],'ブラック':['ホワイト','ブラック','グレイジュ']},
+  '6': {'ホワイト':['ホワイト'],'ブラウン':['ホワイト','ナチュラル','ダークブラウン'],'プラチナステン':['ホワイト','ナチュラル','ダークブラウン','グレイジュ'],'ブラック':['ホワイト','ブラック','グレイジュ']}
 };
 const MAX_PHOTOS=2;
 const blankWindow = () => ({placeId:'',existingId:'',fitId:'',around:'修復不必要',sillRise:'',mitsuke:'',floor:'',roomType:'',roomDetail:'',placeMemo:'',w:[null,null,null],h:[null,null,null],seriesId:'',newWindowId:'',hand:'',glassId:'',glassColor:'',glassPattern:'',outerColor:'',innerColor:'',edgeId:'',screen:'no',mool:'なし',upper:'未確認',memo:'',photos:[]});
@@ -1028,8 +1045,7 @@ const App = {
       reasonNote.innerHTML = unavailableReason ? `<b>選択できない理由:</b> ${esc(unavailableReason)}` : '';
     }
     {
-      const nwName = byId(DATA.newWindows, w.newWindowId)?.name || '';
-      const needsHand = /(たて)?すべり出し窓/.test(nwName) && !nwName.includes('勝手');
+      const needsHand = needsHandSetting(byId(DATA.newWindows, w.newWindowId));
       document.getElementById('handField')?.classList.toggle('hidden', !needsHand);
       if(!needsHand){
         w.hand = '';
