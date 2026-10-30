@@ -226,6 +226,13 @@
     border-radius: var(--radius); padding: 14px 16px; margin-bottom: 14px;
   }
   .kouchi-title { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: #2a8a5a; margin-bottom: 10px; }
+  .kouchi-inline { display:flex; align-items:baseline; flex-wrap:wrap; gap:4px 10px; background:#f0faf5; border:1px solid #b0ddc0; border-radius:var(--radius); padding:8px 12px; margin:6px 0 4px; }
+  .kouchi-inline-key { font-size:11px; font-weight:700; color:#2a8a5a; }
+  .kouchi-inline-val { font-size:20px; font-family:'JetBrains Mono',monospace; font-weight:700; color:#2a8a5a; }
+  .kouchi-inline-f { font-size:10px; color:var(--text-dim); }
+  .kouchi-row { display:flex; align-items:baseline; flex-wrap:wrap; gap:2px 10px; padding:3px 0; }
+  .kouchi-row + .kouchi-row { border-top:1px dashed #b0ddc0; }
+  .kouchi-row-label { font-size:11px; color:#2a6a4a; min-width:7em; }
   .kouchi-val { font-size: 22px; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #2a8a5a; }
 
   /* ── Notes ── */
@@ -597,6 +604,10 @@ main{max-width:940px;padding:24px 20px 12px}
     </tr>
   </table>
   <div class="measure-note">※ KW は上・中・下、KH は左・中・右の最小値が取付寸法となります</div>
+  <div class="kouchi-inline" id="kouchi-inline" style="display:none">
+    <span class="kouchi-inline-key">🔲 有効開口</span>
+    <div id="kouchi-inline-rows" style="flex:1 1 100%"></div>
+  </div>
 
   <!-- Hidden main KH/KW fields for compatibility -->
   <input type="hidden" id="kh">
@@ -665,13 +676,12 @@ main{max-width:940px;padding:24px 20px 12px}
     </div>
   </div>
 
-  <!-- 有効開口 (片開きのみ) -->
+  <!-- 有効開口（片開き・引戸） -->
   <div class="kouchi-section" id="kouchi-card" style="display:none">
     <div class="kouchi-title">🔲 有効開口（自動計算）</div>
     <div class="calc-cell" style="border:none;padding:0;background:transparent">
-      <div class="calc-key">有効開口</div>
-      <div class="kouchi-val" id="kouchi-w">―</div>
-      <div class="calc-formula" id="kouchi-w-formula"></div>
+      <div id="kouchi-card-rows"></div>
+      <div class="calc-formula" id="kouchi-card-note">※ ドアリモ 玄関ドア／玄関引戸 業務用カタログの有効開口寸法割出し公式より（W＝新設枠幅）</div>
     </div>
   </div>
 
@@ -921,14 +931,69 @@ function selectChip(el) {
   document.querySelectorAll(`.chip[data-group="${group}"]`).forEach(c => c.classList.remove('selected'));
   if (wasSelected) delete chipState[group];
   else { el.classList.add('selected'); chipState[group] = el.dataset.val; }
-  if (group === 'katachi') { syncNewShapeFromExisting(); updateKouchiVisibility(); updateChildDoorVisibility(); updateDoorDesignRules(); updatePartsSectionsVisibility(); }
+  if (group === 'katachi') { syncNewShapeFromExisting(); updateKouchiVisibility(); updateChildDoorVisibility(); updateDoorDesignRules(); updatePartsSectionsVisibility(); recalc(); }
   if (group === 'backFloor') setVal('back-floor', chipState[group]==='floor'?'フロア納まり':chipState[group]==='doma'?'土間納まり':'');
+  if (group === 'maisuuS') recalc();
   if (group === 'ranma' || group === 'ranmaS') { updatePartsSectionsVisibility(); updateSlidingCombinationRules(true); }
 }
 
+// 有効開口の計算（業務用カタログ「有効開口寸法割出し公式」）
+// W＝新設枠幅（calc-w）。小数は切り捨て。
+// ドア片開き：KW − 136（半外付けは KW − 146）
+// 引戸：袖付2枚連動引込み戸 (2W−689.5)/3 ／ 2枚建 W/2−158 ／ 4枚建 A01 W/2−275.5・A01以外 W/2−289.5
+let kouchiState = { show:false, items:[], msg:'' };
+function isKouchiTarget() {
+  return (currentType === 'door' && chipState['katachi'] === 'single') || currentType === 'sliding';
+}
+function fmtNum(n) { return Number.isInteger(n) ? String(n) : String(Math.round(n*100)/100); }
+function getSlidingKouchiCandidates() {
+  const series = val('sliding-series') || '';
+  const design = val('sliding-design') || '';
+  const HIKIKOMI = { label:'袖付2枚連動引込み戸', calc:W=>(2*W-689.5)/3, f:W=>`(2×${W} − 689.5) ÷ 3` };
+  const NIMAI    = { label:'2枚建', calc:W=>W/2-158, f:W=>`${W} ÷ 2 − 158` };
+  const YON_A01  = { label:'4枚建（A01）', calc:W=>W/2-275.5, f:W=>`${W} ÷ 2 − 275.5` };
+  const YON_ETC  = { label:'4枚建（A01以外）', calc:W=>W/2-289.5, f:W=>`${W} ÷ 2 − 289.5` };
+  if (series === '袖付2枚連動引込み戸') return [HIKIKOMI];
+  if (series.startsWith('2枚建')) return [NIMAI];
+  if (series.startsWith('4枚建')) {
+    if (design.startsWith('A01')) return [YON_A01];
+    if (design) return [YON_ETC];
+    return [YON_A01, YON_ETC];
+  }
+  if (chipState['maisuuS'] === '4') return [YON_A01, YON_ETC];
+  return [NIMAI, HIKIKOMI];
+}
+function computeKouchi(kw, tsuri, effectiveTsuke) {
+  const st = { show:isKouchiTarget(), items:[], msg:'' };
+  if (!st.show) return st;
+  if (kw === null) { st.msg = 'KW を入力してください'; return st; }
+  if (!tsuri && !effectiveTsuke) { st.msg = '既設枠の種類を選択してください'; return st; }
+  if (currentType === 'door') {
+    const baseW = (!tsuri && effectiveTsuke === 'hanzoto') ? 146 : 136;
+    const v = kw - baseW;
+    st.items.push({ label:'片開き', value:v, formula:`${kw} − ${baseW} = ${v}` });
+    return st;
+  }
+  const W = kw - 10; // 引戸の新設枠幅
+  getSlidingKouchiCandidates().forEach(c => {
+    const raw = c.calc(W); const v = Math.floor(raw);
+    st.items.push({ label:c.label, value:v, formula:`W${W}：${c.f(W)} = ${fmtNum(raw)}` });
+  });
+  return st;
+}
+function renderKouchi(st) {
+  const esc2 = t => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const html = st.items.length
+    ? st.items.map(it => `<div class="kouchi-row"><span class="kouchi-row-label">${esc2(it.label)}</span><span class="kouchi-inline-val">${it.value} mm</span><span class="kouchi-inline-f">${esc2(it.formula)}</span></div>`).join('')
+    : `<div class="kouchi-row"><span class="kouchi-inline-val">―</span><span class="kouchi-inline-f">${esc2(st.msg)}</span></div>`;
+  document.getElementById('kouchi-inline-rows').innerHTML = html;
+  document.getElementById('kouchi-card-rows').innerHTML = html;
+}
 function updateKouchiVisibility() {
-  const show = currentType === 'door' && chipState['katachi'] === 'single';
+  const show = isKouchiTarget();
+  document.getElementById('kouchi-card-note').style.display = show ? '' : 'none';
   document.getElementById('kouchi-card').style.display = show ? '' : 'none';
+  document.getElementById('kouchi-inline').style.display = show ? '' : 'none';
 }
 
 function selectTsuke(t) {
@@ -1140,23 +1205,10 @@ function recalc() {
     wfEl.textContent = `${kw} − ${baseW} = ${effW}`;
   }
 
-  // 有効開口（片開きのみ）
-  const kouchiWEl  = document.getElementById('kouchi-w');
-  const kouchiWfEl = document.getElementById('kouchi-w-formula');
-  const showKouchi = currentType === 'door' && chipState['katachi'] === 'single';
-
-  if (!showKouchi || kw === null) {
-    kouchiWEl.textContent = '―'; kouchiWEl.className = 'kouchi-val';
-    kouchiWfEl.textContent = showKouchi ? 'KW を入力してください' : '';
-  } else if (!tsuri && !effectiveTsuke) {
-    kouchiWEl.textContent = '―'; kouchiWEl.className = 'kouchi-val';
-    kouchiWfEl.textContent = '';
-  } else {
-    const baseW = (!tsuri && effectiveTsuke === 'hanzoto') ? 146 : 136;
-    const kouW  = kw - baseW;
-    kouchiWEl.textContent = kouW + ' mm'; kouchiWEl.className = 'kouchi-val';
-    kouchiWfEl.textContent = `${kw} − ${baseW} = ${kouW}`;
-  }
+  // 有効開口（片開き・引戸）
+  kouchiState = computeKouchi(kw, tsuri, effectiveTsuke);
+  renderKouchi(kouchiState);
+  updateKouchiVisibility();
   updateManufacturingRangeWarning();
 }
 
@@ -1573,8 +1625,8 @@ document.getElementById('meeting-design-3').addEventListener('change',()=>update
 document.getElementById('meeting-handle').addEventListener('change',()=>updateHandleColors(true));
 document.getElementById('meeting-power').addEventListener('change',updateCompatibilityStatus);
 document.getElementById('meeting-handle-color').addEventListener('change',updateCompatibilityStatus);
-document.getElementById('sliding-series').addEventListener('change',()=>updateSlidingOptions(false));
-document.getElementById('sliding-design').addEventListener('change',()=>updateSlidingCombinationRules(false));
+document.getElementById('sliding-series').addEventListener('change',()=>{updateSlidingOptions(false);recalc();});
+document.getElementById('sliding-design').addEventListener('change',()=>{updateSlidingCombinationRules(false);recalc();});
 document.getElementById('sliding-screen').addEventListener('change',()=>updateSlidingScreenOptions(false));
 document.getElementById('sliding-screen-type').addEventListener('change',()=>updateSlidingScreenOptions(true));
 document.getElementById('sliding-handle').addEventListener('change',()=>updateSlidingCombinationRules(true));
@@ -1811,11 +1863,10 @@ function buildText() {
     lines.push('枠高さ：' + hVal + '  ' + document.getElementById('calc-h-formula').textContent);
     lines.push('枠幅　：' + wVal + '  ' + document.getElementById('calc-w-formula').textContent);
   }
-  const kouW = document.getElementById('kouchi-w').textContent;
-  if (kouW !== '―' && currentType === 'door' && chipState['katachi'] === 'single') {
+  if (kouchiState.show && kouchiState.items.length) {
     lines.push('');
     lines.push('【有効開口】');
-    lines.push('有効開口：' + kouW + '  ' + document.getElementById('kouchi-w-formula').textContent);
+    kouchiState.items.forEach(it => lines.push(`${it.label}：${it.value} mm  ${it.formula}`));
   }
   const meeting = collectMeeting();
   const meetingItems = [['候補1 商品・仕様',meeting.series],['状況',meeting.status],['新設枠形式',KATACHI_LABEL[meeting['new-shape']]||meeting['new-shape']],['新設上部仕様',NEW_UPPER_LABEL[meeting['new-upper']]||meeting['new-upper']],['製作範囲警告',meeting['range-result']],['候補1 デザイン',meeting.design],['候補1 扉カラー',meeting.color],['候補2 商品・仕様',meeting['series-2']],['候補2 デザイン',meeting['design-2']],['候補2 扉カラー',meeting['color-2']],['候補3 商品・仕様',meeting['series-3']],['候補3 デザイン',meeting['design-3']],['候補3 扉カラー',meeting['color-3']],['子扉の種類',meeting['child-type']],['鍵',meeting.lock],['電源方式',meeting.power],['ハンドル',meeting.handle],['ハンドル色',meeting['handle-color']],['下枠納まり',meeting['lower-type']],['段差緩和材',meeting['lower-relief']],['下枠化粧カバー',meeting['lower-cover']],['下枠幅木',meeting['lower-baseboard']],['補強アングル',meeting['lower-angle']],['たて額長さ',meeting['lower-vertical']],['下部カバーセット',meeting['lower-wood-cover']]].filter(x=>x[1]);
@@ -2108,13 +2159,11 @@ function buildSheetHTML(siteName, siteDate, kengu, tsukeLabel, shimowakuTxt, isD
   const calcHf = document.getElementById('calc-h-formula').textContent;
   const calcW  = document.getElementById('calc-w').textContent;
   const calcWf = document.getElementById('calc-w-formula').textContent;
-  const kouW   = document.getElementById('kouchi-w').textContent;
-  const kouWf  = document.getElementById('kouchi-w-formula').textContent;
   const sotoTxt = getFrameText('soto') || '―';
   const uchiTxt = getFrameText('uchi') || '―';
   const notes   = document.getElementById('notes').value
                     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const showKouchi = isDoor && chipState['katachi'] === 'single';
+  const showKouchi = kouchiState.show && kouchiState.items.length > 0;
   const pdfTitle = getPdfTitle();
   const photoHtml = photoData.length ? `<div style="margin-top:12px">
     <div style="font-size:9px;font-weight:700;letter-spacing:.15em;color:#666;border-bottom:1px solid #ccc;padding-bottom:3px;margin-bottom:7px">現場写真</div>
@@ -2205,11 +2254,11 @@ ${isDoor ? `<div style="margin-bottom:11px">
       <div style="font-size:10px;color:#889;margin-top:3px">${calcWf}</div>
     </div>
   </div>
-  ${showKouchi ? `<div style="background:#edfaf3;border:1px solid #8ecfaa;border-radius:5px;padding:8px 10px">
-    <div style="font-size:9px;color:#156;margin-bottom:2px">有効開口</div>
-    <div style="font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;color:#166534">${kouW}</div>
-    <div style="font-size:10px;color:#889;margin-top:3px">${kouWf}</div>
-  </div>` : ''}
+  ${showKouchi ? `<div style="display:grid;grid-template-columns:${kouchiState.items.length>1?'1fr 1fr':'1fr'};gap:5px">${kouchiState.items.map(it=>`<div style="background:#edfaf3;border:1px solid #8ecfaa;border-radius:5px;padding:8px 10px">
+    <div style="font-size:9px;color:#156;margin-bottom:2px">有効開口（${esc(it.label)}）</div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700;color:#166534">${it.value} mm</div>
+    <div style="font-size:10px;color:#889;margin-top:3px">${esc(it.formula)}</div>
+  </div>`).join('')}</div>` : ''}
 </div>
 
 <div>
@@ -2397,6 +2446,7 @@ function clearAll(silent=false) {
   // Reset disabled options in frame selects
   document.querySelectorAll('.frame-select option').forEach(opt => opt.disabled = false);
   document.getElementById('kouchi-card').style.display = 'none';
+  document.getElementById('kouchi-inline').style.display = 'none';
   document.getElementById('save-status').textContent = '未保存';
   recalc();
 }
