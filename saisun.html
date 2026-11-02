@@ -335,6 +335,7 @@ main{max-width:940px;padding:24px 20px 12px}
 .frame-group{margin-bottom:18px}.frame-row{gap:10px;margin-bottom:9px}.frame-label{font-size:13px;font-weight:600;min-width:58px;color:var(--text)}
 .frame-select{min-height:44px;border-radius:9px;padding:9px 34px 9px 12px;font-size:14px}.frame-toggle{min-height:40px;border-radius:8px;padding:8px 12px;font-size:12.5px;font-weight:600}
 .frame-indiv{margin-top:10px;padding-top:12px}.indiv-badge{font-size:11.5px;padding:4px 8px}
+.frame-indiv .frame-side{font-size:16px;font-weight:700;min-width:84px;color:var(--accent,#1a4a7a)}
 .calc-section,.kouchi-section{border-radius:11px;padding:17px 18px;margin-bottom:18px}.calc-title,.kouchi-title{font-size:13px;margin-bottom:13px}.calc-grid{gap:12px}
 .calc-cell{border-radius:9px;padding:13px 14px}.calc-key{font-size:12px;margin-bottom:5px}.calc-val,.kouchi-val{font-size:25px}.calc-val.na{font-size:14px}.calc-formula{font-size:11.5px;margin-top:6px}
 .notes-input{min-height:112px;border-radius:10px;padding:13px 14px;font-size:15px;line-height:1.65}.field-warn{font-size:12.5px;padding:7px 0}
@@ -634,9 +635,9 @@ main{max-width:940px;padding:24px 20px 12px}
       <button class="frame-toggle" id="toggle-soto" onclick="toggleFrameIndiv('soto')">個別▾</button>
     </div>
     <div class="frame-indiv" id="panel-soto">
-      <div class="frame-row"><span class="frame-label" style="min-width:30px">右</span><select class="frame-select" id="soto_r" onchange="onSubSelect('soto')"><option value="">―</option><option value="21">21 mm</option><option value="50">50 mm</option><option value="80">80 mm</option><option value="80thin">80（薄）</option><option value="100">100 mm</option><option value="135">135 mm</option><option value="155">155 mm</option></select></div>
-      <div class="frame-row"><span class="frame-label" style="min-width:30px">左</span><select class="frame-select" id="soto_l" onchange="onSubSelect('soto')"><option value="">―</option><option value="21">21 mm</option><option value="50">50 mm</option><option value="80">80 mm</option><option value="80thin">80（薄）</option><option value="100">100 mm</option><option value="135">135 mm</option><option value="155">155 mm</option></select></div>
-      <div class="frame-row"><span class="frame-label" style="min-width:30px">上</span><select class="frame-select" id="soto_t" onchange="onSubSelect('soto')"><option value="">―</option><option value="21">21 mm</option><option value="50">50 mm</option><option value="80">80 mm</option><option value="80thin">80（薄）</option><option value="100">100 mm</option><option value="135">135 mm</option><option value="155">155 mm</option></select></div>
+      <div class="frame-row"><span class="frame-label frame-side">外観右</span><select class="frame-select" id="soto_r" onchange="onSubSelect('soto')"><option value="">―</option><option value="21">21 mm</option><option value="50">50 mm</option><option value="80">80 mm</option><option value="80thin">80（薄）</option><option value="100">100 mm</option><option value="135">135 mm</option><option value="155">155 mm</option></select></div>
+      <div class="frame-row"><span class="frame-label frame-side">外観左</span><select class="frame-select" id="soto_l" onchange="onSubSelect('soto')"><option value="">―</option><option value="21">21 mm</option><option value="50">50 mm</option><option value="80">80 mm</option><option value="80thin">80（薄）</option><option value="100">100 mm</option><option value="135">135 mm</option><option value="155">155 mm</option></select></div>
+      <div class="frame-row"><span class="frame-label frame-side">上</span><select class="frame-select" id="soto_t" onchange="onSubSelect('soto')"><option value="">―</option><option value="21">21 mm</option><option value="50">50 mm</option><option value="80">80 mm</option><option value="80thin">80（薄）</option><option value="100">100 mm</option><option value="135">135 mm</option><option value="155">155 mm</option></select></div>
     </div>
   </div>
 
@@ -651,9 +652,9 @@ main{max-width:940px;padding:24px 20px 12px}
       <button class="frame-toggle" id="toggle-uchi" onclick="toggleFrameIndiv('uchi')">個別▾</button>
     </div>
     <div class="frame-indiv" id="panel-uchi">
-      <div class="frame-row"><span class="frame-label" style="min-width:30px">右</span><select class="frame-select" id="uchi_r" onchange="onSubSelect('uchi')"><option value="">―</option><option value="25">25 mm</option><option value="40">40 mm</option><option value="100">100 mm</option></select></div>
-      <div class="frame-row"><span class="frame-label" style="min-width:30px">左</span><select class="frame-select" id="uchi_l" onchange="onSubSelect('uchi')"><option value="">―</option><option value="25">25 mm</option><option value="40">40 mm</option><option value="100">100 mm</option></select></div>
-      <div class="frame-row"><span class="frame-label" style="min-width:30px">上</span><select class="frame-select" id="uchi_t" onchange="onSubSelect('uchi')"><option value="">―</option><option value="25">25 mm</option><option value="40">40 mm</option><option value="100">100 mm</option></select></div>
+      <div class="frame-row"><span class="frame-label frame-side">外観右</span><select class="frame-select" id="uchi_r" onchange="onSubSelect('uchi')"><option value="">―</option><option value="25">25 mm</option><option value="40">40 mm</option><option value="100">100 mm</option></select></div>
+      <div class="frame-row"><span class="frame-label frame-side">外観左</span><select class="frame-select" id="uchi_l" onchange="onSubSelect('uchi')"><option value="">―</option><option value="25">25 mm</option><option value="40">40 mm</option><option value="100">100 mm</option></select></div>
+      <div class="frame-row"><span class="frame-label frame-side">上</span><select class="frame-select" id="uchi_t" onchange="onSubSelect('uchi')"><option value="">―</option><option value="25">25 mm</option><option value="40">40 mm</option><option value="100">100 mm</option></select></div>
     </div>
   </div>
 
@@ -1815,8 +1816,8 @@ function getFrameText(key) {
   const subs = [key+'_r', key+'_l', key+'_t'];
   const sv = subs.map(id => val(id));
   const mainV = val(key);
-  if (mainV && sv.every(v => v === mainV)) return dvmm(mainV) + '（右・左・上 共通）';
-  if (sv.some(v => v !== '')) return ['右','左','上'].map((p,i) => p+':'+( dvmm(sv[i])||'―')).join(' / ');
+  if (mainV && sv.every(v => v === mainV)) return dvmm(mainV) + '（外観右・外観左・上 共通）';
+  if (sv.some(v => v !== '')) return ['外観右','外観左','上'].map((p,i) => p+':'+( dvmm(sv[i])||'―')).join(' / ');
   return null;
 }
 
